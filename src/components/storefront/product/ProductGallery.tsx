@@ -1,0 +1,74 @@
+"use client"
+
+import { useState } from "react"
+import { ProductImage } from "@/components/storefront/ProductImage"
+import { Package } from "lucide-react"
+
+export function ProductGallery({ product }: { product: any }) {
+  const [activeImage, setActiveImage] = useState<string | null>(product.imageUrl || null)
+  
+  const allImages: string[] = []
+  if (product.imageUrl) allImages.push(product.imageUrl)
+  if (Array.isArray(product.images)) {
+    product.images.forEach((img: string) => {
+      if (!allImages.includes(img)) allImages.push(img)
+    })
+  }
+
+  if (allImages.length === 0) {
+    return (
+      <div className="aspect-[4/5] sm:aspect-square bg-slate-100 rounded-2xl flex items-center justify-center overflow-hidden w-full relative">
+        <div className="flex flex-col items-center text-slate-400 gap-2">
+          <Package className="w-12 h-12" />
+          <span className="text-sm font-medium">{product.name}</span>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-3 w-full">
+      {/* Main Image */}
+      <div className="aspect-[4/5] sm:aspect-square bg-slate-100 rounded-2xl flex items-center justify-center overflow-hidden w-full relative border border-slate-200/50 shadow-sm">
+        <ProductImage 
+          src={activeImage || allImages[0]} 
+          alt={product.name} 
+          fill 
+          sizes="(max-width: 768px) 100vw, 50vw" 
+          className="object-cover w-full h-full transition-opacity duration-300"
+          priority
+        />
+        
+        {/* Pre-order Badge */}
+        {product.isPreOrder && (
+          <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-bold text-amber-700 flex items-center gap-1.5 shadow-sm border border-amber-200 uppercase tracking-widest">
+            <span>📌 Урьдчилсан захиалга</span>
+          </div>
+        )}
+      </div>
+
+      {/* Thumbnails */}
+      {allImages.length > 1 && (
+        <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
+          {allImages.map((img, idx) => (
+            <button
+              key={idx}
+              onClick={() => setActiveImage(img)}
+              className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden shrink-0 border-2 transition-all shadow-sm ${
+                activeImage === img ? "border-[#4e3dc7] opacity-100 ring-2 ring-indigo-100 ring-offset-1" : "border-transparent opacity-60 hover:opacity-100"
+              }`}
+            >
+              <ProductImage
+                src={img}
+                alt={`${product.name} thumbnail ${idx + 1}`}
+                fill
+                sizes="80px"
+                className="object-cover w-full h-full"
+              />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}

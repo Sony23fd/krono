@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AlertTriangle, Trash2 } from "lucide-react";
-import { clearAllStoreData } from "@/app/actions/clear-actions";
+import { clearAllData } from "@/app/actions/clear-actions";
 
 interface Props {
   adminRole: string;
@@ -32,7 +32,7 @@ export default function ClearDataButton({ adminRole }: Props) {
 
     setLoading(true);
     try {
-      const res = await clearAllStoreData();
+      const res = await clearAllData();
       if (res.success) {
         alert("Бүх өгөгдлийг амжилттай устгаж цэвэрлэлээ.");
         window.location.reload();

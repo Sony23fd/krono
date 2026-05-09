@@ -40,13 +40,17 @@ export async function POST(request: NextRequest) {
 
     await writeFile(filepath, buffer)
 
+    const skipDbUpdate = formData.get("skipDbUpdate") === "true"
+
     const fileUrl = `/uploads/products/${filename}`
 
-    // Update product.imageUrl or videoUrl in DB
-    await db.product.update({
-      where: { id: productId },
-      data: isVideo ? { videoUrl: fileUrl } : { imageUrl: fileUrl }
-    })
+    if (!skipDbUpdate) {
+      // Update product.imageUrl in DB (videos also stored here since no separate videoUrl field)
+      await db.product.update({
+        where: { id: productId },
+        data: { imageUrl: fileUrl }
+      })
+    }
 
     return NextResponse.json({ success: true, url: fileUrl, imageUrl: fileUrl, videoUrl: isVideo ? fileUrl : undefined, type: isVideo ? "video" : "image" })
   } catch (error: any) {

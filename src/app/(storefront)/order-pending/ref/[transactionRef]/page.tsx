@@ -1,5 +1,5 @@
-import { getOrdersByTransactionRef, getShopSettings } from "@/app/actions/settings-actions"
-import { getQPayInvoiceForOrder } from "@/app/actions/order-actions"
+import { getShopSettings } from "@/app/actions/settings-actions"
+import { db } from "@/lib/db"
 import { notFound } from "next/navigation"
 import { Clock, CreditCard, CheckCircle2, AlertCircle } from "lucide-react"
 import { CopyButton } from "../../[orderId]/CopyButton"
@@ -11,19 +11,29 @@ export const dynamic = "force-dynamic"
 
 export default async function OrderPendingByRefPage({ params }: { params: Promise<{ transactionRef: string }> }) {
   const { transactionRef } = await params
-  const [{ orders, success }, settings, qpayRes] = await Promise.all([
-    getOrdersByTransactionRef(transactionRef),
-    getShopSettings(),
-    getQPayInvoiceForOrder(transactionRef)
-  ])
 
-  if (!success || !orders?.length) notFound()
+  // transactionRef нь orderNumber эсвэл id байж болно
+  const isNum = !isNaN(Number(transactionRef))
+  const orders = await db.order.findMany({
+    where: {
+      OR: [
+        ...(isNum ? [{ orderNumber: Number(transactionRef) }] : []),
+        { id: transactionRef },
+      ],
+    },
+    include: { items: true, payments: true },
+  })
 
-  const allConfirmed = orders.every((o: any) => o.paymentStatus === "CONFIRMED")
-  const anyRejected = orders.some((o: any) => o.paymentStatus === "REJECTED")
+  const settings = await getShopSettings()
+  const qpayRes = null as any // TODO: QPay integration дахин хийх
+
+  if (!orders?.length) notFound()
+
+  const allConfirmed = orders.every((o: any) => o.orderStatus === "PAID" || o.orderStatus === "DELIVERED")
+  const anyRejected = orders.some((o: any) => o.orderStatus === "CANCELLED")
   const totalAmount = orders.reduce((sum: number, o: any) => sum + Number(o.totalAmount || 0), 0)
   const wantsDelivery = orders.some((o: any) => o.wantsDelivery)
-  const customer = orders[0]
+  const customer = orders[0] as any
 
   if (allConfirmed) {
     return (

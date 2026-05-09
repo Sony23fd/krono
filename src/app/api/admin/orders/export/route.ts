@@ -1,68 +1,124 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { db } from "@/lib/db"
-import * as XLSX from "xlsx"
+import { getCurrentAdmin } from "@/lib/auth"
 
-export async function GET(req: NextRequest) {
+/**
+ * GET /api/admin/orders/export
+ * Захиалгуудыг CSV файлаар татаж авах.
+ */
+export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(req.url)
-    const batchId = searchParams.get("batchId")
+    const admin = await getCurrentAdmin()
+    if (!admin || (admin.role !== "ADMIN" && admin.role !== "CARGO_ADMIN")) {
+      return new NextResponse("Unauthorized", { status: 401 })
+    }
 
-    if (!batchId) {
-      return NextResponse.json({ error: "batchId шаардлагатай" }, { status: 400 })
+    const { searchParams } = new URL(request.url)
+    const status = searchParams.get("status")
+
+    const where: any = {}
+    if (status && status !== "ALL") {
+      where.orderStatus = status
     }
 
     const orders = await db.order.findMany({
-      where: {
-        batchId,
-        paymentStatus: "CONFIRMED",
-        status: {
-          isFinal: false,
-          name: { not: "Цуцлагдсан" },
-        },
+      where,
+      include: {
+        items: true,
+        payments: { select: { method: true, status: true, paidAt: true } },
       },
-      include: { status: true },
-      orderBy: { orderNumber: "asc" },
+      orderBy: { createdAt: "desc" },
+      take: 5000,
     })
 
-    const rows = orders.map((o) => ({
-      "Захиалгын дугаар": o.orderNumber,
-      "Нэр": o.customerName,
-      "Дансны дугаар": o.accountNumber ?? "",
-      "Тоо": o.quantity,
-      "Ирэх өдөр": o.arrivalDate ? new Date(o.arrivalDate).toISOString().split("T")[0] : "",
-      "Хүргүүлэх өдөр": o.deliveryDate ? new Date(o.deliveryDate).toISOString().split("T")[0] : "",
-      "Статус": o.status?.name ?? "",
-      "Хаяг": o.deliveryAddress ?? "",
-      "Карго үнэ": Number(o.cargoFee ?? 0),
-    }))
-
-    const wb = XLSX.utils.book_new()
-    const ws = XLSX.utils.json_to_sheet(rows)
-
-    ws["!cols"] = [
-      { wch: 16 }, // Захиалгын дугаар
-      { wch: 18 }, // Нэр
-      { wch: 16 }, // Дансны дугаар
-      { wch: 6  }, // Тоо
-      { wch: 12 }, // Ирэх өдөр
-      { wch: 14 }, // Хүргүүлэх өдөр
-      { wch: 22 }, // Статус
-      { wch: 32 }, // Хаяг
-      { wch: 10 }, // Карго үнэ
+    // CSV header
+    const headers = [
+      "Дугаар",
+      "Огноо",
+      "Нэр",
+      "Утас",
+      "Данс",
+      "Барааны нэр",
+      "SKU",
+      "Тоо ширхэг",
+      "Нэгж үнэ",
+      "Нийт үнэ",
+      "Хүргэлтийн төлбөр",
+      "Нийт дүн",
+      "Статус",
+      "Төлбөрийн хэлбэр",
+      "Төлбөрийн статус",
+      "Хүргэлт хүсэв",
+      "Хаяг",
+      "Тэмдэглэл",
     ]
 
-    XLSX.utils.book_append_sheet(wb, ws, "Захиалгууд")
-    const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" })
-    const filename = `orders-${batchId.slice(-6)}-${new Date().toISOString().split("T")[0]}.xlsx`
+    const rows: string[][] = []
 
-    return new NextResponse(buf, {
+    for (const order of orders) {
+      if (order.items.length === 0) {
+        rows.push([
+          `#${order.orderNumber}`,
+          new Date(order.createdAt).toLocaleDateString("mn-MN"),
+          order.customerName,
+          order.customerPhone,
+          order.accountNumber || "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          String(Number(order.deliveryFee)),
+          String(Number(order.totalAmount)),
+          order.orderStatus,
+          order.payments[0]?.method || "",
+          order.payments[0]?.status || "",
+          order.wantsDelivery ? "Тийм" : "Үгүй",
+          order.deliveryAddress || "",
+          order.note || "",
+        ])
+      } else {
+        for (const item of order.items) {
+          rows.push([
+            `#${order.orderNumber}`,
+            new Date(order.createdAt).toLocaleDateString("mn-MN"),
+            order.customerName,
+            order.customerPhone,
+            order.accountNumber || "",
+            item.productName,
+            item.sku,
+            String(item.quantity),
+            String(Number(item.unitPrice)),
+            String(Number(item.totalPrice)),
+            String(Number(order.deliveryFee)),
+            String(Number(order.totalAmount)),
+            order.orderStatus,
+            order.payments[0]?.method || "",
+            order.payments[0]?.status || "",
+            order.wantsDelivery ? "Тийм" : "Үгүй",
+            order.deliveryAddress || "",
+            order.note || "",
+          ])
+        }
+      }
+    }
+
+    // BOM + CSV
+    const csvContent = "\uFEFF" + [
+      headers.join(","),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")),
+    ].join("\n")
+
+    const filename = `orders-export-${new Date().toISOString().slice(0, 10)}.csv`
+
+    return new NextResponse(csvContent, {
       headers: {
-        "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "Content-Type": "text/csv; charset=utf-8",
         "Content-Disposition": `attachment; filename="${filename}"`,
       },
     })
-  } catch (err: any) {
-    console.error("Export error:", err)
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (error: any) {
+    console.error("[OrderExport] Error:", error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }

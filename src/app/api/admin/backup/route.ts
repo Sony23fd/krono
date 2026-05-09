@@ -11,13 +11,10 @@ export async function GET() {
 
     // Fetch all necessary data
     const categories = await db.category.findMany()
-    const products = await db.product.findMany()
-    const batches = await db.batch.findMany()
-    const orders = await db.order.findMany()
+    const products = await db.product.findMany({ include: { variants: true } })
+    const orders = await db.order.findMany({ include: { items: true, payments: true } })
     const users = await db.user.findMany()
     const shopSettings = await db.shopSettings.findMany()
-    const orderStatusTypes = await db.orderStatusType.findMany()
-    const activityLogs = await (db as any).activityLog?.findMany().catch(() => [])
 
     const backupData = {
       timestamp: new Date().toISOString(),
@@ -28,12 +25,9 @@ export async function GET() {
       data: {
         categories,
         products,
-        batches,
         orders,
         users,
         shopSettings,
-        orderStatusTypes,
-        activityLogs,
       }
     }
 

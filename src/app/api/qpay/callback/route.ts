@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { getShopSettings } from "@/app/actions/settings-actions"
 import { checkQPayPayment, createQPayEbarimt } from "@/lib/qpay"
-import { orderEmitter } from "@/lib/orderEvents"
+import { confirmPayment } from "@/app/actions/order-actions"
 
 export async function GET(request: Request) {
   return handleCallback(request)
@@ -12,51 +12,59 @@ export async function POST(request: Request) {
   return handleCallback(request)
 }
 
+/**
+ * QPay callback handler.
+ * 
+ * Шинэ schema дээр:
+ * - Order.idempotencyKey → QPay invoice бүтэхэд ашигласан key
+ * - Payment.externalRef → QPay invoice_id хадгалагдана
+ * - Payment.metadata → QPay-аас ирсэн нэмэлт мэдээлэл (e-barimt г.м.)
+ * 
+ * Дуудагдах URL: /api/qpay/callback?ref=<payment.id>&payment_id=<qpay_payment_id>
+ */
 async function handleCallback(request: Request) {
   const { searchParams } = new URL(request.url)
-  const transactionRef = searchParams.get("ref")
-  const paymentId = searchParams.get("payment_id")
+  const paymentDbId = searchParams.get("ref") // Манай Payment.id
+  const qpayPaymentId = searchParams.get("payment_id")
 
-  if (!transactionRef) {
+  if (!paymentDbId) {
     return NextResponse.json({ error: "Missing ref parameter" }, { status: 400 })
   }
 
   try {
-    // 1. Check if QPay is even enabled in the system
+    // 1. QPay идэвхтэй эсэхийг шалгах
     const settings = await getShopSettings()
     if (settings.qpay_enabled !== "true") {
-      console.warn("QPay callback received but QPay is currently disabled in settings.")
+      console.warn("[QPay Callback] QPay is disabled")
       return NextResponse.json({ error: "QPay is currently disabled" }, { status: 403 })
     }
 
-    // Find orders with this ref
-    const orders = await (db.order as any).findMany({
-      where: { transactionRef }
+    // 2. Payment бичлэг хайх
+    const payment = await db.payment.findUnique({
+      where: { id: paymentDbId },
+      include: { order: { select: { id: true, orderStatus: true, orderNumber: true } } }
     })
 
-    if (!orders || orders.length === 0) {
-      return NextResponse.json({ error: "Order not found" }, { status: 404 })
+    if (!payment) {
+      return NextResponse.json({ error: "Payment not found" }, { status: 404 })
     }
 
-    const firstOrder = orders[0]
-    
-    // If already confirmed, nothing to do
-    if (firstOrder.paymentStatus === "CONFIRMED") {
+    // Аль хэдийн баталгаажсан бол
+    if (payment.status === "PAID") {
       return NextResponse.json({ success: true, message: "Already confirmed" })
     }
 
-    const invoiceId = firstOrder.qpayInvoiceId
+    // 3. QPay-аас төлбөр төлөгдсөн эсэхийг давхар шалгах
+    const invoiceId = payment.externalRef
     if (!invoiceId) {
-      return NextResponse.json({ error: "No QPay invoice found for this order" }, { status: 400 })
+      return NextResponse.json({ error: "No QPay invoice linked to this payment" }, { status: 400 })
     }
 
-    // Double check with QPay if the invoice is really paid
     let isPaid = false
-    let finalPaymentId = paymentId
+    let finalPaymentId = qpayPaymentId
 
     const checkRes = await checkQPayPayment(invoiceId)
     if (checkRes.success && checkRes.data.count > 0) {
-      // Find a successful payment row
       const paidRow = checkRes.data.rows?.find((r: any) => r.payment_status === "PAID")
       if (paidRow) {
         isPaid = true
@@ -65,76 +73,52 @@ async function handleCallback(request: Request) {
     }
 
     if (!isPaid) {
-      return NextResponse.json({ error: "Payment not verified" }, { status: 400 })
+      return NextResponse.json({ error: "Payment not verified by QPay" }, { status: 400 })
     }
 
-    let ebarimtId = null
-    let ebarimtQr = null
-    let ebarimtLottery = null
-
-    // Payment is verified. Now create E-barimt if we found a payment_id
+    // 4. E-barimt үүсгэх (алдаа гарвал ч захиалга баталгаажна)
+    let ebarimtData: any = null
     if (finalPaymentId) {
       try {
         const ebRes = await createQPayEbarimt(finalPaymentId)
         if (ebRes.success) {
-          ebarimtId = ebRes.data.id || ebRes.data.billId
-          ebarimtQr = ebRes.data.qr_data || ebRes.data.qrCode // depending on QPay exact response
-          ebarimtLottery = ebRes.data.lottery || ebRes.data.lotteryWarningMsg
+          ebarimtData = {
+            id: ebRes.data.id || ebRes.data.billId,
+            qr: ebRes.data.qr_data || ebRes.data.qrCode,
+            lottery: ebRes.data.lottery || ebRes.data.lotteryWarningMsg,
+          }
         }
       } catch (err) {
-        console.error("Failed to generate E-barimt:", err)
-        // We continue even if ebarimt fails, so the order is still confirmed
+        console.error("[QPay Callback] E-barimt failed:", err)
       }
     }
 
-    // Find or create the web confirmed status
-    let webConfirmedStatus = await db.orderStatusType.findFirst({
-      where: { name: "Захиалга баталгаажсан /Вэбээр/" }
-    });
-    
-    if (!webConfirmedStatus) {
-      webConfirmedStatus = await db.orderStatusType.create({
+    // 5. Төлбөр баталгаажуулах (stock adjustment + status update)
+    const result = await confirmPayment(
+      payment.order.id,
+      `QPAY_${invoiceId}`
+    )
+
+    if (!result.success) {
+      return NextResponse.json({ error: result.error }, { status: 400 })
+    }
+
+    // 6. Payment metadata шинэчлэх (e-barimt мэдээлэл)
+    if (ebarimtData) {
+      await db.payment.update({
+        where: { id: paymentDbId },
         data: {
-          name: "Захиалга баталгаажсан /Вэбээр/",
-          color: "blue",
-          isDefault: false,
-          isFinal: false,
-          isDeliverable: true
+          metadata: ebarimtData as any,
         }
-      });
+      })
     }
 
-    // Update orders in DB
-    await (db.order as any).updateMany({
-      where: { transactionRef },
-      data: {
-        paymentStatus: "CONFIRMED",
-        statusId: webConfirmedStatus.id,
-        ebarimtId: ebarimtId,
-        ebarimtQr: ebarimtQr,
-        ebarimtLottery: ebarimtLottery,
-        confirmationMethod: "QPAY_AUTO",
-        confirmedAt: new Date()
-      }
-    })
-
-    // Prepare notification logic
-    const totalAmount = orders.reduce((sum: number, o: any) => sum + Number(o.totalAmount || 0), 0)
-    const name = orders[0].customerName
-    const phone = orders[0].customerPhone
-
-    // Emit event for realtime Admin notification
-    orderEmitter.emit("order-confirmed", {
-      transactionRef,
-      name,
-      phone,
-      totalAmount
-    })
+    console.log(`[QPay Callback] Order #${payment.order.orderNumber} confirmed via QPay`)
 
     return NextResponse.json({ success: true })
 
   } catch (error) {
-    console.error("QPay callback error:", error)
+    console.error("[QPay Callback] Error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

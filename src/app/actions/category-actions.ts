@@ -3,196 +3,102 @@
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 
-export async function getCategories(days: number = 30) {
+export async function getCategories() {
   try {
-    const whereClause: any = { isArchived: false };
-    
-    // We shouldn't filter category by updatedAt because categories are like folders
-    // that could be created months ago but still have active orders today.
-    // If we want to filter, we should filter at the batch/order level instead,
-    // but for now, we will return all unarchived categories regardless of days.
-
     const categories = await db.category.findMany({
-      where: whereClause,
-      orderBy: { createdAt: "desc" },
+      where: { isActive: true },
       include: {
-        batches: {
-          include: {
-            orders: { include: { status: true } }
-          }
-        }
-      }
+        _count: { select: { products: true } },
+      },
+      orderBy: { sortOrder: "asc" },
     })
     return { success: true, categories: JSON.parse(JSON.stringify(categories)) }
-  } catch (error) {
-    console.error("Failed to fetch categories:", error)
-    return { success: false, error: "Failed to fetch categories" }
+  } catch (error: any) {
+    return { success: false, error: error.message, categories: [] }
   }
 }
 
-export async function getCategoryById(id: string) {
+export async function getAllCategories() {
   try {
-    const category = await db.category.findUnique({
-      where: { id }
-    })
-    return { success: true, category }
-  } catch (error) {
-    console.error("Failed to fetch category:", error)
-    return { success: false, error: "Failed to fetch category" }
-  }
-}
-
-export async function createCategory(name: string, deliveryFee: number = 0) {
-  try {
-    const category = await (db.category as any).create({
-      data: { name, deliveryFee },
-    })
-    revalidatePath("/admin/categories")
-    return { success: true, category }
-  } catch (error) {
-    console.error("Failed to create category:", error)
-    return { success: false, error: "Failed to create category" }
-  }
-}
-
-export async function updateCategory(id: string, name: string, deliveryFee?: number) {
-  try {
-    const category = await (db.category as any).update({
-      where: { id },
-      data: { 
-        name,
-        ...(deliveryFee !== undefined && { deliveryFee })
+    const categories = await db.category.findMany({
+      include: {
+        _count: { select: { products: true } },
       },
+      orderBy: { sortOrder: "asc" },
     })
-    if (deliveryFee !== undefined) {
-      await (db.batch as any).updateMany({
-        where: { categoryId: id },
-        data: { deliveryFee }
-      })
-    }
+    return { success: true, categories: JSON.parse(JSON.stringify(categories)) }
+  } catch (error: any) {
+    return { success: false, error: error.message, categories: [] }
+  }
+}
+
+export async function createCategory(data: { name: string; imageUrl?: string }) {
+  try {
+    const slug = data.name
+      .toLowerCase()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9\-а-яөүё]/gi, "")
+    
+    const category = await db.category.create({
+      data: {
+        name: data.name.trim(),
+        slug: slug || `cat-${Date.now()}`,
+        imageUrl: data.imageUrl,
+      }
+    })
+    revalidatePath("/admin/products")
     revalidatePath("/admin/categories")
-    return { success: true, category }
-  } catch (error) {
-    console.error("Failed to update category:", error)
-    return { success: false, error: "Failed to update category" }
+    return { success: true, category: JSON.parse(JSON.stringify(category)) }
+  } catch (error: any) {
+    if (error.code === "P2002") return { success: false, error: "Ангилал давхардаж байна" }
+    return { success: false, error: error.message }
+  }
+}
+
+export async function updateCategory(id: string, data: { name?: string; imageUrl?: string; isActive?: boolean; sortOrder?: number }) {
+  try {
+    const existing = await db.category.findUnique({ where: { id } })
+    if (!existing) return { success: false, error: "Ангилал олдсонгүй" }
+
+    let slug = existing.slug
+    if (data.name && data.name.trim() !== existing.name) {
+      slug = data.name
+        .toLowerCase()
+        .replace(/\s+/g, "-")
+        .replace(/[^a-z0-9\-а-яөүё]/gi, "")
+    }
+
+    const category = await db.category.update({
+      where: { id },
+      data: {
+        ...(data.name && { name: data.name.trim(), slug }),
+        ...(data.imageUrl !== undefined && { imageUrl: data.imageUrl }),
+        ...(data.isActive !== undefined && { isActive: data.isActive }),
+        ...(data.sortOrder !== undefined && { sortOrder: data.sortOrder }),
+      }
+    })
+
+    revalidatePath("/admin/products")
+    revalidatePath("/admin/categories")
+    revalidatePath("/")
+    return { success: true, category: JSON.parse(JSON.stringify(category)) }
+  } catch (error: any) {
+    if (error.code === "P2002") return { success: false, error: "Нэр давхардаж байна" }
+    return { success: false, error: error.message }
   }
 }
 
 export async function deleteCategory(id: string) {
   try {
-    // Check if category has any batches first
-    const category = await db.category.findUnique({
-      where: { id },
-      include: { batches: true }
-    });
-
-    if (category && category.batches.length > 0) {
-      return { success: false, error: "Cannot delete category with associated batches" }
+    const productCount = await db.product.count({ where: { categoryId: id } })
+    if (productCount > 0) {
+      return { success: false, error: `${productCount} бараатай ангилалыг устгах боломжгүй. Эхлээд барааг шилжүүлнэ үү.` }
     }
 
-    await db.category.delete({
-      where: { id },
-    })
+    await db.category.delete({ where: { id } })
     revalidatePath("/admin/categories")
     return { success: true }
-  } catch (error) {
-    console.error("Failed to delete category:", error)
-    return { success: false, error: "Failed to delete category" }
-  }
-}
-
-export async function updateCategoryDeliveryFee(categoryId: string, deliveryFee: number) {
-  try {
-    await (db.category as any).update({
-      where: { id: categoryId },
-      data: { deliveryFee }
-    })
-    // Propagate to all batches in this category so existing batches inherit the fee
-    await (db.batch as any).updateMany({
-      where: { categoryId },
-      data: { deliveryFee }
-    })
-    revalidatePath("/admin/orders/category/" + categoryId)
-    revalidatePath("/admin/products")
-    revalidatePath("/")
-    return { success: true }
   } catch (error: any) {
-    console.error("Failed to update category delivery fee:", error)
-    return { success: false, error: error.message }
-  }
-}
-
-export async function archiveCategory(categoryId: string) {
-  try {
-    await (db.category as any).update({
-      where: { id: categoryId },
-      data: { isArchived: true }
-    })
-    revalidatePath("/admin/orders")
-    revalidatePath("/admin/orders/archived")
-    return { success: true }
-  } catch (error: any) {
-    return { success: false, error: error.message }
-  }
-}
-
-export async function unarchiveCategory(categoryId: string) {
-  try {
-    await (db.category as any).update({
-      where: { id: categoryId },
-      data: { isArchived: false }
-    })
-    revalidatePath("/admin/orders")
-    revalidatePath("/admin/orders/archived")
-    return { success: true }
-  } catch (error: any) {
-    return { success: false, error: error.message }
-  }
-}
-
-export async function getArchivedCategories(days: number = 30) {
-  try {
-    const whereClause: any = { isArchived: true };
-    if (days > 0) {
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - days);
-      whereClause.updatedAt = { gte: cutoffDate };
-    }
-
-    const categories = await (db.category as any).findMany({
-      where: whereClause,
-      orderBy: { updatedAt: "desc" },
-      include: {
-        batches: {
-          include: {
-            orders: { include: { status: true } }
-          }
-        }
-      }
-    })
-    return { success: true, categories: JSON.parse(JSON.stringify(categories)) }
-  } catch (error: any) {
-    return { success: false, error: "Failed to fetch archived categories", categories: [] }
-  }
-}
-
-export async function toggleCategoryReadyStock(
-  categoryId: string, 
-  isReadyStock: boolean, 
-  readyStockStatusId?: string | null
-) {
-  try {
-    await (db.category as any).update({
-      where: { id: categoryId },
-      data: { 
-        isReadyStock,
-        readyStockStatusId: isReadyStock ? (readyStockStatusId || null) : null
-      }
-    })
-    revalidatePath("/admin/orders")
-    return { success: true }
-  } catch (error: any) {
-    console.error("Failed to toggle ready stock:", error)
     return { success: false, error: error.message }
   }
 }

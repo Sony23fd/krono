@@ -7,12 +7,14 @@ interface ProductImageProps {
   src: string
   alt: string
   fill?: boolean
+  width?: number
+  height?: number
   sizes?: string
   className?: string
   priority?: boolean
 }
 
-export function ProductImage({ src, alt, fill, sizes, className, priority }: ProductImageProps) {
+export function ProductImage({ src, alt, fill, width, height, sizes, className, priority }: ProductImageProps) {
   const [error, setError] = useState(false)
   const [loaded, setLoaded] = useState(false)
 
@@ -42,6 +44,8 @@ export function ProductImage({ src, alt, fill, sizes, className, priority }: Pro
         src={src}
         alt={alt}
         fill={fill}
+        width={!fill ? width : undefined}
+        height={!fill ? height : undefined}
         sizes={sizes}
         className={className}
         priority={priority}

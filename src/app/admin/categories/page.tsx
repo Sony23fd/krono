@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { Plus, Eye, Edit2, Trash2 } from "lucide-react"
-import { getCategories, createCategory } from "@/app/actions/category-actions"
+import { getCategories, createCategory, updateCategory, deleteCategory } from "@/app/actions/category-actions"
 import { Input } from "@/components/ui/input"
 import { 
   Sheet, 
@@ -38,8 +38,7 @@ export default async function OrderCategoriesPage() {
             <form action={async (formData) => {
               "use server"
               const name = formData.get("name") as string;
-              const fee = Number(formData.get("deliveryFee")) || 0;
-              if (name) await createCategory(name, fee);
+              if (name) await createCategory({ name });
             }} className="space-y-4 mt-6">
               <div className="space-y-2">
                 <label htmlFor="name" className="text-sm font-medium">Ангиллын нэр</label>
@@ -94,8 +93,7 @@ export default async function OrderCategoriesPage() {
                           const { updateCategory } = await import("@/app/actions/category-actions")
                           const id = formData.get("id") as string
                           const name = formData.get("name") as string
-                          const fee = Number(formData.get("deliveryFee")) || 0
-                          if (id && name) await updateCategory(id, name, fee)
+                          if (id && name) await updateCategory(id, { name })
                         }} className="space-y-4">
                           <input type="hidden" name="id" value={cat.id} />
                           <div className="space-y-2">

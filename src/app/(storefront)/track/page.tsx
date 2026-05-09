@@ -1,4 +1,4 @@
-import { getOrdersByQuery } from "@/app/actions/order-actions"
+import { getOrdersByQuery } from "@/app/actions/track-actions"
 import { getShopSettings } from "@/app/actions/settings-actions"
 import { 
   CheckCircle2, 
@@ -11,11 +11,30 @@ import {
   History,
   AlertTriangle
 } from "lucide-react"
-import DeliveryRequestButton from "./DeliveryRequestButton"
 import PhoneTracker from "./PhoneTracker"
-import { OrderStatusTimeline } from "@/components/OrderStatusTimeline"
 
 export const dynamic = "force-dynamic"
+
+// Статус-ыг тодорхойлох helper
+const STATUS_STYLES: Record<string, { icon: any; color: string; bg: string; border: string }> = {
+  PENDING: { icon: Clock, color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200" },
+  PAID: { icon: CheckCircle2, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-200" },
+  PROCESSING: { icon: Package, color: "text-indigo-600", bg: "bg-indigo-50", border: "border-indigo-200" },
+  SHIPPED: { icon: Truck, color: "text-purple-600", bg: "bg-purple-50", border: "border-purple-200" },
+  DELIVERED: { icon: CheckCircle2, color: "text-green-600", bg: "bg-green-50", border: "border-green-200" },
+  CANCELLED: { icon: XCircle, color: "text-red-500", bg: "bg-red-50", border: "border-red-200" },
+  REFUNDED: { icon: AlertCircle, color: "text-slate-500", bg: "bg-slate-50", border: "border-slate-200" },
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  PENDING: "Хүлээгдэж буй",
+  PAID: "Төлбөр баталгаажсан",
+  PROCESSING: "Боловсруулж буй",
+  SHIPPED: "Илгээгдсэн",
+  DELIVERED: "Хүргэгдсэн",
+  CANCELLED: "Цуцлагдсан",
+  REFUNDED: "Буцаагдсан",
+}
 
 export default async function TrackOrderPage({
   searchParams,
@@ -25,43 +44,26 @@ export default async function TrackOrderPage({
   const resolvedParams = await searchParams
   const q = resolvedParams.q || resolvedParams.account
 
-  const [settings, accountData] = await Promise.all([
+  const [settings, queryData] = await Promise.all([
     getShopSettings(),
-    q ? getOrdersByQuery(q) : Promise.resolve({ orders: [], success: true, needsVerification: false, phone: "" })
+    q ? getOrdersByQuery(q) : Promise.resolve({ orders: [], success: true }),
   ])
-  const { orders, success, needsVerification, phone } = accountData as any
+  const orders = queryData.orders || []
 
-  // Define logic used in results
-  const grouped: Record<string, any[]> = {}
-  for (const order of (orders || [])) {
-    const key = order.transactionRef || order.id
-    if (!grouped[key]) grouped[key] = []
-    grouped[key].push(order)
-  }
-
-  const isOrderFinished = (o: any) => 
-    o.status?.isFinal === true || 
-    o.paymentStatus === "REJECTED" || 
-    o.status?.name === "Цуцлагдсан" ||
-    o.status?.name?.toLowerCase().includes("rejected");
-
-  const activeGroups = Object.values(grouped).filter(g => g.some((o: any) => !isOrderFinished(o)))
-  const completedGroups = Object.values(grouped).filter(g => g.every((o: any) => isOrderFinished(o)))
-  const totalOrders = orders?.length || 0
+  const activeOrders = orders.filter((o: any) => !["CANCELLED", "DELIVERED", "REFUNDED"].includes(o.orderStatus))
+  const completedOrders = orders.filter((o: any) => ["CANCELLED", "DELIVERED", "REFUNDED"].includes(o.orderStatus))
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
       {/* Global Delivery Delay Warning */}
       {settings.delivery_delay_active === "true" && (
-        <div className="mb-8 bg-amber-50 border-2 border-amber-200 rounded-2xl p-5 shadow-sm shadow-amber-100/50 flex gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
-          <div className="w-12 h-12 rounded-xl bg-white border border-amber-200 flex items-center justify-center shrink-0 shadow-sm text-amber-600">
-            <AlertTriangle className="w-6 h-6 fill-amber-50" />
+        <div className="mb-8 bg-amber-50 border-2 border-amber-200 rounded-2xl p-5 shadow-sm flex gap-4">
+          <div className="w-12 h-12 rounded-xl bg-white border border-amber-200 flex items-center justify-center shrink-0 text-amber-600">
+            <AlertTriangle className="w-6 h-6" />
           </div>
-          <div className="space-y-1 text-left">
-            <h4 className="font-bold text-amber-900 leading-tight">Хүргэлтийн Анхааруулга</h4>
-            <p className="text-sm text-amber-800/80 font-medium leading-relaxed italic">
-              "{settings.delivery_delay_message}"
-            </p>
+          <div className="space-y-1">
+            <h4 className="font-bold text-amber-900">Хүргэлтийн Анхааруулга</h4>
+            <p className="text-sm text-amber-800/80 font-medium italic">&quot;{settings.delivery_delay_message}&quot;</p>
           </div>
         </div>
       )}
@@ -71,21 +73,21 @@ export default async function TrackOrderPage({
           <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 mx-auto mb-4">
             <Search className="w-8 h-8" />
           </div>
-          <h2 className="text-2xl font-bold text-slate-900 mb-2">Хайлт хийгдсэнгүй</h2>
-          <p className="text-slate-500">Та дээрх хайлтын хэсэгт дансны дугаараа оруулан хайна уу.</p>
+          <h2 className="text-2xl font-bold text-slate-900 mb-2">Захиалга хайх</h2>
+          <p className="text-slate-500">Утасны дугаар эсвэл дансны дугаараа оруулан хайна уу.</p>
         </div>
       ) : (
         <>
           <div className="mb-8">
-            <h1 className="text-2xl font-bold text-slate-900 leading-tight">
+            <h1 className="text-2xl font-bold text-slate-900">
               Хайлтын үр дүн: <span className="text-[#4F46E5]">{q}</span>
             </h1>
-            <p className="text-slate-500 mt-1 font-medium italic">Нийт захиалга: {totalOrders}</p>
+            <p className="text-slate-500 mt-1 font-medium">Нийт захиалга: {orders.length}</p>
           </div>
 
-          {!success || totalOrders === 0 ? (
+          {orders.length === 0 ? (
             <div className="bg-white rounded-xl border border-dashed p-12 text-center text-slate-500 font-medium">
-              Хайлтын илэрц олдсонгүй. Утас, данс, эсвэл линкээ шалгана уу.
+              Хайлтын илэрц олдсонгүй. Утас, данс-аа шалгана уу.
             </div>
           ) : (
             <div className="space-y-12">
@@ -94,29 +96,28 @@ export default async function TrackOrderPage({
                 <h2 className="text-xl font-bold text-slate-800 border-b pb-3 mb-6 flex items-center gap-2">
                   <Clock className="w-5 h-5 text-blue-500" /> Идэвхтэй захиалга
                 </h2>
-                {activeGroups.length > 0 ? (
-                  <div className="space-y-6">
-                    <UnifiedDeliverySection groups={activeGroups} deliveryScheduleDays={settings.delivery_schedule_days || "3,6"} />
-                    {activeGroups.map((groupOrders) => (
-                      <OrderGroup key={groupOrders[0].transactionRef || groupOrders[0].id} orders={groupOrders} deliveryScheduleDays={settings.delivery_schedule_days || "3,6"} />
+                {activeOrders.length > 0 ? (
+                  <div className="space-y-4">
+                    {activeOrders.map((order: any) => (
+                      <OrderCard key={order.id} order={order} />
                     ))}
                   </div>
                 ) : (
-                  <div className="bg-slate-50 rounded-lg p-8 text-center text-slate-500 border border-slate-100 font-medium italic">
+                  <div className="bg-slate-50 rounded-lg p-8 text-center text-slate-500 border font-medium italic">
                     Одоогоор идэвхтэй захиалга алга байна.
                   </div>
                 )}
               </div>
 
               {/* Completed Orders */}
-              {completedGroups.length > 0 && (
+              {completedOrders.length > 0 && (
                 <div>
                   <h2 className="text-xl font-bold text-slate-800 border-b pb-3 mb-6 flex items-center gap-2">
                     <History className="w-5 h-5 text-green-500" /> Өмнөх түүх
                   </h2>
-                  <div className="space-y-6">
-                    {completedGroups.map((groupOrders) => (
-                      <OrderGroup key={groupOrders[0].transactionRef || groupOrders[0].id} orders={groupOrders} completed deliveryScheduleDays={settings.delivery_schedule_days || "3,6"} />
+                  <div className="space-y-4">
+                    {completedOrders.map((order: any) => (
+                      <OrderCard key={order.id} order={order} completed />
                     ))}
                   </div>
                 </div>
@@ -129,206 +130,78 @@ export default async function TrackOrderPage({
   )
 }
 
-function UnifiedDeliverySection({ groups, deliveryScheduleDays = "3,6" }: { groups: any[][], deliveryScheduleDays?: string }) {
-  const allOrders = groups.flat()
-  const alreadyDelivered = allOrders.filter((o: any) => o.wantsDelivery)
-  const deliveryAddress = alreadyDelivered.find((o: any) => o.deliveryAddress)?.deliveryAddress
-  const isStatusDeliverable = (status: any) => {
-    if (!status) return false;
-    if (status.isDeliverable) return true;
-    if (status.isFinal) return false;
-    const name = status.name?.toLowerCase() || "";
-    return ["ирсэн", "arrived", "монголд", "улаанбаатарт", "ub"].some(k => name.includes(k));
-  }
-
-  const eligibleForDelivery = allOrders.filter((o: any) => isStatusDeliverable(o.status) && !o.wantsDelivery)
-  const notYetDeliverable = allOrders.filter((o: any) => !isStatusDeliverable(o.status) && !o.wantsDelivery && !o.status?.isFinal)
-
-  if (alreadyDelivered.length === 0 && eligibleForDelivery.length === 0 && notYetDeliverable.length === 0) return null
-  const hasMixedDeliverable = eligibleForDelivery.length > 0 && notYetDeliverable.length > 0;
+function OrderCard({ order, completed = false }: { order: any; completed?: boolean }) {
+  const style = STATUS_STYLES[order.orderStatus] || STATUS_STYLES.PENDING
+  const StatusIcon = style.icon
+  const isCancelled = order.orderStatus === "CANCELLED"
 
   return (
-    <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl border border-indigo-100 p-5 space-y-4 shadow-sm">
-      <div className="flex items-center gap-2">
-        <Truck className="w-5 h-5 text-indigo-600" />
-        <h3 className="font-bold text-slate-800">Хүргэлтийн мэдээлэл</h3>
-      </div>
-      {alreadyDelivered.length > 0 && (
-        <div className="flex items-start gap-3 text-sm text-green-700 bg-green-50/80 rounded-xl px-4 py-3 border border-green-200 shadow-sm">
-          <CheckCircle2 className="w-5 h-5 mt-0 flex-shrink-0 text-green-500" />
-          <div>
-            <p className="font-semibold text-green-800">Хүргэлт захиалагдсан ({alreadyDelivered.length} бараа)</p>
-            {deliveryAddress && <p className="text-xs font-medium text-green-600/90 mt-0.5">{deliveryAddress}</p>}
-          </div>
-        </div>
-      )}
-      {eligibleForDelivery.length > 0 && (
-        <div className="space-y-3 bg-white p-4 rounded-xl border border-indigo-100 shadow-sm">
-          <p className="text-sm text-slate-700 font-medium">
-            🚚 <strong>{eligibleForDelivery.length}</strong> бараа хүргэлтэд бэлэн байна.
-          </p>
-          <DeliveryRequestButton orderIds={eligibleForDelivery.map((o: any) => o.id)} deliveryScheduleDays={deliveryScheduleDays} />
-          {hasMixedDeliverable && (
-            <div className="mt-2 bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800 leading-relaxed font-medium">
-              ⚠️ <strong className="text-amber-900">Анхаарах:</strong> Танд ирээгүй <strong>{notYetDeliverable.length}</strong> бараа байна. 
-              Та ирсэн барааг нь одоо салгаж хүргүүлэх бол, дараа нь үлдсэн барааг хүргэхэд <strong>ДАХИН хүргэлтийн төлбөр төлнө</strong> гэдгийг анхаарна уу!
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
-
-function OrderGroup({ orders, completed = false, deliveryScheduleDays = "3,6" }: { orders: any[]; completed?: boolean; deliveryScheduleDays?: string }) {
-  const first = orders[0]
-  const totalAmount = orders.reduce((s: number, o: any) => s + Number(o.totalAmount || 0), 0)
-  const allRejected = orders.every((o: any) => o.status?.name === "Цуцлагдсан" || o.paymentStatus === "REJECTED")
-  const anyRejected = orders.some((o: any) => o.status?.name === "Цуцлагдсан" || o.paymentStatus === "REJECTED")
-  const allFinal = orders.every((o: any) => o.status?.isFinal)
-  const allDelivered = allFinal && !anyRejected
-  const allDeliveryRequested = orders.every((o: any) => o.wantsDelivery)
-  const someDeliveryRequested = orders.some((o: any) => o.wantsDelivery)
-
-  // Get delivery address from any order that has it
-  const deliveryAddressObj = orders.find((o: any) => {
-    const addr = o.deliveryAddress?.trim() || "";
-    return addr && addr !== "Өөрөө ирж авна" && addr !== "Өөрөө авна" && addr !== "Дэлгүүрээс авна";
-  });
-  const deliveryAddress = deliveryAddressObj?.deliveryAddress;
-
-  // Determine styles (Neutralize if completed)
-  let borderClass = "border-slate-200/60 shadow-slate-200/50"
-  let accentClass = ""
-  let headerIconBg = "bg-white border-slate-200 text-slate-500"
-  let HeaderIcon = Package
-
-  if (completed) {
-    // If in history, always use muted/neutral colors regardless of status
-    borderClass = "border-slate-200 shadow-sm opacity-70 grayscale-[0.3]"
-    accentClass = "border-l-4 border-l-slate-300"
-    headerIconBg = "bg-slate-50 border-slate-100 text-slate-400"
-    HeaderIcon = allRejected ? XCircle : (allDelivered ? CheckCircle2 : Package)
-  } else if (allRejected) {
-    borderClass = "border-slate-200 shadow-sm"
-    accentClass = "border-l-4 border-l-red-500/80"
-    headerIconBg = "bg-red-50 border-red-100 text-red-500"
-    HeaderIcon = XCircle
-  } else if (allDelivered) {
-    borderClass = "border-emerald-200 shadow-emerald-500/5 ring-1 ring-emerald-500/10"
-    accentClass = "border-l-4 border-l-emerald-500/80"
-    headerIconBg = "bg-emerald-50 border-emerald-100 text-emerald-600"
-    HeaderIcon = CheckCircle2
-  } else if (allDeliveryRequested) {
-    borderClass = "border-emerald-200 shadow-sm"
-    accentClass = "border-l-4 border-l-emerald-400"
-  } else if (someDeliveryRequested) {
-    borderClass = "border-amber-200 shadow-sm"
-    accentClass = "border-l-4 border-l-amber-400"
-  }
-
-  return (
-    <div className={`bg-white rounded-xl border transition-all overflow-hidden ${borderClass} ${accentClass}`}>
-      <div className="bg-slate-50/30 border-b border-slate-100 px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-left">
+    <div className={`bg-white rounded-xl border overflow-hidden transition-all ${completed ? "opacity-70" : ""} ${isCancelled ? "border-l-4 border-l-red-400" : ""}`}>
+      {/* Header */}
+      <div className="bg-slate-50/30 border-b border-slate-100 px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 shadow-sm border ${headerIconBg}`}>
-            <HeaderIcon className="w-4 h-4" />
+          <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 shadow-sm border ${style.bg} ${style.border}`}>
+            <StatusIcon className={`w-4 h-4 ${style.color}`} />
           </div>
           <div>
-            <p className={`text-sm font-extrabold tracking-tight ${allRejected || completed ? "text-slate-500" : "text-slate-800"}`}>
-              {allRejected ? "Цуцлагдсан захиалга" : (orders.length > 1 ? `${orders.length} ширхэг бараа` : "Захиалсан бараа")}
+            <p className="text-sm font-extrabold text-slate-800">
+              Захиалга #{order.orderNumber}
             </p>
             <p className="text-[11px] font-bold text-slate-400 mt-0.5 uppercase tracking-wider">
-              {new Date(first.createdAt).toLocaleDateString("mn-MN")}
+              {new Date(order.createdAt).toLocaleDateString("mn-MN")} · {order.customerName}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          {allDeliveryRequested && !allRejected && !completed && (
-            <span className="text-[10px] px-2.5 py-1 rounded-full font-bold bg-emerald-100 text-emerald-700 flex items-center gap-1.5 border border-emerald-200 shadow-sm">
-              <Truck className="w-3 h-3" /> ХҮРГЭЛТ
-            </span>
-          )}
-          {totalAmount > 0 ? (
-            <span className={`font-black text-lg tracking-tighter ${allRejected || completed ? "text-slate-400" : "text-slate-900"}`}>
-              ₮{totalAmount.toLocaleString()}
-            </span>
-          ) : (
-            <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-100">Төлөгдсөн</span>
-          )}
+          <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold border ${style.bg} ${style.border} ${style.color}`}>
+            {STATUS_LABELS[order.orderStatus] || order.orderStatus}
+          </span>
+          <span className={`font-black text-lg ${isCancelled || completed ? "text-slate-400" : "text-slate-900"}`}>
+            ₮{Number(order.totalAmount).toLocaleString()}
+          </span>
         </div>
       </div>
 
-      <div className="px-5 py-2 border-b border-slate-50">
-        <OrderStatusTimeline 
-          status={allRejected ? "Цуцлагдсан" : (first.status?.name || "")} 
-          isFinal={first.status?.isFinal} 
-          deliveryScheduleDays={deliveryScheduleDays}
-        />
-      </div>
-
-      <div className="divide-y divide-slate-50 text-left">
-        {orders.map((order: any) => {
-          const isCancelled = order.status?.name === "Цуцлагдсан" || order.paymentStatus === "REJECTED";
-          const isPending = !isCancelled && !order.status?.isDeliverable && !order.status?.isFinal;
-          
-          return (
-            <div key={order.id} className={`px-5 py-3.5 flex items-center justify-between gap-4 transition-colors ${order.wantsDelivery && !isCancelled && !completed ? "bg-emerald-50/20" : "hover:bg-slate-50/50"} ${isPending || isCancelled || completed ? "opacity-75" : ""}`}>
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <div className="min-w-0">
-                  <p className={`font-bold text-sm truncate ${isCancelled || completed ? "text-slate-400 font-bold" : isPending ? "text-slate-500" : "text-slate-800"}`}>
-                    {order.batch?.product?.name}
-                  </p>
-                  <p className="text-[10px] text-slate-400 mt-0.5 font-bold uppercase tracking-wide">#{order.orderNumber} · {order.quantity} ширхэг</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                {order.wantsDelivery && !isCancelled && (
-                  <span className={`text-[9px] px-1.5 py-0.5 rounded font-black uppercase tracking-tighter border shadow-sm ${completed ? "bg-slate-50 border-slate-200 text-slate-400" : "bg-emerald-50 border-emerald-100 text-emerald-600"}`}>
-                    ХҮРГЭЛТ
-                  </span>
-                )}
-                <span className={`text-[10px] px-2 py-0.5 rounded font-black tracking-tight uppercase border ${
-                  isCancelled || completed
-                    ? "bg-slate-50 border-slate-200 text-slate-400"
-                    : order.status?.isFinal 
-                      ? "bg-emerald-50 border-emerald-200/50 text-emerald-600" 
-                      : isPending
-                        ? "bg-slate-50 border-slate-200/60 text-slate-500"
-                        : "bg-blue-50 border-blue-100 text-blue-600"
-                }`}>
-                  {order.status?.name || "Хүлээгдэж байна"}
-                </span>
-              </div>
+      {/* Items */}
+      <div className="divide-y divide-slate-50">
+        {order.items?.map((item: any) => (
+          <div key={item.id} className="px-5 py-3 flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className={`font-bold text-sm truncate ${isCancelled ? "text-slate-400" : "text-slate-800"}`}>
+                {item.productName}
+              </p>
+              <p className="text-[10px] text-slate-400 mt-0.5 font-bold uppercase tracking-wide">
+                SKU: {item.sku} · {item.quantity} ширхэг
+              </p>
             </div>
-          )
-        })}
+            <span className="text-sm font-bold text-slate-700 shrink-0">
+              ₮{Number(item.totalPrice).toLocaleString()}
+            </span>
+          </div>
+        ))}
       </div>
 
-      {/* Delivery address display */}
-      {deliveryAddress && someDeliveryRequested && (
-        <div className="px-5 py-3 bg-blue-50/50 border-t border-blue-100 text-left">
+      {/* Delivery info */}
+      {order.wantsDelivery && order.deliveryAddress && (
+        <div className="px-5 py-3 bg-blue-50/50 border-t border-blue-100">
           <div className="flex items-start gap-2.5">
             <Truck className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
             <div className="min-w-0">
               <p className="text-[10px] font-black text-blue-800/60 uppercase tracking-widest mb-1">Хүргэлтийн хаяг:</p>
-              <p className="text-sm text-blue-900 font-semibold leading-relaxed">
-                {deliveryAddress}
-              </p>
+              <p className="text-sm text-blue-900 font-semibold">{order.deliveryAddress}</p>
             </div>
           </div>
         </div>
       )}
 
-      {allRejected && first.cancellationReason && (
-        <div className="px-5 py-3 bg-red-50/50 border-t border-red-100 text-left">
+      {/* Cancellation reason */}
+      {isCancelled && order.cancellationReason && (
+        <div className="px-5 py-3 bg-red-50/50 border-t border-red-100">
           <div className="flex items-start gap-2.5">
             <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
             <div className="min-w-0">
-              <p className="text-[10px] font-black text-red-800/60 uppercase tracking-widest mb-1">Админ тайлбар:</p>
-              <p className="text-[11px] text-red-700 font-bold italic leading-relaxed">
-                "{first.cancellationReason}"
-              </p>
+              <p className="text-[10px] font-black text-red-800/60 uppercase tracking-widest mb-1">Шалтгаан:</p>
+              <p className="text-[11px] text-red-700 font-bold italic">&quot;{order.cancellationReason}&quot;</p>
             </div>
           </div>
         </div>

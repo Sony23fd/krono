@@ -31,28 +31,14 @@ const SIDEBAR_GROUPS: SidebarGroup[] = [
   {
     label: "ЗАХИАЛГА",
     items: [
-      { name: "Шинэ & Хүлээгдэж буй", url: "/admin/orders/pending", icon: Clock, highlight: true, roles: ["ADMIN", "CARGO_ADMIN"] },
-      { name: "Хүргэлтийн захиалга", url: "/admin/orders/delivery", icon: Truck, highlight: true, roles: ["ADMIN", "CARGO_ADMIN"] },
       { name: "Бүх захиалга", url: "/admin/orders", icon: ShoppingBag, roles: ["ADMIN", "CARGO_ADMIN"] },
-      { name: "Буцаалтууд", url: "/admin/orders/refunds", icon: RefreshCcw, roles: ["ADMIN"] },
       { name: "Барааны жагсаалт", url: "/admin/products", icon: Package, roles: ["ADMIN"] },
       { name: "Ангилал & Төрөл", url: "/admin/categories", icon: ListFilter, roles: ["ADMIN"] },
     ]
   },
   {
-    label: "АРХИВ / ТҮҮХ",
-    items: [
-      { name: "Баталгаажсан захиалгууд", url: "/admin/orders/archived/confirmed", icon: CheckCircle, roles: ["ADMIN", "CARGO_ADMIN"] },
-      { name: "Өөрөө авсан захиалга", url: "/admin/orders/picked-up", icon: Handshake, roles: ["ADMIN", "CARGO_ADMIN"] },
-      { name: "Хүргэгдсэн захиалга", url: "/admin/orders/delivered", icon: PackageCheck, roles: ["ADMIN", "CARGO_ADMIN"] },
-      { name: "Цуцлагдсан захиалга", url: "/admin/orders/rejected", icon: XCircle, roles: ["ADMIN", "CARGO_ADMIN"] },
-      { name: "Архивлагдсан багц", url: "/admin/orders/archived", icon: Archive, roles: ["ADMIN", "CARGO_ADMIN"] },
-    ]
-  },
-  {
     label: "СИСТЕМ & ТОХИРГОО",
     items: [
-      { name: "Захиалгын статус", url: "/admin/order-status", icon: Activity, roles: ["ADMIN"] },
       { name: "Өгөгдлийн төв", url: "/admin/data-center", icon: Database, highlight: true, roles: ["DATAADMIN"] },
       { name: "Хэрэглэгчид", url: "/admin/users", icon: Users, roles: ["ADMIN", "DATAADMIN"] },
       { name: "Ерөнхий тохиргоо", url: "/admin/settings/general", icon: Settings, roles: ["ADMIN"] },

@@ -54,19 +54,19 @@ export function ActiveBatchesList({
                 suppressHydrationWarning
               >
                 <Link href={`/product/${batch.id}`} className="block relative bg-slate-100 rounded-xl overflow-hidden aspect-square mb-4">
-                  {batch.product?.videoUrl ? (
+                  {batch.videoUrl ? (
                     <video
-                      src={batch.product.videoUrl}
+                      src={batch.videoUrl}
                       autoPlay
                       muted
                       loop
                       playsInline
                       className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500 pointer-events-none"
                     />
-                  ) : batch.product?.imageUrl ? (
+                  ) : batch.imageUrl ? (
                     <ProductImage
-                      src={batch.product.imageUrl}
-                      alt={batch.product.name || "Бараа"}
+                      src={batch.imageUrl}
+                      alt={batch.name || "Бараа"}
                       fill
                       className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
                       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
@@ -92,7 +92,7 @@ export function ActiveBatchesList({
                 <div className="flex-1 flex flex-col gap-3">
                   <Link href={`/product/${batch.id}`}>
                     <h3 className="font-semibold text-slate-900 leading-snug hover:text-[#4e3dc7] transition-colors line-clamp-2">
-                      {batch.product?.name}
+                      {batch.name}
                     </h3>
                   </Link>
 
@@ -100,7 +100,7 @@ export function ActiveBatchesList({
                     <div className="flex justify-between items-end mb-3">
                       <div>
                         <p className="text-xl font-black text-slate-900 tracking-tight">
-                          ₮{(() => { const bp = parseFloat(String(batch.price ?? 0)); const pp = parseFloat(String(batch.product?.price ?? 0)); return (bp > 0 ? bp : pp).toLocaleString(); })()}
+                          ₮{Number(batch.price).toLocaleString()}
                         </p>
                         {Number(batch.deliveryFee) > 0 && (
                           <p className="text-[11px] text-slate-500 font-medium mt-0.5">+₮{Number(batch.deliveryFee).toLocaleString()} хүргэлт</p>
@@ -126,7 +126,7 @@ export function ActiveBatchesList({
                         <>
                           <div className="flex justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                             <span>Захиалга дүүрэлт</span>
-                            <span className="text-[#4e3dc7]">{batch.remainingQuantity} үлдсэн</span>
+                            <span className="text-[#4e3dc7]">{batch.remainingQuantity ?? batch.stockQuantity} үлдсэн</span>
                           </div>
                           <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
                             <div 
@@ -140,9 +140,9 @@ export function ActiveBatchesList({
 
                     <AddToCartButton
                       batchId={batch.id}
-                      name={batch.product?.name ?? ""}
-                      imageUrl={batch.product?.imageUrl}
-                      unitPrice={(() => { const bp = parseFloat(String(batch.price ?? 0)); const pp = parseFloat(String(batch.product?.price ?? 0)); return bp > 0 ? bp : pp; })()}
+                      name={batch.name}
+                      imageUrl={batch.imageUrl}
+                      unitPrice={Number(batch.price)}
                       deliveryFee={Number(batch.deliveryFee || 0)}
                       isPreOrder={batch.isPreOrder}
                     />

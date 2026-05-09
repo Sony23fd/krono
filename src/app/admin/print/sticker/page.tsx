@@ -28,11 +28,7 @@ export default async function PrintStickerPage({
       id: { in: orderIdList }
     },
     include: {
-      batch: {
-        include: {
-          product: true
-        }
-      }
+      items: true,
     }
   })
 

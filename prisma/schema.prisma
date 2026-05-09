@@ -8,140 +8,253 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+// ═══════════════════════════════════════
+// ХЭРЭГЛЭГЧ
+// ═══════════════════════════════════════
 model User {
-  id              String   @id @default(cuid())
-  phone           String?  @unique
-  email           String?  @unique
-  password        String?
-  name            String?
-  role            Role     @default(CUSTOMER)
-  createdAt       DateTime @default(now())
-  confirmedOrders Order[]  @relation("ConfirmedOrders")
+  id        String   @id @default(cuid())
+  phone     String?  @unique
+  email     String?  @unique
+  password  String?
+  name      String?
+  role      Role     @default(CUSTOMER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  cart      Cart?
+  orders    Order[]
+
+  @@index([role])
 }
 
+enum Role {
+  CUSTOMER
+  ADMIN
+  STAFF
+  CARGO_ADMIN
+  DATAADMIN
+}
+
+// ═══════════════════════════════════════
+// АНГИЛАЛ
+// ═══════════════════════════════════════
 model Category {
-  id                 String           @id @default(cuid())
-  name               String
-  deliveryFee        Decimal?         @default(0)
-  isArchived         Boolean          @default(false)
-  isReadyStock       Boolean          @default(false)
-  readyStockStatusId String?
-  readyStockStatus   OrderStatusType? @relation(fields: [readyStockStatusId], references: [id])
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
-  batches            Batch[]
+  id        String    @id @default(cuid())
+  name      String    @unique
+  slug      String    @unique
+  imageUrl  String?
+  isActive  Boolean   @default(true)
+  sortOrder Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  products  Product[]
+
+  @@index([isActive, sortOrder])
 }
 
+// ═══════════════════════════════════════
+// БАРАА
+// ═══════════════════════════════════════
 model Product {
-  id            String   @id @default(cuid())
-  productNumber Int      @unique @default(autoincrement())
+  id            String         @id @default(cuid())
+  sku           String         @unique
   name          String
+  slug          String         @unique
   description   String?
   imageUrl      String?
-  videoUrl      String?
+  images        Json?
   price         Decimal
-  sourceLink    String?
-  isActive      Boolean  @default(true)
-  weight        Decimal? @default(0.0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  comparePrice  Decimal?
+  costPrice     Decimal?
+  weight        Decimal?       @default(0)
+  categoryId    String?
+  stockQuantity Int            @default(0)
+  reservedStock Int            @default(0)
+  lowStockAlert Int            @default(5)
+  status        ProductStatus  @default(ACTIVE)
   options       Json?
-  batches       Batch[]
+  isPreOrder    Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  category      Category?      @relation(fields: [categoryId], references: [id])
+  variants      ProductVariant[]
+  cartItems     CartItem[]
+  orderItems    OrderItem[]
 
-  @@index([isActive])
+  @@index([status])
+  @@index([categoryId])
+  @@index([sku])
+  @@index([slug])
   @@index([name])
 }
 
-model Batch {
-  id                 String      @id @default(cuid())
-  batchNumber        Int         @unique @default(autoincrement())
-  productId          String
-  categoryId         String
-  description        String?
-  targetQuantity     Int         @default(0)
-  remainingQuantity  Int         @default(0)
-  cargoFeeStatus     String?
-  price              Decimal?
-  status             BatchStatus @default(OPEN)
-  isAvailableForSale Boolean     @default(false)
-  deliveryFee        Decimal?    @default(0)
-  createdAt          DateTime    @default(now())
-  updatedAt          DateTime    @updatedAt
-  isPreOrder         Boolean     @default(false)
-  variantStock       Json?
-  closingDate        DateTime?
-  category           Category    @relation(fields: [categoryId], references: [id])
-  product            Product     @relation(fields: [productId], references: [id])
-  orders             Order[]
+enum ProductStatus {
+  ACTIVE
+  DRAFT
+  ARCHIVED
+  OUT_OF_STOCK
+}
 
-  @@index([status])
-  @@index([isAvailableForSale])
-  @@index([categoryId])
+// Хувилбарууд (Өнгө, Хэмжээ комбинацууд)
+model ProductVariant {
+  id            String   @id @default(cuid())
+  productId     String
+  sku           String   @unique
+  name          String
+  options       Json
+  price         Decimal?
+  stockQuantity Int      @default(0)
+  imageUrl      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
   @@index([productId])
 }
 
-model OrderStatusType {
-  id            String     @id @default(cuid())
-  name          String     @unique
-  color         String?    @default("slate")
-  isFinal       Boolean    @default(false)
-  isDefault     Boolean    @default(false)
-  isDeliverable Boolean    @default(false)
-  isCancelled   Boolean    @default(false)
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
-  orders        Order[]
-  categories    Category[]
+// ═══════════════════════════════════════
+// САГС (Server-side)
+// ═══════════════════════════════════════
+model Cart {
+  id        String     @id @default(cuid())
+  userId    String?    @unique
+  sessionId String     @unique
+  expiresAt DateTime
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  items     CartItem[]
+  user      User?      @relation(fields: [userId], references: [id])
+
+  @@index([expiresAt])
 }
 
+model CartItem {
+  id        String   @id @default(cuid())
+  cartId    String
+  productId String
+  variantId String?
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id])
+
+  @@unique([cartId, productId, variantId])
+  @@index([cartId])
+}
+
+// ═══════════════════════════════════════
+// ЗАХИАЛГА
+// ═══════════════════════════════════════
 model Order {
-  id                    String           @id @default(cuid())
-  orderNumber           Int              @unique @default(autoincrement())
-  batchId               String
-  customerName          String
-  customerPhone         String
-  accountNumber         String?
-  quantity              Int              @default(1)
-  arrivalDate           DateTime?
-  deliveryDate          DateTime?
-  deliveryAddress       String?
-  deliveryRequestedAt   DateTime?
-  statusId              String?
-  cargoFee              Decimal?         @default(0)
-  wantsDelivery         Boolean          @default(false)
-  deliveryFeePaid       Boolean          @default(false)
-  deliveryQpayInvoiceId String?
-  paymentProofUrl       String?
-  paymentStatus         String           @default("PENDING")
-  totalAmount           Decimal?         @default(0)
-  transactionRef        String?
-  qpayInvoiceId         String?
-  qpayQrText            String?
-  qpayUrls              Json?
-  ebarimtId             String?
-  ebarimtQr             String?
-  ebarimtLottery        String?
-  ebarimtAmount         String?
-  creationSource        String?          @default("WEB")
-  createdByAdmin        String?
-  createdAt             DateTime         @default(now())
-  updatedAt             DateTime         @updatedAt
-  isRefunded            Boolean          @default(false)
-  selectedOptions       Json?
-  confirmationMethod    String?          @default("MANUAL")
-  confirmedAt           DateTime?
-  confirmedById         String?
-  cancellationReason    String?
-  batch                 Batch            @relation(fields: [batchId], references: [id])
-  confirmedBy           User?            @relation("ConfirmedOrders", fields: [confirmedById], references: [id])
-  status                OrderStatusType? @relation(fields: [statusId], references: [id])
+  id                 String         @id @default(cuid())
+  orderNumber        Int            @unique @default(autoincrement())
+  idempotencyKey     String         @unique
+  userId             String?
+  customerName       String
+  customerPhone      String
+  accountNumber      String?
+  subtotal           Decimal        @default(0)
+  deliveryFee        Decimal        @default(0)
+  discount           Decimal        @default(0)
+  totalAmount        Decimal        @default(0)
+  orderStatus        OrderStatus    @default(PENDING)
+  deliveryAddress    String?
+  deliveryDate       DateTime?
+  wantsDelivery      Boolean        @default(false)
+  stockReservedAt    DateTime?
+  stockReleasedAt    DateTime?
+  note               String?
+  cancellationReason String?
+  creationSource     CreationSource @default(WEB)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  items              OrderItem[]
+  payments           Payment[]
+  user               User?          @relation(fields: [userId], references: [id])
 
-  @@index([paymentStatus])
-  @@index([updatedAt])
+  @@index([orderStatus])
   @@index([customerPhone])
-  @@index([transactionRef])
+  @@index([idempotencyKey])
+  @@index([stockReservedAt])
+  @@index([createdAt])
+  @@index([updatedAt])
 }
 
+enum OrderStatus {
+  PENDING
+  PAID
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum CreationSource {
+  WEB
+  ADMIN
+  POS
+  API
+}
+
+model OrderItem {
+  id              String   @id @default(cuid())
+  orderId         String
+  productId       String
+  variantId       String?
+  productName     String
+  variantName     String?
+  sku             String
+  quantity        Int
+  unitPrice       Decimal
+  totalPrice      Decimal
+  selectedOptions Json?
+  createdAt       DateTime @default(now())
+  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product         Product  @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+// ═══════════════════════════════════════
+// ТӨЛБӨР
+// ═══════════════════════════════════════
+model Payment {
+  id          String        @id @default(cuid())
+  orderId     String
+  method      PaymentMethod
+  amount      Decimal
+  status      PaymentStatus @default(PENDING)
+  externalRef String?
+  paidAt      DateTime?
+  metadata    Json?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  order       Order         @relation(fields: [orderId], references: [id])
+
+  @@index([orderId])
+  @@index([externalRef])
+  @@index([status])
+}
+
+enum PaymentMethod {
+  QPAY
+  BANK_TRANSFER
+  CASH
+  CARD
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+// ═══════════════════════════════════════
+// СИСТЕМ
+// ═══════════════════════════════════════
 model ShopSettings {
   id        String   @id @default(cuid())
   key       String   @unique
@@ -157,12 +270,16 @@ model ActivityLog {
   userRole  String
   action    String
   target    String?
-  targetUrl String?
   detail    String?
   createdAt DateTime @default(now())
 
   @@index([userId])
   @@index([createdAt])
+}
+
+model VerifiedPhone {
+  phone      String   @id
+  verifiedAt DateTime @default(now())
 }
 
 model VisitorLog {
@@ -176,24 +293,4 @@ model VisitorLog {
 
   @@index([createdAt])
   @@index([path])
-}
-
-enum Role {
-  CUSTOMER
-  ADMIN
-  CARGO_ADMIN
-  DATAADMIN
-  SHOPPER
-}
-
-enum BatchStatus {
-  OPEN
-  CLOSED
-  SHIPPED
-  ARRIVED
-}
-
-model VerifiedPhone {
-  phone      String   @id
-  verifiedAt DateTime @default(now())
 }

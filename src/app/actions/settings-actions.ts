@@ -2,32 +2,26 @@
 
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
-import { getCurrentAdmin, logActivity } from "@/lib/auth"
+import { getCurrentAdmin } from "@/lib/auth"
 
 const DEFAULT_SETTINGS: Record<string, string> = {
   bank_name: "Хаан Банк",
   bank_account: "",
   bank_holder: "",
-  bank_note: "Anar Korea Shop",
-  terms_of_service: "Захиалгаа баталгаажуулсны дараа цуцлах боломжгүй. Бараа зургаас арай ялгаатай байж болно. Асуудал гарвал бидэнтэй холбогдоно уу.",
-  delivery_terms: "Хүргэлт нь Улаанбаатар хот дотор үйлчилнэ. Буруу хаяг оруулсны улмаас хүргэлт хийгдээгүй тохиолдолд бид хариуцлага хүлээхгүй. Хүргэлтийн нэмэлт зардал нь захиалгын нийт үнэд тооцогдоно.",
-  qpay_enabled: "true",
+  bank_note: "Shop",
+  terms_of_service: "Захиалгаа баталгаажуулсны дараа цуцлах боломжгүй.",
+  delivery_terms: "Хүргэлт нь Улаанбаатар хот дотор үйлчилнэ.",
+  qpay_enabled: "false",
   delivery_fee: "6000",
-  cargo_bank_name: "Хаан Банк",
-  cargo_bank_account: "",
-  cargo_bank_holder: "",
-  cargo_payment_instruction: "Гүйлгээний утга дээр утасныхаа дугаарыг заавал бичнэ үү.",
-  delivery_delay_active: "false",
-  delivery_delay_message: "Хүргэлтийн захиалга хэт олон байгаагаас шалтгаалан таны захиалга бага зэрэг саатаж очих магадлалтайг анхаарна уу.",
   delivery_schedule_days: "3,6",
-  phone_verification_enabled: "true"
+  phone_verification_enabled: "false",
 }
 
 export async function getShopSettings(): Promise<Record<string, string>> {
   try {
-    const rows = await (db as any).shopSettings.findMany()
+    const rows = await db.shopSettings.findMany()
     const map: Record<string, string> = { ...DEFAULT_SETTINGS }
-    rows.forEach((r: any) => { map[r.key] = r.value })
+    rows.forEach((r) => { map[r.key] = r.value })
     return map
   } catch {
     return DEFAULT_SETTINGS
@@ -36,72 +30,30 @@ export async function getShopSettings(): Promise<Record<string, string>> {
 
 export async function saveShopSetting(key: string, value: string) {
   try {
-    await (db as any).shopSettings.upsert({
+    await db.shopSettings.upsert({
       where: { key },
       update: { value },
       create: { key, value }
     })
-    revalidatePath("/admin/settings/payment")
-    revalidatePath("/admin/settings/terms")
-    revalidatePath("/admin/cargo-settings")
+    revalidatePath("/admin/settings")
     revalidatePath("/cart")
-    revalidatePath("/track")
     return { success: true }
   } catch (error: any) {
     return { success: false, error: error.message }
   }
 }
 
+// ═══════════════════════════════════════════════════
+// PENDING ORDERS (Шинэ schema)
+// ═══════════════════════════════════════════════════
+
 export async function getPendingOrders() {
   try {
     const orders = await db.order.findMany({
-      where: {
-        OR: [
-          { paymentStatus: "PENDING" },
-          { 
-             paymentStatus: "CONFIRMED", 
-             status: { name: "Захиалга баталгаажсан /Вэбээр/" }
-          }
-        ]
-      } as any,
-      select: {
-        id: true,
-        orderNumber: true,
-        customerName: true,
-        customerPhone: true,
-        accountNumber: true,
-        quantity: true,
-        totalAmount: true,
-        transactionRef: true,
-        paymentProofUrl: true,
-        paymentStatus: true,
-        wantsDelivery: true,
-        deliveryAddress: true,
-        createdAt: true,
-        batch: {
-          select: {
-            id: true,
-            batchNumber: true,
-            product: {
-              select: {
-                id: true,
-                name: true
-              }
-            },
-            category: {
-              select: {
-                id: true,
-                name: true
-              }
-            }
-          }
-        },
-        status: {
-          select: {
-            id: true,
-            name: true
-          }
-        }
+      where: { orderStatus: "PENDING" },
+      include: {
+        items: true,
+        payments: { select: { id: true, method: true, status: true, amount: true } },
       },
       orderBy: { createdAt: "desc" }
     })
@@ -112,134 +64,29 @@ export async function getPendingOrders() {
 }
 
 export async function confirmOrderPayment(orderId: string) {
-  try {
-    const admin = await getCurrentAdmin()
-    if (!admin) return { success: false, error: "Нэвтрэнэ үү" }
-
-    const confirmedStatus = await db.orderStatusType.findFirst({ where: { name: "Захиалга баталгаажсан" } }) 
-      || await db.orderStatusType.findFirst({ where: { name: "Баталгаажсан" } }) 
-      || await db.orderStatusType.findFirst({ where: { isDefault: false, isFinal: false } });
-
-    const order = await (db.order as any).findUnique({
-      where: { id: orderId },
-      include: { batch: { include: { product: true } } }
-    })
-    if (!order) return { success: false, error: "Захиалга олдсонгүй" }
-
-    await (db.order as any).update({
-      where: { id: orderId },
-      data: {
-        paymentStatus: "CONFIRMED",
-        confirmedById: admin.id,
-        confirmationMethod: "MANUAL",
-        confirmedAt: new Date(),
-        ...(confirmedStatus?.id && { statusId: confirmedStatus.id })
-      }
-    })
-
-    await logActivity({
-      userId: admin.id,
-      userName: admin.name || "Админ",
-      userRole: admin.role,
-      action: "Төлбөр баталгаажуулав",
-      target: "Захиалга",
-      detail: `#${order.orderNumber} захиалгын төлбөрийг баталгаажууллаа. Бараа: ${order.batch?.product?.name || "?"}, Харилцагч: ${order.customerName} (${order.customerPhone}), Дүн: ${order.totalAmount}₮`,
-    })
-
-    revalidatePath("/admin/orders/pending")
-    revalidatePath("/admin/orders")
-    return { success: true }
-  } catch (error: any) {
-    return { success: false, error: error.message }
-  }
+  const { adminConfirmPayment } = await import("./order-actions")
+  return adminConfirmPayment(orderId)
 }
 
 export async function rejectOrderPayment(orderId: string, reason?: string) {
-  try {
-    const admin = await getCurrentAdmin()
-    if (!admin) return { success: false, error: "Нэвтрэнэ үү" }
-
-    let orderInfo: any = null;
-    await db.$transaction(async (tx) => {
-      const order = await (tx.order as any).findUnique({ where: { id: orderId } })
-      if (!order) return
-      orderInfo = order;
-
-      const rejectedStatus = await tx.orderStatusType.findFirst({ where: { name: "Цуцлагдсан" } });
-
-      await (tx.order as any).update({
-        where: { id: orderId },
-        data: {
-          paymentStatus: "REJECTED",
-          cancellationReason: reason || null,
-          ...(rejectedStatus?.id && { statusId: rejectedStatus.id })
-        }
-      })
-
-      await (tx.batch as any).update({
-        where: { id: order.batchId },
-        data: { remainingQuantity: { increment: order.quantity } }
-      })
-    })
-
-    if (orderInfo && admin) {
-      await logActivity({
-        userId: admin.id,
-        userName: admin.name || "Админ",
-        userRole: admin.role,
-        action: "Төлбөр цуцлав",
-        target: "Захиалга",
-        detail: `#${orderInfo.orderNumber} захиалгын төлбөрийг цуцаллаа. Шалтгаан: ${reason || "Тайлбаргүй"}. Бараа: ${orderInfo.batch?.product?.name || "?"}, Харилцагч: ${orderInfo.customerName} (${orderInfo.customerPhone})`,
-      });
-    }
-
-    revalidatePath("/admin/orders/pending")
-    revalidatePath("/admin/orders")
-    return { success: true }
-  } catch (error: any) {
-    return { success: false, error: error.message }
-  }
+  const { cancelOrder } = await import("./order-actions")
+  return cancelOrder(orderId, reason || "Төлбөр баталгаажуулагдаагүй")
 }
 
-/** Confirm all orders in a customer's checkout group at once */
 export async function confirmGroupPayment(orderIds: string[]) {
   try {
     const admin = await getCurrentAdmin()
     if (!admin) return { success: false, error: "Нэвтрэнэ үү" }
 
-    const confirmedStatus = await db.orderStatusType.findFirst({ where: { name: "Захиалга баталгаажсан" } })
-      || await db.orderStatusType.findFirst({ where: { name: "Баталгаажсан" } })
-      || await db.orderStatusType.findFirst({ where: { isDefault: false, isFinal: false } });
+    const results = []
+    for (const id of orderIds) {
+      const res = await confirmOrderPayment(id)
+      results.push(res)
+    }
 
-    const orderSummaries = await db.order.findMany({
-      where: { id: { in: orderIds } },
-      select: { orderNumber: true, customerName: true, customerPhone: true, totalAmount: true }
-    });
-    const orderNums = orderSummaries.map(o => `#${o.orderNumber}`).join(", ");
-    const totalAmount = orderSummaries.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
+    const failed = results.find(r => !r.success)
+    if (failed) return failed
 
-    await (db.order as any).updateMany({
-      where: { id: { in: orderIds } },
-      data: {
-        paymentStatus: "CONFIRMED",
-        confirmedById: admin.id,
-        confirmationMethod: "MANUAL",
-        confirmedAt: new Date(),
-        ...(confirmedStatus?.id && { statusId: confirmedStatus.id })
-      }
-    })
-
-    await logActivity({
-      userId: admin.id,
-      userName: admin.name || "Админ",
-      userRole: admin.role || "ADMIN",
-      action: "Төлбөр баталгаажуулав",
-      target: "Захиалга(ууд)",
-      detail: `${orderIds.length} ширхэг захиалга (${orderNums}) төлбөрийг баталгаажууллаа. Нийт дүн: ${totalAmount.toLocaleString()}₮`,
-    });
-
-    revalidatePath("/admin/orders/pending")
-    revalidatePath("/admin/orders")
     return { success: true }
   } catch (error: any) {
     return { success: false, error: error.message }
@@ -251,47 +98,10 @@ export async function rejectGroupPayment(orderIds: string[], reason?: string) {
     const admin = await getCurrentAdmin()
     if (!admin) return { success: false, error: "Нэвтрэнэ үү" }
 
-    const orderSummaries = await db.order.findMany({
-      where: { id: { in: orderIds } },
-      select: { orderNumber: true, customerName: true, customerPhone: true }
-    });
-    const orderNums = orderSummaries.map(o => `#${o.orderNumber}`).join(", ");
+    for (const id of orderIds) {
+      await rejectOrderPayment(id, reason)
+    }
 
-    await db.$transaction(async (tx) => {
-      const orders = await (tx.order as any).findMany({
-        where: { id: { in: orderIds } }
-      })
-
-      const rejectedStatus = await tx.orderStatusType.findFirst({ where: { name: "Цуцлагдсан" } });
-
-      await (tx.order as any).updateMany({
-        where: { id: { in: orderIds } },
-        data: { 
-          paymentStatus: "REJECTED",
-          cancellationReason: reason || null,
-          ...(rejectedStatus?.id && { statusId: rejectedStatus.id })
-        }
-      })
-
-      for (const order of orders) {
-        await (tx.batch as any).update({
-          where: { id: order.batchId },
-          data: { remainingQuantity: { increment: order.quantity } }
-        })
-      }
-    })
-
-    await logActivity({
-      userId: admin.id,
-      userName: admin.name || "Админ",
-      userRole: admin.role || "ADMIN",
-      action: "Төлбөр цуцлав",
-      target: "Захиалга(ууд)",
-      detail: `${orderIds.length} ширхэг захиалга (${orderNums}) цуцаллаа. Шалтгаан: ${reason || "Тайлбаргүй"}`,
-    });
-
-    revalidatePath("/admin/orders/pending")
-    revalidatePath("/admin/orders")
     return { success: true }
   } catch (error: any) {
     return { success: false, error: error.message }
@@ -300,28 +110,12 @@ export async function rejectGroupPayment(orderIds: string[], reason?: string) {
 
 export async function getOrderForPayment(orderId: string) {
   try {
-    const order = await (db.order as any).findUnique({
+    const order = await db.order.findUnique({
       where: { id: orderId },
-      include: {
-        batch: { include: { product: true } }
-      }
+      include: { items: true, payments: true }
     })
-    if (!order) return { success: false, error: "Order not found" }
+    if (!order) return { success: false, error: "Захиалга олдсонгүй" }
     return { success: true, order: JSON.parse(JSON.stringify(order)) }
-  } catch (error: any) {
-    return { success: false, error: error.message }
-  }
-}
-
-export async function getOrdersByTransactionRef(transactionRef: string) {
-  try {
-    const orders = await (db.order as any).findMany({
-      where: { transactionRef },
-      include: { batch: { include: { product: true } } },
-      orderBy: { createdAt: "asc" }
-    })
-    if (!orders?.length) return { success: false, error: "Orders not found" }
-    return { success: true, orders: JSON.parse(JSON.stringify(orders)) }
   } catch (error: any) {
     return { success: false, error: error.message }
   }

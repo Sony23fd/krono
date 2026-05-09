@@ -2,357 +2,304 @@
 
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
-import { BatchStatus } from "@prisma/client"
 
-export async function getProducts({
-  search,
-  page = 1,
-  limit = 20,
-  stockFilter = "all",
-  sortFilter = "newest",
-  saleFilter = "all",
-  categoryFilter,
-  preOrderFilter = "all"
-}: {
-  search?: string,
-  page?: number,
-  limit?: number,
-  stockFilter?: "all" | "in_stock" | "out_of_stock",
-  sortFilter?: "remaining_desc" | "remaining_asc" | "newest" | "oldest",
-  saleFilter?: "all" | "on_sale" | "not_on_sale",
-  categoryFilter?: string,
-  preOrderFilter?: "all" | "pre_order" | "regular"
-} = {}) {
+// ═══════════════════════════════════════════════════
+// БАРАА CRUD
+// ═══════════════════════════════════════════════════
+
+export async function getProducts(filters?: {
+  search?: string
+  status?: string
+  categoryId?: string
+  page?: number
+  limit?: number
+  sort?: "newest" | "oldest" | "price_asc" | "price_desc" | "stock_asc" | "stock_desc"
+}) {
   try {
-    const whereClause: any = {}
+    const page = filters?.page || 1
+    const limit = filters?.limit || 20
+    const where: any = {}
 
-    // Search filter
-    if (search && search.trim()) {
-      whereClause.product = {
-        name: { contains: search.trim(), mode: 'insensitive' }
-      }
+    if (filters?.search?.trim()) {
+      const q = filters.search.trim()
+      where.OR = [
+        { name: { contains: q, mode: "insensitive" } },
+        { sku: { contains: q, mode: "insensitive" } },
+        { description: { contains: q, mode: "insensitive" } },
+      ]
     }
 
-    // Sale status filter
-    if (saleFilter === "on_sale") {
-      whereClause.isAvailableForSale = true
-    } else if (saleFilter === "not_on_sale") {
-      whereClause.isAvailableForSale = false
+    if (filters?.status && filters.status !== "ALL") {
+      where.status = filters.status
     }
 
-    // Category filter
-    if (categoryFilter && categoryFilter !== "all") {
-      whereClause.categoryId = categoryFilter
+    if (filters?.categoryId && filters.categoryId !== "ALL") {
+      where.categoryId = filters.categoryId
     }
 
-    // Pre-order filter
-    if (preOrderFilter === "pre_order") {
-      whereClause.isPreOrder = true
-    } else if (preOrderFilter === "regular") {
-      whereClause.isPreOrder = false
-    }
-
-    // Build orderBy based on sortFilter
     let orderBy: any = { createdAt: "desc" }
-    if (sortFilter === "newest") {
-      orderBy = { createdAt: "desc" }
-    } else if (sortFilter === "oldest") {
-      orderBy = { createdAt: "asc" }
+    switch (filters?.sort) {
+      case "oldest": orderBy = { createdAt: "asc" }; break
+      case "price_asc": orderBy = { price: "asc" }; break
+      case "price_desc": orderBy = { price: "desc" }; break
+      case "stock_asc": orderBy = { stockQuantity: "asc" }; break
+      case "stock_desc": orderBy = { stockQuantity: "desc" }; break
     }
-    // Note: remaining_desc/asc requires post-processing since it's calculated
 
-    const [batches, totalCount] = await Promise.all([
-      db.batch.findMany({
-        where: whereClause,
+    const [products, total] = await Promise.all([
+      db.product.findMany({
+        where,
         include: {
-          product: true,
-          category: true,
+          category: { select: { id: true, name: true } },
+          variants: { orderBy: { createdAt: "asc" } },
+          _count: { select: { orderItems: true } },
         },
         orderBy,
         skip: (page - 1) * limit,
         take: limit,
       }),
-      db.batch.count({ where: whereClause })
+      db.product.count({ where }),
     ])
-
-    // Let the database quickly sum quantities for valid orders grouped by batch
-    const batchIds = batches.map(b => b.id)
-    const validOrderAggregations = await db.order.groupBy({
-      by: ['batchId'],
-      where: {
-        batchId: { in: batchIds },
-        paymentStatus: 'CONFIRMED',
-        status: {
-          name: { not: 'Цуцлагдсан' }
-        }
-      },
-      _sum: {
-        quantity: true
-      }
-    })
-
-    const quantityMap = new Map();
-    validOrderAggregations.forEach(agg => {
-      quantityMap.set(agg.batchId, agg._sum.quantity || 0);
-    });
-
-    let enrichedBatches = batches.map(batch => ({
-      ...batch,
-      _calculatedOrderedSum: quantityMap.get(batch.id) || 0
-    }));
-
-    // Apply stock filter on enriched data
-    if (stockFilter === "in_stock") {
-      enrichedBatches = enrichedBatches.filter(b =>
-        (b.targetQuantity - b._calculatedOrderedSum) > 0
-      )
-    } else if (stockFilter === "out_of_stock") {
-      enrichedBatches = enrichedBatches.filter(b =>
-        (b.targetQuantity - b._calculatedOrderedSum) <= 0
-      )
-    }
-
-    // Apply remaining sort if needed
-    if (sortFilter === "remaining_desc" || sortFilter === "remaining_asc") {
-      enrichedBatches.sort((a, b) => {
-        const aRem = a.targetQuantity - a._calculatedOrderedSum
-        const bRem = b.targetQuantity - b._calculatedOrderedSum
-        return sortFilter === "remaining_desc" ? bRem - aRem : aRem - bRem
-      })
-    }
 
     return {
       success: true,
-      products: JSON.parse(JSON.stringify(enrichedBatches)),
-      totalCount,
-      totalPages: Math.ceil(totalCount / limit),
-      currentPage: page
-    };
-  } catch (error) {
-    console.error("Failed to fetch batches:", error)
-    return { success: false, error: "Failed to fetch batches", products: [], totalCount: 0, totalPages: 0, currentPage: 1 }
+      products: JSON.parse(JSON.stringify(products)),
+      total,
+      totalPages: Math.ceil(total / limit),
+      currentPage: page,
+    }
+  } catch (error: any) {
+    console.error("[GetProducts] Error:", error)
+    return { success: false, error: error.message, products: [], total: 0, totalPages: 0, currentPage: 1 }
   }
 }
 
 export async function getActiveProducts() {
   try {
-    const batches = await db.batch.findMany({
-      where: { 
-        isAvailableForSale: true,
-        category: {
-          isArchived: false,
-          name: { not: { contains: "Сарын захиалга" } }
-        }
+    const products = await db.product.findMany({
+      where: {
+        status: "ACTIVE",
+        stockQuantity: { gt: 0 },
       },
-      include: { product: true, category: true },
+      include: {
+        category: { select: { id: true, name: true, slug: true } },
+        variants: { orderBy: { createdAt: "asc" } },
+      },
       orderBy: { createdAt: "desc" },
     })
-    return { success: true, products: JSON.parse(JSON.stringify(batches)) }
-  } catch (error) {
-    console.error("Failed to fetch active batches:", error)
-    return { success: false, error: "Failed to fetch active batches" }
+
+    // Available stock тооцоолж нэмэх
+    const enriched = products.map(p => ({
+      ...p,
+      availableStock: p.stockQuantity - p.reservedStock,
+    }))
+
+    return { success: true, products: JSON.parse(JSON.stringify(enriched)) }
+  } catch (error: any) {
+    return { success: false, error: error.message, products: [] }
   }
 }
 
-export async function toggleBatchForSale(batchId: string, isAvailableForSale: boolean) {
+export async function getProductBySlug(slug: string) {
   try {
-    // Fetch category's deliveryFee to auto-inherit when enabling
-    const batch = await db.batch.findUnique({
-      where: { id: batchId },
-      include: { category: true }
+    const product = await db.product.findUnique({
+      where: { slug },
+      include: {
+        category: true,
+        variants: { orderBy: { createdAt: "asc" } },
+      },
     })
-    const categoryFee = (batch?.category as any)?.deliveryFee
-    await db.batch.update({
-      where: { id: batchId },
-      data: {
-        isAvailableForSale,
-        // Inherit category delivery fee on enable if not already set
-        ...(isAvailableForSale && categoryFee !== undefined && { deliveryFee: categoryFee })
-      } as any
-    })
-    revalidatePath("/admin/products")
-    revalidatePath("/")
-    return { success: true }
-  } catch (error) {
-    console.error("Failed to toggle batch for sale:", error)
-    return { success: false, error: "Failed to toggle" }
-  }
-}
+    if (!product) return { success: false, error: "Олдсонгүй" }
 
-export async function toggleBatchPreOrder(batchId: string, isPreOrder: boolean) {
-  try {
-    await db.batch.update({
-      where: { id: batchId },
-      data: { isPreOrder } as any
-    })
-    revalidatePath("/admin/products")
-    revalidatePath("/")
-    return { success: true }
-  } catch (error) {
-    console.error("Failed to toggle pre-order:", error)
-    return { success: false, error: "Failed to toggle pre-order" }
-  }
-}
-
-export async function updateBatchDeliveryFee(batchId: string, deliveryFee: number) {
-  try {
-    await db.batch.update({
-      where: { id: batchId },
-      data: { deliveryFee } as any
-    })
-    revalidatePath("/admin/products")
-    return { success: true }
-  } catch (error) {
-    console.error("Failed to update delivery fee:", error)
-    return { success: false, error: "Failed to update delivery fee" }
-  }
-}
-
-export async function updateBatchRemainingQty(batchId: string, remainingQuantity: number) {
-  try {
-    await db.batch.update({
-      where: { id: batchId },
-      data: { remainingQuantity }
-    })
-    revalidatePath("/admin/products")
-    revalidatePath("/")
-    return { success: true }
-  } catch (error) {
-    console.error("Failed to update remaining quantity:", error)
-    return { success: false, error: "Failed to update remaining quantity" }
-  }
-}
-
-export async function updateBatchClosingDate(batchId: string, closingDate: Date | null) {
-  try {
-    await db.batch.update({
-      where: { id: batchId },
-      data: { closingDate } as any
-    })
-    revalidatePath("/admin/products")
-    revalidatePath("/")
-    return { success: true }
-  } catch (error) {
-    console.error("Failed to update closing date:", error)
-    return { success: false, error: "Failed to update closing date" }
+    return {
+      success: true,
+      product: JSON.parse(JSON.stringify({
+        ...product,
+        availableStock: product.stockQuantity - product.reservedStock,
+      })),
+    }
+  } catch (error: any) {
+    return { success: false, error: error.message }
   }
 }
 
 export async function createProduct(data: {
+  sku: string
   name: string
   description?: string
-  targetQuantity: number
-  remainingQuantity: number
   price: number
+  comparePrice?: number
+  costPrice?: number
+  stockQuantity: number
   weight?: number
-  sourceLink?: string
   categoryId?: string
-  options?: any[]
-  variantStock?: Record<string, number>
+  imageUrl?: string
+  isPreOrder?: boolean
+  options?: any
+  variants?: { sku: string; name: string; price?: number; stockQuantity: number; options: any }[]
 }) {
   try {
-    let status: BatchStatus = BatchStatus.OPEN
-    if (data.remainingQuantity <= 0) {
-      status = BatchStatus.CLOSED
-    }
+    const slug = data.name
+      .toLowerCase()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9\-а-яөүё]/gi, "")
+      + `-${data.sku.toLowerCase()}`
 
-    // Since UI is simplified, we create Product and Batch together.
-    // In a real expanded app, we might select an existing product.
-    // For now we assume a Default Category if none specified.
-    let categoryId = data.categoryId
-    if (!categoryId) {
-      let defaultCategory = await db.category.findFirst()
-      if (!defaultCategory) {
-        defaultCategory = await db.category.create({ data: { name: "Ерөнхий ангилал" } })
-      }
-      categoryId = defaultCategory.id
-    }
-
-    const batch = await db.batch.create({
+    const product = await db.product.create({
       data: {
-        targetQuantity: data.targetQuantity,
-        remainingQuantity: data.remainingQuantity,
-        status: status,
+        sku: data.sku.trim(),
+        name: data.name.trim(),
+        slug,
+        description: data.description?.trim(),
         price: data.price,
-        description: data.description,
-        ...(data.variantStock && { variantStock: data.variantStock }),
-        category: { connect: { id: categoryId } },
-        product: {
-          create: {
-            name: data.name,
-            price: data.price,
-            ...(data.weight !== undefined && { weight: data.weight }),
-            ...(data.sourceLink !== undefined && { sourceLink: data.sourceLink }),
-            ...(data.options !== undefined && { options: data.options }),
+        comparePrice: data.comparePrice,
+        costPrice: data.costPrice,
+        stockQuantity: data.stockQuantity,
+        weight: data.weight || 0,
+        imageUrl: data.imageUrl,
+        isPreOrder: data.isPreOrder || false,
+        options: data.options,
+        status: data.stockQuantity > 0 ? "ACTIVE" : "OUT_OF_STOCK",
+        ...(data.categoryId && { categoryId: data.categoryId }),
+        ...(data.variants && data.variants.length > 0 && {
+          variants: {
+            create: data.variants.map(v => ({
+              sku: v.sku.trim(),
+              name: v.name.trim(),
+              price: v.price,
+              stockQuantity: v.stockQuantity,
+              options: v.options,
+            }))
           }
-        }
+        }),
       },
-      include: { product: true }
+      include: { variants: true, category: true },
     })
-    
-    return { success: true, product: JSON.parse(JSON.stringify(batch)) }
-  } catch (error) {
-    console.error("Failed to create product:", error)
-    return { success: false, error: "Failed to create product" }
+
+    revalidatePath("/admin/products")
+    revalidatePath("/")
+    return { success: true, product: JSON.parse(JSON.stringify(product)) }
+  } catch (error: any) {
+    if (error.code === "P2002") {
+      const field = error.meta?.target?.[0]
+      return { success: false, error: `${field === "sku" ? "SKU" : field === "slug" ? "Нэр" : field} давхардаж байна` }
+    }
+    console.error("[CreateProduct] Error:", error)
+    return { success: false, error: error.message }
   }
 }
 
-export async function updateProduct(data: {
-  productId: string
-  batchId: string
-  name: string
+export async function updateProduct(productId: string, data: {
+  name?: string
   description?: string
-  targetQuantity: number
-  remainingQuantity: number
-  price: number
+  price?: number
+  comparePrice?: number
+  costPrice?: number
+  stockQuantity?: number
   weight?: number
-  sourceLink?: string
-  options?: any[]
-  variantStock?: Record<string, number> | null
+  categoryId?: string
+  imageUrl?: string
+  status?: string
+  isPreOrder?: boolean
+  options?: any
+  images?: string[]
 }) {
   try {
-    // 1. Update the Product entity
-    await db.product.update({
-      where: { id: data.productId },
+    const existing = await db.product.findUnique({ where: { id: productId } })
+    if (!existing) return { success: false, error: "Бараа олдсонгүй" }
+
+    // Slug шинэчлэх (нэр өөрчлөгдвөл)
+    let slug = existing.slug
+    if (data.name && data.name.trim() !== existing.name) {
+      slug = data.name
+        .toLowerCase()
+        .replace(/\s+/g, "-")
+        .replace(/[^a-z0-9\-а-яөүё]/gi, "")
+        + `-${existing.sku.toLowerCase()}`
+    }
+
+    const product = await db.product.update({
+      where: { id: productId },
       data: {
-        name: data.name,
-        description: data.description,
-        price: data.price,
-        weight: data.weight,
-        sourceLink: data.sourceLink,
-        options: data.options || []
-      }
+        ...(data.name && { name: data.name.trim(), slug }),
+        ...(data.description !== undefined && { description: data.description }),
+        ...(data.price !== undefined && { price: data.price }),
+        ...(data.comparePrice !== undefined && { comparePrice: data.comparePrice }),
+        ...(data.costPrice !== undefined && { costPrice: data.costPrice }),
+        ...(data.stockQuantity !== undefined && {
+          stockQuantity: data.stockQuantity,
+          status: data.stockQuantity > 0 ? "ACTIVE" : "OUT_OF_STOCK",
+        }),
+        ...(data.weight !== undefined && { weight: data.weight }),
+        ...(data.categoryId !== undefined && { categoryId: data.categoryId }),
+        ...(data.imageUrl !== undefined && { imageUrl: data.imageUrl }),
+        ...(data.status !== undefined && { status: data.status as any }),
+        ...(data.isPreOrder !== undefined && { isPreOrder: data.isPreOrder }),
+        ...(data.options !== undefined && { options: data.options }),
+        ...(data.images !== undefined && { images: data.images }),
+      },
     })
 
-    // 2. Update the Batch entity
-    let status: BatchStatus = BatchStatus.OPEN
-    if (data.remainingQuantity <= 0) {
-      status = BatchStatus.CLOSED
-    } else {
-      status = BatchStatus.OPEN
+    revalidatePath("/admin/products")
+    revalidatePath("/")
+    return { success: true, product: JSON.parse(JSON.stringify(product)) }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}
+
+export async function deleteProduct(productId: string) {
+  try {
+    // Идэвхтэй захиалгатай эсэх шалгах
+    const orderCount = await db.orderItem.count({
+      where: {
+        productId,
+        order: { orderStatus: { in: ["PENDING", "PAID", "PROCESSING", "SHIPPED"] } }
+      }
+    })
+    if (orderCount > 0) {
+      return { success: false, error: `${orderCount} идэвхтэй захиалгатай тул устгах боломжгүй. Архивлах боломжтой.` }
     }
 
-    const batchUpdateData: any = {
-      price: data.price,
-      description: data.description,
-      targetQuantity: data.targetQuantity,
-      remainingQuantity: data.remainingQuantity,
-      status: status,
-    }
-    if (data.variantStock !== undefined) {
-      batchUpdateData.variantStock = data.variantStock ?? undefined
-    }
-
-    await db.batch.update({
-      where: { id: data.batchId },
-      data: batchUpdateData
+    await db.product.update({
+      where: { id: productId },
+      data: { status: "ARCHIVED" }
     })
 
     revalidatePath("/admin/products")
     revalidatePath("/")
     return { success: true }
-  } catch (error) {
-    console.error("Failed to update product:", error)
-    return { success: false, error: "Failed to update product" }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// АНГИЛАЛ CRUD
+// ═══════════════════════════════════════════════════
+
+export async function getCategories() {
+  try {
+    const categories = await db.category.findMany({
+      include: { _count: { select: { products: true } } },
+      orderBy: { sortOrder: "asc" },
+    })
+    return { success: true, categories: JSON.parse(JSON.stringify(categories)) }
+  } catch (error: any) {
+    return { success: false, error: error.message, categories: [] }
+  }
+}
+
+export async function createCategory(data: { name: string; imageUrl?: string }) {
+  try {
+    const slug = data.name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9\-а-яөүё]/gi, "")
+    const category = await db.category.create({
+      data: { name: data.name.trim(), slug: slug || `cat-${Date.now()}`, imageUrl: data.imageUrl }
+    })
+    revalidatePath("/admin/products")
+    return { success: true, category: JSON.parse(JSON.stringify(category)) }
+  } catch (error: any) {
+    if (error.code === "P2002") return { success: false, error: "Ангилал давхардаж байна" }
+    return { success: false, error: error.message }
   }
 }

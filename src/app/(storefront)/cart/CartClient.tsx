@@ -3,7 +3,7 @@
 import { useCart } from "@/context/CartContext"
 import { useState, useRef, useCallback, useEffect } from "react"
 import { Trash2, Minus, Plus, ShoppingCart, Truck, ShoppingBag, Package, AlertCircle, Info, CheckCircle2, Loader2, MessageSquare } from "lucide-react"
-import { createOrder, validateCartStock } from "@/app/actions/order-actions"
+import { checkout, validateCartStock } from "@/app/actions/checkout-actions"
 import { startPhoneVerification, checkPhoneVerified } from "@/app/actions/verify-actions"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -260,51 +260,45 @@ export function CartClient({
       const accountNumber = formData.get("accountNumber") as string
       const deliveryAddress = formData.get("deliveryAddress") as string
 
-      // Validate stock before placing orders
-      const stockCheck = await validateCartStock(items.map(i => ({ batchId: i.batchId, qty: i.qty })))
+      // Pre-validate stock (non-locking, UI feedback)
+      const stockCheck = await validateCartStock(
+        items.map(i => ({ productId: i.batchId, quantity: i.qty }))
+      )
       if (!stockCheck.success) {
         setError(stockCheck.errors[0])
         setSubmitting(false)
         return
       }
 
-      // Generate one shared transactionRef for all cart orders
-      const sharedRef = `ANR${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substring(2, 6).toUpperCase()}`
+      // Single atomic checkout with idempotency key
+      const idempotencyKey = crypto.randomUUID()
 
-      // Delivery fee is a ONE-TIME charge — only added to the first order.
-      const results = await Promise.all(
-        items.map((item, idx) =>
-          createOrder({
-            customerName,
-            phoneNumber,
-            accountNumber,
-            deliveryAddress: (wantsDelivery && !hasPreOrder) ? deliveryAddress : "Өөрөө ирж авна",
-            deliveryDate: (wantsDelivery && !hasPreOrder && selectedDeliveryDate) ? selectedDeliveryDate : undefined,
-            quantity: item.qty,
-            totalAmount: item.unitPrice * item.qty + (wantsDelivery && !hasPreOrder && idx === 0 ? singleDeliveryFee : 0),
-            batchId: item.batchId,
-            wantsDelivery: hasPreOrder ? false : wantsDelivery,
-            transactionRef: sharedRef,
-          })
-        )
-      )
+      const result = await checkout({
+        idempotencyKey,
+        customerName,
+        phoneNumber,
+        accountNumber,
+        deliveryAddress: (wantsDelivery && !hasPreOrder) ? deliveryAddress : undefined,
+        deliveryDate: (wantsDelivery && !hasPreOrder && selectedDeliveryDate) ? selectedDeliveryDate : undefined,
+        wantsDelivery: hasPreOrder ? false : wantsDelivery,
+        note: undefined,
+        items: items.map(item => ({
+          productId: item.batchId,
+          quantity: item.qty,
+        })),
+      })
 
-      const failed = results.find(r => !r.success)
-      if (failed) {
-        setError(failed.error ?? "Захиалга үүсгэхэд алдаа гарлаа")
+      if (!result.success) {
+        setError(result.error ?? "Захиалга үүсгэхэд алдаа гарлаа")
         setSubmitting(false)
         return
       }
 
-      toast({ title: "Амжилттай", description: "Захиалгууд үүсгэгдлээ." })
+      toast({ title: "Амжилттай", description: "Захиалга үүсгэгдлээ." })
       setIsRedirecting(true)
       clearCart()
-      // Redirect to specific page based on QPay availability
-      if (qpayEnabled) {
-        router.push(`/order-pending/ref/${sharedRef}`)
-      } else {
-        router.push(`/order-manual/ref/${sharedRef}`)
-      }
+      // Redirect to order page
+      router.push(`/order-manual/ref/${result.order.orderNumber}`)
     } catch (e: any) {
       setError(e.message || "Алдаа гарлаа")
       setSubmitting(false)

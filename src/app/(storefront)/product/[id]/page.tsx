@@ -2,43 +2,53 @@ import { db } from "@/lib/db"
 import { notFound } from "next/navigation"
 import { Package, Truck, ShoppingBag, ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import { ProductGallery } from "@/components/storefront/product/ProductGallery"
 import { ProductImage } from "@/components/storefront/ProductImage"
 import { ProductOrderForm } from "./ProductOrderForm"
-import { RelatedBatches } from "@/components/storefront/product/RelatedBatches"
 import { getShopSettings } from "@/app/actions/settings-actions"
 
 export const dynamic = "force-dynamic"
 
 export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const batch = await db.batch.findUnique({
-    where: { id },
-    include: { product: true }
+
+  // id нь slug эсвэл cuid байж болно
+  const product = await db.product.findFirst({
+    where: {
+      OR: [
+        { id },
+        { slug: id },
+      ],
+      status: { in: ["ACTIVE", "OUT_OF_STOCK"] },
+    },
+    include: {
+      category: true,
+      variants: { orderBy: { createdAt: "asc" } },
+    },
   })
 
-  if (!batch || !batch.isAvailableForSale) {
+  if (!product) {
     notFound()
   }
 
-  const [relatedBatches, shopSettings] = await Promise.all([
-    db.batch.findMany({
-      where: { 
-        isAvailableForSale: true, 
-        id: { not: batch.id } 
-      } as any,
-      include: { product: true, category: true },
+  const [relatedProducts, shopSettings] = await Promise.all([
+    db.product.findMany({
+      where: {
+        status: "ACTIVE",
+        id: { not: product.id },
+        ...(product.categoryId && { categoryId: product.categoryId }),
+      },
+      include: { category: true },
       take: 4,
-      orderBy: { createdAt: "desc" }
+      orderBy: { createdAt: "desc" },
     }),
-    getShopSettings()
+    getShopSettings(),
   ])
 
-  const batchPrice = parseFloat(String(batch.price ?? 0))
-  const productPrice = parseFloat(String(batch.product?.price ?? 0))
-  const unitPrice = batchPrice > 0 ? batchPrice : productPrice
-  const batchFee = Number((batch as any).deliveryFee || 0)
+  const unitPrice = Number(product.price)
+  const availableStock = product.stockQuantity - product.reservedStock
   const globalFee = Number(shopSettings.delivery_fee || 0)
-  const deliveryFee = batchFee > 0 ? batchFee : globalFee
+  const deliveryFee = globalFee
 
   return (
     <>
@@ -51,41 +61,33 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
         {/* Product Info Side */}
         <div className="md:w-1/2 p-8 bg-slate-50 border-r flex flex-col">
-          <div className="aspect-[4/5] sm:aspect-square bg-slate-200 rounded-xl mb-6 flex items-center justify-center overflow-hidden relative">
-            {(batch.product as any)?.videoUrl ? (
-              <video src={(batch.product as any).videoUrl} autoPlay loop muted playsInline className="object-cover w-full h-full" />
-            ) : batch.product?.imageUrl ? (
-              <ProductImage src={batch.product.imageUrl} alt={batch.product.name} fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover w-full h-full" />
-            ) : (
-              <div className="flex flex-col items-center text-slate-400 gap-2">
-                <Package className="w-12 h-12" />
-                <span className="text-sm font-medium">{batch.product?.name}</span>
-              </div>
-            )}
-            
-            {/* Pre-order Badge Overlay */}
-            {(batch as any).isPreOrder && (
-              <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-bold text-amber-700 flex items-center gap-1.5 shadow-sm border border-amber-200 uppercase tracking-widest">
-                <span>📌 Урьдчилсан захиалга</span>
-              </div>
-            )}
-          </div>
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">{batch.product?.name}</h1>
+          <ProductGallery product={{
+            name: product.name,
+            imageUrl: product.imageUrl,
+            images: product.images,
+            isPreOrder: product.isPreOrder
+          }} />
+          <h1 className="text-2xl font-bold text-slate-900 mb-2">{product.name}</h1>
           <p className="text-slate-600 mb-6 flex-1">
-            {batch.description || batch.product?.description || "Тайлбар оруулаагүй байна."}
+            {product.description || "Тайлбар оруулаагүй байна."}
           </p>
 
           <div className="space-y-3 bg-white p-4 rounded-lg border">
             <div className="flex justify-between items-center">
               <span className="text-slate-500 text-sm">Нэгж үнэ:</span>
-              <span className="font-bold text-xl text-slate-900">₮{unitPrice.toLocaleString()}</span>
+              <div className="flex items-center gap-2">
+                {product.comparePrice && Number(product.comparePrice) > unitPrice && (
+                  <span className="text-sm text-slate-400 line-through">₮{Number(product.comparePrice).toLocaleString()}</span>
+                )}
+                <span className="font-bold text-xl text-slate-900">₮{unitPrice.toLocaleString()}</span>
+              </div>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-slate-500 text-sm">Үлдэгдэл:</span>
-              <span className={`font-bold ${(batch as any).isPreOrder || batch.remainingQuantity > 0 ? "text-green-600" : "text-red-500"}`}>
-                {(batch as any).isPreOrder 
+              <span className={`font-bold ${product.isPreOrder || availableStock > 0 ? "text-green-600" : "text-red-500"}`}>
+                {product.isPreOrder 
                   ? "Хязгааргүй (Урьдчилсан)"
-                  : batch.remainingQuantity > 0 ? `${batch.remainingQuantity} ширхэг` : "Дууссан"
+                  : availableStock > 0 ? `${availableStock} ширхэг` : "Дууссан"
                 }
               </span>
             </div>
@@ -95,10 +97,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                   <Truck className="w-4 h-4 text-indigo-400" /> Хүргэлтийн үнэ:
                 </span>
                 <span className="font-semibold text-slate-800">
-                  {(batch as any).isPreOrder 
-                    ? `₮${deliveryFee.toLocaleString()} (ирсний дараа)`
-                    : `₮${deliveryFee.toLocaleString()}`
-                  }
+                  ₮{deliveryFee.toLocaleString()}
                 </span>
               </div>
             )}
@@ -111,16 +110,14 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               <div>
                 <p className="text-xs text-slate-500 font-medium">Хүргэгдэх хугацаа</p>
                 <p className="text-sm font-bold text-slate-800">
-                  {Number(batch.cargoFeeStatus) > 0 ? "Ойролцоогоор 7-14 хоног (Солонгосоос)" : (() => {
+                  {(() => {
                     const DAY_NAMES = ["Ням", "Даваа", "Мягмар", "Лхагва", "Пүрэв", "Баасан", "Бямба"]
                     const scheduleDays = (shopSettings.delivery_schedule_days || "3,6").split(",").map(Number)
-                    const dayNames = scheduleDays.map(d => DAY_NAMES[d]).filter(Boolean).join(", ")
+                    const dayNames = scheduleDays.map((d: number) => DAY_NAMES[d]).filter(Boolean).join(", ")
                     return dayNames ? `🚚 Хүргэлт ${dayNames} гарагт гарна` : "Бэлэн байгаа"
                   })()}
                 </p>
-                {Number(batch.cargoFeeStatus) <= 0 && (
-                  <p className="text-[11px] text-slate-400 mt-0.5">Товлосон өдрөөс 24-72 цагийн дотор хүргэгдэнэ</p>
-                )}
+                <p className="text-[11px] text-slate-400 mt-0.5">Товлосон өдрөөс 24-72 цагийн дотор хүргэгдэнэ</p>
               </div>
             </div>
 
@@ -142,15 +139,15 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             <ShoppingBag className="w-5 h-5 text-indigo-500" /> Захиалга өгөх
           </h2>
           <ProductOrderForm
-            batchId={batch.id}
+            productId={product.id}
             unitPrice={unitPrice}
             deliveryFee={deliveryFee}
-            remainingQuantity={batch.remainingQuantity}
+            remainingQuantity={availableStock}
             termsOfService={shopSettings.terms_of_service}
             deliveryTerms={shopSettings.delivery_terms}
-            isPreOrder={(batch as any).isPreOrder}
-            options={(batch.product as any)?.options}
-            variantStock={(batch as any).variantStock}
+            isPreOrder={product.isPreOrder}
+            options={product.options as any}
+            variants={product.variants as any}
             deliveryScheduleDays={shopSettings.delivery_schedule_days || "3,6"}
           />
         </div>
@@ -163,7 +160,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0 flex-1">
             <p className="text-xs text-slate-500 font-medium truncate mb-0.5">
-              {batch.product?.name}
+              {product.name}
             </p>
             <p className="text-lg font-bold text-slate-900 leading-none">
               ₮{unitPrice.toLocaleString()}
@@ -175,11 +172,27 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         </div>
       </div>
       
-      {relatedBatches.length > 0 && (
-        <RelatedBatches 
-          batches={relatedBatches as any} 
-          title="Танд санал болгох" 
-        />
+      {relatedProducts.length > 0 && (
+        <div className="max-w-4xl mx-auto px-4 pb-12">
+          <h3 className="text-lg font-bold text-slate-900 mb-4">Танд санал болгох</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {relatedProducts.map(p => (
+              <Link key={p.id} href={`/product/${p.slug}`} className="bg-white rounded-xl border p-3 hover:shadow-md transition-shadow">
+                <div className="aspect-square bg-slate-100 rounded-lg overflow-hidden mb-2">
+                  {p.imageUrl ? (
+                    <ProductImage src={p.imageUrl} alt={p.name} width={200} height={200} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-slate-300">
+                      <Package className="w-8 h-8" />
+                    </div>
+                  )}
+                </div>
+                <p className="text-sm font-semibold text-slate-800 truncate">{p.name}</p>
+                <p className="text-sm font-bold text-indigo-600">₮{Number(p.price).toLocaleString()}</p>
+              </Link>
+            ))}
+          </div>
+        </div>
       )}
     </>
   )

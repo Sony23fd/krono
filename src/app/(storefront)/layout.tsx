@@ -59,15 +59,15 @@ export default async function StorefrontLayout({ children }: { children: ReactNo
   return (
     <CartProvider>
       {/* Navigation / Top Header */}
-      <header className="sticky top-0 z-40 border-b border-indigo-800/50 shadow-md relative overflow-hidden">
+      <header className="sticky top-0 z-40 border-b border-indigo-800/50 shadow-md relative overflow-hidden" suppressHydrationWarning>
 
         {/* Animated Background */}
         <AnimatedHeroBackground bgColor="#3c27c4" />
 
-        <div className="relative z-10 max-w-6xl mx-auto px-4 py-3 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="relative z-10 max-w-6xl mx-auto px-4 py-3 flex flex-col md:flex-row md:items-center justify-between gap-4" suppressHydrationWarning>
           <Link href="/" className="flex items-center gap-2 group">
             {siteLogo ? (
-              <div className="relative flex items-center h-12">
+              <div className="relative flex items-center h-12" suppressHydrationWarning>
                 <img
                   src={siteLogo}
                   alt="AnarKorea Logo"
@@ -76,7 +76,7 @@ export default async function StorefrontLayout({ children }: { children: ReactNo
               </div>
             ) : (
               <>
-                <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white font-bold text-lg shadow-sm border border-white/10 group-hover:bg-white/30 transition-colors">
+                <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white font-bold text-lg shadow-sm border border-white/10 group-hover:bg-white/30 transition-colors" suppressHydrationWarning>
                   A
                 </div>
                 <span className="font-extrabold text-2xl tracking-tight text-white">
@@ -86,7 +86,7 @@ export default async function StorefrontLayout({ children }: { children: ReactNo
             )}
           </Link>
 
-          <div className="flex items-center gap-4 w-full md:w-auto mt-2 md:mt-0">
+          <div className="flex items-center gap-4 w-full md:w-auto mt-2 md:mt-0" suppressHydrationWarning>
             <form action="/track" className="flex relative group w-full md:w-auto shadow-lg hover:shadow-xl transition-shadow rounded-full font-sans">
               <input
                 type="text"
@@ -104,7 +104,7 @@ export default async function StorefrontLayout({ children }: { children: ReactNo
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 min-h-[60vh] pb-10">
+      <main className="flex-1 min-h-[60vh] pb-10" suppressHydrationWarning>
         {children}
       </main>
 
@@ -116,7 +116,7 @@ export default async function StorefrontLayout({ children }: { children: ReactNo
       <SocialProofToast />
 
       {/* Modern Premium Footer */}
-      <footer className="bg-[#1c1642] text-slate-300 pt-16 pb-8 px-4 md:px-8 lg:px-16 mt-auto">
+      <footer className="bg-[#1c1642] text-slate-300 pt-16 pb-8 px-4 md:px-8 lg:px-16 mt-auto" suppressHydrationWarning>
         <div className="max-w-6xl mx-auto">
           {/* Top border decor */}
           <div className="h-1 w-20 bg-gradient-to-r from-[#4e3dc7] to-indigo-400 rounded-full mb-12"></div>

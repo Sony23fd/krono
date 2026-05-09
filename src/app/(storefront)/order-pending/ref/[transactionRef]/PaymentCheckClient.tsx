@@ -3,7 +3,6 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { RefreshCw } from "lucide-react"
-import { checkOrderPayment } from "@/app/actions/order-actions"
 import { useToast } from "@/components/ui/use-toast"
 
 export function PaymentCheckClient({ transactionRef }: { transactionRef: string }) {
@@ -14,17 +13,9 @@ export function PaymentCheckClient({ transactionRef }: { transactionRef: string 
   async function handleCheck() {
     setIsChecking(true)
     try {
-      const result = await checkOrderPayment(transactionRef)
-      if (result.success) {
-        if (result.paid) {
-          toast({ title: "Төлбөр баталгаажлаа", description: "Таны захиалга амжилттай баталгаажлаа!" })
-          router.refresh()
-        } else {
-          toast({ title: "Төлбөр хүлээгдэж байна", description: "Таны төлбөр хараахан ороогүй байна.", variant: "destructive" })
-        }
-      } else {
-        toast({ title: "Алдаа гарлаа", description: result.error || "Шалгах үед алдаа гарлаа", variant: "destructive" })
-      }
+      // Хуудсыг refresh хийнэ → server-side data шинэчлэгдэнэ
+      router.refresh()
+      toast({ title: "Шинэчлэгдлээ", description: "Төлбөрийн төлөвийг шалгаж байна..." })
     } catch {
       toast({ title: "Алдаа", description: "Сервертэй холбогдож чадсангүй", variant: "destructive" })
     } finally {

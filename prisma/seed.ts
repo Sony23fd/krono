@@ -1,99 +1,95 @@
-import { PrismaClient } from '@prisma/client'
-import bcrypt from 'bcryptjs'
+import { PrismaClient } from "@prisma/client"
+import { hash } from "bcryptjs"
 
-const prisma = new PrismaClient()
+const db = new PrismaClient()
 
 async function main() {
-  console.log('Seeding database...')
+  console.log("🌱 Seeding database...")
 
-  // 1. Create Default Admin User
-  const adminPassword = await bcrypt.hash('admin123', 10)
-  const admin = await prisma.user.upsert({
-    where: { email: 'admin@anarshop.mn' },
+  // 1. Admin хэрэглэгч
+  const adminPassword = await hash("admin123", 12)
+  const admin = await db.user.upsert({
+    where: { email: "admin@shop.mn" },
     update: {},
     create: {
-      email: 'admin@anarshop.mn',
+      email: "admin@shop.mn",
+      phone: "99999999",
+      name: "Админ",
       password: adminPassword,
-      role: 'ADMIN',
-      name: 'Anar Admin',
+      role: "ADMIN",
     },
   })
-  console.log(`Created admin user: ${admin.email}`)
+  console.log(`✅ Admin: ${admin.email}`)
 
-  // 1b. Create Default Cargo Admin User
-  const cargoPassword = await bcrypt.hash('cargo123', 10)
-  const cargoAdmin = await prisma.user.upsert({
-    where: { email: 'cargo@anarshop.mn' },
-    update: {},
-    create: {
-      email: 'cargo@anarshop.mn',
-      password: cargoPassword,
-      role: 'CARGO_ADMIN',
-      name: 'Cargo Admin',
-    },
-  })
-  console.log(`Created cargo admin user: ${cargoAdmin.email}`)
-
-  // 1c. Create Default Data Admin User
-  const dataPassword = await bcrypt.hash('data123', 10)
-  const dataAdmin = await prisma.user.upsert({
-    where: { email: 'data@anarshop.mn' },
-    update: {},
-    create: {
-      email: 'data@anarshop.mn',
-      password: dataPassword,
-      role: 'DATAADMIN',
-      name: 'Data Admin',
-    },
-  })
-  console.log(`Created data admin user: ${dataAdmin.email}`)
-
-  // 2. Create Order Status Types
-  const statuses = [
-    { name: 'Төлбөр хүлээгдэж байна', isFinal: false, isDefault: true, color: 'amber' },
-    { name: 'Захиалга баталгаажсан', isFinal: false, isDefault: false, color: 'blue' },
-    { name: 'Цуцлагдсан', isFinal: true, isDefault: false, color: 'red' },
-    { name: 'Солонгосоос хөдөлсөн', isFinal: false, isDefault: false, color: 'purple' },
-    { name: 'Улаанбаатарт ирсэн', isFinal: false, isDefault: false, color: 'indigo' },
-    { name: 'Өөрөө ирж авсан', isFinal: true, isDefault: false, color: 'emerald' },
-    { name: 'Хүргэлтээр авсан', isFinal: true, isDefault: false, color: 'emerald' },
+  // 2. Ангилалууд
+  const categories = [
+    { name: "Гоо сайхан", slug: "goo-saikhan" },
+    { name: "Арьс арчилгаа", slug: "aris-archilgaa" },
+    { name: "Хоол хүнс", slug: "khool-khuns" },
+    { name: "Эрүүл мэнд", slug: "eruul-mend" },
+    { name: "Гэр ахуй", slug: "ger-akhui" },
   ]
 
-  for (const s of statuses) {
-    await prisma.orderStatusType.upsert({
-      where: { name: s.name },
-      update: { 
-        isDefault: s.isDefault,
-        isFinal: s.isFinal,
-        color: s.color 
+  for (const cat of categories) {
+    await db.category.upsert({
+      where: { slug: cat.slug },
+      update: {},
+      create: cat,
+    })
+  }
+  console.log(`✅ ${categories.length} ангилал`)
+
+  // 3. Жишээ бараанууд
+  const sampleProducts = [
+    { sku: "GS-001", name: "Солонгос нүүрний крем", price: 35000, stockQuantity: 50, categorySlug: "goo-saikhan" },
+    { sku: "GS-002", name: "Нүдний тос", price: 28000, stockQuantity: 30, categorySlug: "goo-saikhan" },
+    { sku: "AA-001", name: "Витамин C серум", price: 45000, stockQuantity: 25, categorySlug: "aris-archilgaa" },
+  ]
+
+  for (const p of sampleProducts) {
+    const cat = await db.category.findUnique({ where: { slug: p.categorySlug } })
+    const slug = p.name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9\-а-яөүё]/gi, "") + `-${p.sku.toLowerCase()}`
+
+    await db.product.upsert({
+      where: { sku: p.sku },
+      update: { stockQuantity: p.stockQuantity, price: p.price },
+      create: {
+        sku: p.sku,
+        name: p.name,
+        slug,
+        price: p.price,
+        stockQuantity: p.stockQuantity,
+        status: "ACTIVE",
+        ...(cat && { categoryId: cat.id }),
       },
+    })
+  }
+  console.log(`✅ ${sampleProducts.length} жишээ бараа`)
+
+  // 4. ShopSettings
+  const settings = [
+    { key: "shop_name", value: "Энгийн Шоп" },
+    { key: "delivery_fee", value: "6000" },
+    { key: "qpay_enabled", value: "false" },
+  ]
+
+  for (const s of settings) {
+    await db.shopSettings.upsert({
+      where: { key: s.key },
+      update: { value: s.value },
       create: s,
     })
   }
-  console.log(`Created ${statuses.length} order statuses`)
+  console.log(`✅ ${settings.length} тохиргоо`)
 
-  // 3. Create Categories
-  const categories = [
-    { name: 'Бэлэн Монголд байгаа бараа' },
-    { name: '2026.03 сар' }
-  ]
-
-  for (const c of categories) {
-    const existing = await prisma.category.findFirst({ where: { name: c.name } })
-    if (!existing) {
-      await prisma.category.create({ data: c })
-    }
-  }
-  console.log(`Created ${categories.length} categories`)
-
-  console.log('Seeding finished.')
+  console.log("\n🎉 Seed амжилттай дууслаа!")
 }
 
 main()
   .catch((e) => {
-    console.error(e)
+    console.error("❌ Seed алдаа:", e)
     process.exit(1)
   })
   .finally(async () => {
-    await prisma.$disconnect()
+    await db.$disconnect()
   })

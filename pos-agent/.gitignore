@@ -1,0 +1,5 @@
+node_modules/
+logs/
+sync-state.json
+.env
+*.tmp

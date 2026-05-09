@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { Truck, ShoppingBag, AlertCircle, Info } from "lucide-react"
 import { useCart } from "@/context/CartContext"
-import { createOrder } from "@/app/actions/order-actions"
+import { checkout } from "@/app/actions/checkout-actions"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/components/ui/use-toast"
 import { Package } from "lucide-react"
@@ -14,7 +14,7 @@ import { getUpcomingDeliveryDates } from "@/lib/utils"
 import { isValidPhone } from "@/lib/customer-utils"
 
 interface Props {
-  batchId: string
+  productId: string
   unitPrice: number
   deliveryFee: number
   remainingQuantity: number
@@ -22,7 +22,7 @@ interface Props {
   deliveryTerms?: string
   isPreOrder?: boolean
   options?: Array<{ name: string, values: string[] }>
-  variantStock?: Record<string, number> | null
+  variants?: Array<{ id: string; sku: string; name: string; stockQuantity: number; price?: number }>
   deliveryScheduleDays?: string
 }
 
@@ -45,7 +45,9 @@ function getNextDeliveryDate(scheduleDaysStr: string): string {
   return ""
 }
 
-export function ProductOrderForm({ batchId, unitPrice, deliveryFee, remainingQuantity, termsOfService, deliveryTerms, isPreOrder, options, variantStock, deliveryScheduleDays = "3,6" }: Props) {
+export function ProductOrderForm({ productId, unitPrice, deliveryFee, remainingQuantity, termsOfService, deliveryTerms, isPreOrder, options, variants, deliveryScheduleDays = "3,6" }: Props) {
+  // Build variantStock map from variants array
+  const variantStock = variants?.reduce((acc, v) => ({ ...acc, [v.name]: v.stockQuantity }), {} as Record<string, number>) || null
   const router = useRouter()
   const { removeItem } = useCart()
   const { toast } = useToast()
@@ -132,25 +134,27 @@ export function ProductOrderForm({ batchId, unitPrice, deliveryFee, remainingQua
     setSubmitting(true)
     setError(null)
 
-    const result = await createOrder({
+    const idempotencyKey = crypto.randomUUID()
+
+    const result = await checkout({
+      idempotencyKey,
       customerName: data.get("customerName") as string,
       phoneNumber: phone,
       accountNumber: data.get("accountNumber") as string,
-      deliveryAddress: wantsDelivery ? (data.get("deliveryAddress") as string) : "Өөрөө ирж авна",
+      deliveryAddress: wantsDelivery ? (data.get("deliveryAddress") as string) : undefined,
       deliveryDate: (wantsDelivery && !isPreOrder && selectedDeliveryDate) ? selectedDeliveryDate : undefined,
-      quantity: qty,
-      totalAmount,
-      batchId,
       wantsDelivery: isPreOrder ? false : wantsDelivery,
-      selectedOptions: Object.keys(selectedOptions).length > 0 ? selectedOptions : undefined
+      items: [{
+        productId,
+        quantity: qty,
+      }],
     })
 
     if (result.success) {
-      removeItem(batchId)
-      const orderId = result.order?.id
+      removeItem(productId)
       toast({ title: "Амжилттай", description: "Захиалга үүсгэлээ." })
       setIsRedirecting(true)
-      router.push(orderId ? `/order-pending/${orderId}` : `/order-success${result.order?.transactionRef ? `?ref=${result.order.transactionRef}` : ''}`)
+      router.push(`/order-manual/ref/${result.order?.orderNumber}`)
     } else {
       setError(result.error ?? "Алдаа гарлаа")
       setSubmitting(false)

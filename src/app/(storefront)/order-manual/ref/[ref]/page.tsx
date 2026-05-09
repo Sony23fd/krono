@@ -11,7 +11,13 @@ export default async function ManualCheckoutPage({ params }: { params: Promise<{
   const { ref } = await params
   
   const orders = await db.order.findMany({
-    where: { transactionRef: ref }
+    where: {
+      OR: [
+        ...(isNaN(Number(ref)) ? [] : [{ orderNumber: Number(ref) }]),
+        { id: ref },
+      ],
+    },
+    include: { items: true },
   })
 
   if (!orders || orders.length === 0) {

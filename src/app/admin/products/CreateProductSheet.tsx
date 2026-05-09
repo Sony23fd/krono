@@ -74,16 +74,14 @@ export function CreateProductSheet({ categories }: { categories: any[] }) {
       : Number(formData.get("remainingQuantity") || 0)
 
     const res = await createProduct({
+      sku: (formData.get("sku") as string) || `SKU-${Date.now()}`,
       name: formData.get("name") as string,
       description: formData.get("description") as string,
-      targetQuantity: Number(formData.get("targetQuantity") || 0),
-      remainingQuantity,
+      stockQuantity: remainingQuantity,
       price: Number(formData.get("price") || 0),
       weight: Number(formData.get("weight") || 0),
-      sourceLink: formData.get("sourceLink") as string,
       categoryId: selectedCategoryId || undefined,
       options: formattedOptions.length > 0 ? formattedOptions : undefined,
-      variantStock: finalVariantStock
     })
     setLoading(false)
     if (res.success) {
