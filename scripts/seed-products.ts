@@ -124,7 +124,7 @@ async function main() {
   console.log()
 
   // ─── 2. Parse HTML with Cheerio ─────────────────────────
-  const $ = cheerio.load(html, { decodeEntities: true })
+  const $ = cheerio.load(html)
   const rows = $("tr")
   console.log(`📊 Total <tr> rows found: ${rows.length}`)
 
