@@ -1,13 +1,25 @@
 import { ReactNode } from "react"
 import { Outfit } from "next/font/google"
 import { Toaster } from "sonner"
+import { db } from "@/lib/db"
+import type { Metadata } from "next"
 import "./globals.css"
 
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" })
 
-export const metadata = {
-  title: "Anar Korea Shop",
-  description: "Korean product procurement system",
+export async function generateMetadata(): Promise<Metadata> {
+  let shopName = "Билэг Супермаркет"
+  try {
+    const setting = await db.shopSettings.findUnique({ where: { key: "shop_name" } })
+    if (setting?.value) shopName = setting.value
+  } catch {}
+  return {
+    title: {
+      default: shopName,
+      template: `%s | ${shopName}`,
+    },
+    description: `${shopName} — Таны өдөр тутмын супермаркет`,
+  }
 }
 
 export default function RootLayout({ children }: { children: ReactNode }) {

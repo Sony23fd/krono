@@ -40,13 +40,13 @@ export default function AdminLoginPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+          <div className="w-14 h-14 bg-[#e63946] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-red-900/30">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7">
               <path d="M12 2L2 7l10 5 10-5-10-5z"/>
               <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-white">Anar Shop</h1>
+          <h1 className="text-2xl font-bold text-white">Bileg Admin</h1>
           <p className="text-slate-400 text-sm mt-1">Админ хэсэгт нэвтрэх</p>
         </div>
 
@@ -60,7 +60,7 @@ export default function AdminLoginPage() {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
-                placeholder="admin@anarshop.mn"
+                placeholder="admin@bileg.mn"
                 className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
               />
             </div>
@@ -107,14 +107,14 @@ export default function AdminLoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 disabled:opacity-60 transition-colors shadow-sm"
+              className="w-full py-3 bg-[#e63946] text-white font-semibold rounded-xl hover:bg-[#c8161d] disabled:opacity-60 transition-colors shadow-sm"
             >
               {loading ? "Нэвтэрч байна..." : "Нэвтрэх"}
             </button>
           </form>
         </div>
 
-        <p className="text-center text-slate-500 text-xs mt-6">© 2026 Anar Shop · Зөвхөн эрх бүхий хэрэглэгдэд</p>
+        <p className="text-center text-slate-500 text-xs mt-6">© 2026 Билэг Супермаркет · Зөвхөн эрх бүхий хэрэглэгчдэд</p>
       </div>
     </div>
   )

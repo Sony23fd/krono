@@ -100,12 +100,22 @@ export default async function StorefrontLayout({ children }: { children: ReactNo
           </Link>
 
           {/* Search Bar — always visible */}
-          <div className="flex-1 max-w-3xl">
+          <div className="flex-1 max-w-2xl">
             <HeaderSearchBar categories={categories} />
           </div>
 
+          {/* Desktop Nav Links */}
+          <nav className="hidden lg:flex items-center gap-6 shrink-0">
+            <Link href="/shop" className="text-sm font-semibold text-gray-700 hover:text-[#e63946] transition-colors whitespace-nowrap">
+              Дэлгүүр
+            </Link>
+            <Link href="/categories" className="text-sm font-semibold text-gray-700 hover:text-[#e63946] transition-colors whitespace-nowrap">
+              Ангилал
+            </Link>
+          </nav>
+
           {/* Right: Desktop Icon Buttons */}
-          <div className="hidden md:flex items-center gap-3 shrink-0 border-l border-slate-200 pl-6">
+          <div className="hidden md:flex items-center gap-3 shrink-0 border-l border-slate-200 pl-5">
             <FavoritesBadgeIcon />
             <CartBadgeIcon />
             <ProfileMenuIcon />

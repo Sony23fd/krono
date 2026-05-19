@@ -20,6 +20,7 @@ interface Props {
 export function GeneralSettingsClient({ initialSettings, userRole }: Props) {
   const router = useRouter()
   
+  const [shopName, setShopName] = useState(initialSettings["shop_name"] || "Билэг Супермаркет")
   const [logoUrl, setLogoUrl] = useState(initialSettings["site_logo"] || "")
   // Default to true if not explicitly set to "false"
   const [showHeroText, setShowHeroText] = useState(initialSettings["hero_text_visible"] !== "false")
@@ -74,6 +75,14 @@ export function GeneralSettingsClient({ initialSettings, userRole }: Props) {
   async function handleSave() {
     setIsSaving(true)
     try {
+      // Save shop name
+      const resName = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "shop_name", value: shopName }),
+      })
+      if (!resName.ok) throw new Error("Дэлгүүрийн нэр хадгалахад алдаа гарлаа")
+
       // Save logo
       const resLogo = await fetch("/api/admin/settings", {
         method: "POST",
@@ -141,6 +150,26 @@ export function GeneralSettingsClient({ initialSettings, userRole }: Props) {
 
   return (
     <div className="space-y-8">
+      {/* Shop Name */}
+      <Card className="border-slate-200 shadow-sm">
+        <CardHeader>
+          <CardTitle>Дэлгүүрийн нэр</CardTitle>
+          <CardDescription>
+            Browser tab, footer, мэдэгдлүүд дээр гарч ирэх дэлгүүрийн нэр.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <input
+            type="text"
+            value={shopName}
+            onChange={e => setShopName(e.target.value)}
+            placeholder="Билэг Супермаркет"
+            className="w-full max-w-md px-4 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#e63946]/30 focus:border-[#e63946]/50"
+          />
+        </CardContent>
+      </Card>
+
+      {/* Logo */}
       <Card className="border-slate-200 shadow-sm">
         <CardHeader>
           <CardTitle>Сайтын Лого</CardTitle>

@@ -1,4 +1,6 @@
 "use client"
+
+import { useState, useEffect } from "react"
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   BarChart, Bar, Cell, PieChart, Pie, Legend, Cell as RechartsCell
@@ -25,6 +27,41 @@ const COLORS = [
 ];
 
 export function DashboardCharts({ revenueData, topProducts, viewsOverTime = [], categoryStats = [] }: ChartData) {
+  const [mounted, setMounted] = useState(false)
+
+  // Only render on the client to avoid SSR hydration mismatch
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) {
+    // Provide clean skeleton placeholders with matching heights to prevent layout shifts
+    return (
+      <div className="space-y-6 mt-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col h-[380px] animate-pulse">
+            <div className="h-6 w-48 bg-slate-100 rounded-lg"></div>
+            <div className="flex-1 mt-4 bg-slate-50/50 rounded-xl"></div>
+          </div>
+          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col h-[380px] animate-pulse">
+            <div className="h-6 w-48 bg-slate-100 rounded-lg"></div>
+            <div className="flex-1 mt-4 bg-slate-50/50 rounded-xl"></div>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col h-[430px] animate-pulse">
+            <div className="h-6 w-48 bg-slate-100 rounded-lg"></div>
+            <div className="flex-1 mt-4 bg-slate-50/50 rounded-xl"></div>
+          </div>
+          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col h-[430px] animate-pulse">
+            <div className="h-6 w-48 bg-slate-100 rounded-lg"></div>
+            <div className="flex-1 mt-4 bg-slate-50/50 rounded-xl"></div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6 mt-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
