@@ -18,6 +18,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { ActionForm } from "@/components/admin/ActionForm"
 
 export default async function OrderCategoriesPage() {
   const { categories, success } = await getCategories()
@@ -35,11 +36,12 @@ export default async function OrderCategoriesPage() {
             <SheetHeader>
               <SheetTitle>Шинэ ангилал нэмэх</SheetTitle>
             </SheetHeader>
-            <form action={async (formData) => {
+            <ActionForm action={async (formData) => {
               "use server"
               const name = formData.get("name") as string;
-              if (name) await createCategory({ name });
-            }} className="space-y-4 mt-6">
+              if (name) return await createCategory({ name });
+              return { success: false, error: "Нэр оруулна уу" }
+            }} className="space-y-4 mt-6" successMessage="Ангилал үүсгэлээ">
               <div className="space-y-2">
                 <label htmlFor="name" className="text-sm font-medium">Ангиллын нэр</label>
                 <Input id="name" name="name" required placeholder="Ж: 2026.03 сар" />
@@ -49,7 +51,7 @@ export default async function OrderCategoriesPage() {
                 <Input id="deliveryFee" name="deliveryFee" type="number" defaultValue="0" />
               </div>
               <Button type="submit" className="w-full bg-[#4F46E5] text-white hover:bg-[#4338ca]">Үүсгэх</Button>
-            </form>
+            </ActionForm>
           </SheetContent>
         </Sheet>
       </div>
@@ -88,26 +90,28 @@ export default async function OrderCategoriesPage() {
                         <DialogHeader>
                           <DialogTitle>Ангилал засах</DialogTitle>
                         </DialogHeader>
-                        <form action={async (formData) => {
+                        <ActionForm action={async (formData) => {
                           "use server"
                           const { updateCategory } = await import("@/app/actions/category-actions")
                           const id = formData.get("id") as string
                           const name = formData.get("name") as string
-                          if (id && name) await updateCategory(id, { name })
-                        }} className="space-y-4">
+                          const deliveryFee = formData.get("deliveryFee") as string
+                          if (id && name) return await updateCategory(id, { name, deliveryFee: Number(deliveryFee) || 0 } as any)
+                          return { success: false, error: "Мэдээлэл дутуу байна" }
+                        }} className="space-y-4" successMessage="Амжилттай заслаа">
                           <input type="hidden" name="id" value={cat.id} />
                           <div className="space-y-2">
                             <label htmlFor={`edit-name-${cat.id}`} className="text-sm font-medium">Ангиллын нэр</label>
-                            <Input id={`edit-name-${cat.id}`} name="name" defaultValue={cat.name || ""} required />
+                            <Input key={`name-${cat.id}-${cat.name}`} id={`edit-name-${cat.id}`} name="name" defaultValue={cat.name || ""} required />
                           </div>
                           <div className="space-y-2">
                             <label htmlFor={`edit-fee-${cat.id}`} className="text-sm font-medium">Хүргэлтийн үнэ (₮)</label>
-                            <Input id={`edit-fee-${cat.id}`} name="deliveryFee" type="number" defaultValue={cat.deliveryFee?.toString() ?? "0"} />
+                            <Input key={`fee-${cat.id}-${cat.deliveryFee}`} id={`edit-fee-${cat.id}`} name="deliveryFee" type="number" defaultValue={cat.deliveryFee?.toString() ?? "0"} />
                           </div>
                           <DialogFooter>
                             <Button type="submit" className="bg-[#4F46E5] hover:bg-[#4338ca] text-white">Хадгалах</Button>
                           </DialogFooter>
-                        </form>
+                        </ActionForm>
                       </DialogContent>
                     </Dialog>
 
@@ -122,17 +126,18 @@ export default async function OrderCategoriesPage() {
                             Та "{cat.name}" ангиллыг устгахдаа итгэлтэй байна уу?
                           </DialogDescription>
                         </DialogHeader>
-                        <form action={async (formData) => {
+                        <ActionForm action={async (formData) => {
                           "use server"
                           const { deleteCategory } = await import("@/app/actions/category-actions")
                           const id = formData.get("id") as string
-                          if (id) await deleteCategory(id)
-                        }}>
+                          if (id) return await deleteCategory(id)
+                          return { success: false, error: "Алдаа гарлаа" }
+                        }} successMessage="Амжилттай устгагдлаа">
                           <input type="hidden" name="id" value={cat.id} />
                           <DialogFooter className="mt-4">
                             <Button type="submit" variant="destructive">Тийм, устгах</Button>
                           </DialogFooter>
-                        </form>
+                        </ActionForm>
                       </DialogContent>
                     </Dialog>
                   </td>

@@ -3,11 +3,10 @@
 import { useState } from "react"
 import { saveEnvFile } from "@/app/actions/env-actions"
 import { updateSystemFromServer } from "@/app/actions/system-actions"
-import { useToast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 import { Save, RefreshCw, Loader2, AlertTriangle } from "lucide-react"
 
 export function SystemSetupClient({ initialEnv }: { initialEnv: string }) {
-  const { toast } = useToast()
   const [envContent, setEnvContent] = useState(initialEnv)
   const [savingEnv, setSavingEnv] = useState(false)
   const [updatingSystem, setUpdatingSystem] = useState(false)
@@ -19,9 +18,9 @@ export function SystemSetupClient({ initialEnv }: { initialEnv: string }) {
     setSavingEnv(false)
 
     if (result.success) {
-      toast({ title: "Амжилттай", description: ".env файл хадгалагдлаа. Системийг шинэчлэх товчийг дарж идэвхжүүлнэ үү." })
+      toast.success(".env файл хадгалагдлаа. Системийг шинэчлэх товчийг дарж идэвхжүүлнэ үү.")
     } else {
-      toast({ variant: "destructive", title: "Алдаа", description: result.error || "Хадгалж чадсангүй" })
+      toast.error(result.error || "Хадгалж чадсангүй")
     }
   }
 
@@ -36,7 +35,7 @@ export function SystemSetupClient({ initialEnv }: { initialEnv: string }) {
       
       if (result.success) {
         setLogs(prev => prev + "\n✅ " + result.message + "\n\nДэлгэрэнгүй лог:\n" + (result.output || ""))
-        toast({ title: "Шинэчлэл хийгдлээ", description: "Сайт дахин ачааллагдаж байна." })
+        toast.success("Шинэчлэл хийгдлээ. Сайт дахин ачааллагдаж байна.")
         
         // Reload after a few seconds
         setTimeout(() => {
@@ -44,7 +43,7 @@ export function SystemSetupClient({ initialEnv }: { initialEnv: string }) {
         }, 5000)
       } else {
         setLogs(prev => prev + "\n❌ Алдаа гарлаа: " + result.error)
-        toast({ variant: "destructive", title: "Алдаа", description: result.error || "Шинэчлэх явцад алдаа гарлаа" })
+        toast.error(result.error || "Шинэчлэх явцад алдаа гарлаа")
       }
     } catch (e: any) {
       setLogs(prev => prev + "\n❌ Сүлжээний алдаа эсвэл Сервер унтарлаа. (pm2 restart хийгдсэн байж магадгүй)")

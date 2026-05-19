@@ -1,6 +1,6 @@
 import { ReactNode } from "react"
 import { Outfit } from "next/font/google"
-import { ToastProvider } from "@/components/ui/use-toast"
+import { Toaster } from "sonner"
 import "./globals.css"
 
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" })
@@ -12,11 +12,10 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="mn" className={`${outfit.variable} ${outfit.className}`}>
+    <html lang="mn" className={`${outfit.variable} ${outfit.className}`} suppressHydrationWarning>
       <body className="min-h-screen bg-slate-50 flex flex-col font-sans font-medium" suppressHydrationWarning>
-        <ToastProvider>
-          {children}
-        </ToastProvider>
+        <Toaster richColors position="top-right" />
+        {children}
       </body>
     </html>
   )

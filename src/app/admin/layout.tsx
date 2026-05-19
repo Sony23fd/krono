@@ -11,7 +11,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   }
 
   return (
-    <div className="flex h-screen w-full bg-slate-50 print:block print:h-auto print:overflow-visible">
+    <div className="flex h-screen w-full bg-[#f1f5f9] print:block print:h-auto print:overflow-visible">
       <AdminSidebar className="hidden md:flex print:!hidden" role={admin?.role || "CARGO_ADMIN"} />
       <div className="flex flex-col flex-1 w-full relative print:block print:h-auto print:overflow-visible">
         <TopHeader admin={admin} />

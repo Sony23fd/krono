@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Loader2, Upload, ImageIcon } from "lucide-react"
-import { useToast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 import Image from "next/image"
 import { Switch } from "@/components/ui/switch"
 
@@ -19,7 +19,6 @@ interface Props {
 
 export function GeneralSettingsClient({ initialSettings, userRole }: Props) {
   const router = useRouter()
-  const { toast } = useToast()
   
   const [logoUrl, setLogoUrl] = useState(initialSettings["site_logo"] || "")
   // Default to true if not explicitly set to "false"
@@ -64,16 +63,9 @@ export function GeneralSettingsClient({ initialSettings, userRole }: Props) {
       if (!res.ok) throw new Error(data.error || "Унших үед алдаа гарлаа")
 
       setLogoUrl(data.url)
-      toast({
-        title: "Зураг хуулагдлаа",
-        description: "Одоо 'Хадгалах' товчийг дарна уу.",
-      })
+      toast.success("Зураг хуулагдлаа. 'Хадгалах' товчийг дарна уу.")
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Алдаа",
-        description: error.message,
-      })
+      toast.error(error.message)
     } finally {
       setIsUploading(false)
     }
@@ -138,17 +130,10 @@ export function GeneralSettingsClient({ initialSettings, userRole }: Props) {
       })
       if (!resCarousel.ok) throw new Error("Carousel хадгалахад алдаа гарлаа")
 
-      toast({
-        title: "Амжилттай",
-        description: "Тохиргоонууд хадгалагдлаа",
-      })
+      toast.success("Тохиргоонууд хадгалагдлаа")
       router.refresh()
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Алдаа",
-        description: error.message,
-      })
+      toast.error(error.message)
     } finally {
       setIsSaving(false)
     }
@@ -334,7 +319,7 @@ export function GeneralSettingsClient({ initialSettings, userRole }: Props) {
                         if (!res.ok) throw new Error(data.error)
                         setCarouselImages(prev => [...prev, data.url])
                       } catch (error: any) {
-                        toast({ variant: "destructive", title: "Алдаа", description: error.message })
+                        toast.error(error.message)
                       } finally {
                         setIsUploading(false)
                       }

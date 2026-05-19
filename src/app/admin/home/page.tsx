@@ -1,6 +1,5 @@
 import { db } from "@/lib/db"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Package, Users, ShoppingCart, DollarSign, CheckCircle, AlertCircle } from "lucide-react"
+import { Package, ShoppingCart, DollarSign, AlertCircle } from "lucide-react"
 import { DashboardCharts } from "./DashboardCharts"
 import { DateRangeFilter } from "@/components/admin/DateRangeFilter"
 import Link from "next/link"
@@ -113,80 +112,79 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
   return (
     <div className="space-y-6">
       {pendingOrdersCount > 0 && (
-        <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl flex items-start sm:items-center justify-between gap-4 shadow-sm">
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/80 p-4 rounded-2xl flex items-start sm:items-center justify-between gap-4 shadow-sm">
           <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+            <div className="p-2 bg-amber-100 rounded-xl shrink-0">
+              <AlertCircle className="w-5 h-5 text-amber-600" />
+            </div>
             <div>
-              <h3 className="font-bold text-amber-800 text-sm">Хүлээгдэж буй захиалга</h3>
-              <p className="text-amber-600 text-sm mt-0.5"><strong>{pendingOrdersCount}</strong> ширхэг захиалга төлбөр хүлээж байна.</p>
+              <h3 className="font-bold text-amber-900 text-sm">Хүлээгдэж буй захиалга</h3>
+              <p className="text-amber-700 text-sm mt-0.5"><strong>{pendingOrdersCount}</strong> ширхэг захиалга төлбөр хүлээж байна.</p>
             </div>
           </div>
-          <Link href="/admin/orders" className="text-xs font-bold bg-white text-amber-600 border border-amber-200 px-4 py-2 rounded-lg shadow-sm hover:shadow transition-all whitespace-nowrap">
-            Шалгах
+          <Link href="/admin/orders" className="text-xs font-bold bg-white text-amber-700 border border-amber-200 px-4 py-2 rounded-xl shadow-sm hover:shadow transition-all whitespace-nowrap">
+            Шалгах →
           </Link>
         </div>
       )}
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Хянах самбар</h1>
-          <p className="text-slate-500 mt-2 text-sm">Дэлгүүрийн үйл ажиллагааны статистик.</p>
+          <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900">Хянах самбар</h1>
+          <p className="text-slate-500 mt-1 text-sm">Дэлгүүрийн үйл ажиллагааны нэгдсэн харагдац.</p>
         </div>
         <DateRangeFilter days={days} basePath="/admin/home" />
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-slate-200 shadow-sm overflow-hidden group">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-            <CardTitle className="text-sm font-semibold text-slate-500">Нийт Орлого</CardTitle>
-            <div className="p-2 bg-indigo-50 rounded-lg group-hover:scale-110 transition-transform">
-              <DollarSign className="h-4 w-4 text-[#4e3dc7]" />
+      {/* Stat Cards */}
+      <div className="grid gap-4 md:gap-6 grid-cols-2 lg:grid-cols-4">
+        {/* Revenue */}
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 group hover:shadow-md transition-shadow relative overflow-hidden">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Нийт Орлого</span>
+            <div className="p-2 bg-[#e63946]/10 rounded-xl group-hover:scale-110 transition-transform">
+              <DollarSign className="h-4 w-4 text-[#e63946]" />
             </div>
-          </CardHeader>
-          <CardContent className="relative z-10">
-            <div className="text-2xl font-black text-slate-900">₮{totalRevenue.toLocaleString()}</div>
-          </CardContent>
-          <div className="absolute top-0 right-0 -mr-4 -mt-4 w-24 h-24 bg-indigo-50/30 rounded-full blur-2xl"></div>
-        </Card>
+          </div>
+          <p className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">₮{totalRevenue.toLocaleString()}</p>
+          <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-[#e63946]/5 rounded-full blur-2xl"></div>
+        </div>
 
-        <Card className="border-slate-200 shadow-sm overflow-hidden group">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-            <CardTitle className="text-sm font-semibold text-slate-500">Захиалга</CardTitle>
-            <div className="p-2 bg-green-50 rounded-lg group-hover:scale-110 transition-transform">
-              <ShoppingCart className="h-4 w-4 text-green-600" />
+        {/* Orders */}
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 group hover:shadow-md transition-shadow relative overflow-hidden">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Захиалга</span>
+            <div className="p-2 bg-[#22c55e]/10 rounded-xl group-hover:scale-110 transition-transform">
+              <ShoppingCart className="h-4 w-4 text-[#22c55e]" />
             </div>
-          </CardHeader>
-          <CardContent className="relative z-10">
-            <div className="text-2xl font-black text-slate-900">{successfulOrdersCount.toLocaleString()} ш</div>
-          </CardContent>
-          <div className="absolute top-0 right-0 -mr-4 -mt-4 w-24 h-24 bg-green-50/30 rounded-full blur-2xl"></div>
-        </Card>
+          </div>
+          <p className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">{successfulOrdersCount.toLocaleString()}</p>
+          <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-[#22c55e]/5 rounded-full blur-2xl"></div>
+        </div>
 
-        <Card className="border-slate-200 shadow-sm overflow-hidden group">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-            <CardTitle className="text-sm font-semibold text-slate-500">Хүлээгдэж буй</CardTitle>
-            <div className="p-2 bg-amber-50 rounded-lg group-hover:scale-110 transition-transform">
-              <AlertCircle className="h-4 w-4 text-amber-600" />
+        {/* Pending */}
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 group hover:shadow-md transition-shadow relative overflow-hidden">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Хүлээгдэж буй</span>
+            <div className="p-2 bg-[#fb8500]/10 rounded-xl group-hover:scale-110 transition-transform">
+              <AlertCircle className="h-4 w-4 text-[#fb8500]" />
             </div>
-          </CardHeader>
-          <CardContent className="relative z-10">
-            <div className="text-2xl font-black text-slate-900">{pendingOrdersCount}</div>
-          </CardContent>
-          <div className="absolute top-0 right-0 -mr-4 -mt-4 w-24 h-24 bg-amber-50/30 rounded-full blur-2xl"></div>
-        </Card>
+          </div>
+          <p className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">{pendingOrdersCount}</p>
+          <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-[#fb8500]/5 rounded-full blur-2xl"></div>
+        </div>
 
-        <Card className="border-slate-200 shadow-sm overflow-hidden group">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-            <CardTitle className="text-sm font-semibold text-slate-500">Идэвхтэй бараа</CardTitle>
-            <div className="p-2 bg-orange-50 rounded-lg group-hover:scale-110 transition-transform">
-              <Package className="h-4 w-4 text-orange-600" />
+        {/* Active Products */}
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 group hover:shadow-md transition-shadow relative overflow-hidden">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Идэвхтэй бараа</span>
+            <div className="p-2 bg-[#001f3f]/10 rounded-xl group-hover:scale-110 transition-transform">
+              <Package className="h-4 w-4 text-[#001f3f]" />
             </div>
-          </CardHeader>
-          <CardContent className="relative z-10">
-            <div className="text-2xl font-black text-slate-900">{activeProductsCount}</div>
-          </CardContent>
-          <div className="absolute top-0 right-0 -mr-4 -mt-4 w-24 h-24 bg-orange-50/30 rounded-full blur-2xl"></div>
-        </Card>
+          </div>
+          <p className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">{activeProductsCount}</p>
+          <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-[#001f3f]/5 rounded-full blur-2xl"></div>
+        </div>
       </div>
 
       <DashboardCharts 

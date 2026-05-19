@@ -1,10 +1,10 @@
 import { db } from "@/lib/db"
 import { notFound } from "next/navigation"
-import { Package, Truck, ShoppingBag, ArrowLeft } from "lucide-react"
+import { Package, Truck, ArrowLeft, ShieldCheck, Zap } from "lucide-react"
 import Link from "next/link"
 import { ProductGallery } from "@/components/storefront/product/ProductGallery"
 import { ProductImage } from "@/components/storefront/ProductImage"
-import { ProductOrderForm } from "./ProductOrderForm"
+import { ProductActions } from "./ProductActions"
 import { getShopSettings } from "@/app/actions/settings-actions"
 
 export const dynamic = "force-dynamic"
@@ -51,149 +51,167 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   const deliveryFee = globalFee
 
   return (
-    <>
-      <div className="max-w-4xl mx-auto px-4 py-12">
-        <Link href="/" className="inline-flex items-center gap-2 text-slate-500 hover:text-indigo-600 transition-colors mb-6 font-medium bg-white px-4 py-2 rounded-xl border shadow-sm">
-        <ArrowLeft className="w-4 h-4" />
-        Буцах
-      </Link>
-      <div className="bg-white rounded-2xl shadow-sm border overflow-hidden flex flex-col md:flex-row">
+    <div className="bg-white min-h-screen pb-20 md:pb-0">
+      {/* Premium Breadcrumb / Back button */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+        <Link href="/" className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-[#E21B22] transition-colors">
+          <ArrowLeft className="w-4 h-4" />
+          Буцах
+        </Link>
+      </div>
 
-        {/* Product Info Side */}
-        <div className="md:w-1/2 p-8 bg-slate-50 border-r flex flex-col">
-          <ProductGallery product={{
-            name: product.name,
-            imageUrl: product.imageUrl,
-            images: product.images,
-            isPreOrder: product.isPreOrder
-          }} />
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">{product.name}</h1>
-          <p className="text-slate-600 mb-6 flex-1">
-            {product.description || "Тайлбар оруулаагүй байна."}
-          </p>
-
-          <div className="space-y-3 bg-white p-4 rounded-lg border">
-            <div className="flex justify-between items-center">
-              <span className="text-slate-500 text-sm">Нэгж үнэ:</span>
-              <div className="flex items-center gap-2">
-                {product.comparePrice && Number(product.comparePrice) > unitPrice && (
-                  <span className="text-sm text-slate-400 line-through">₮{Number(product.comparePrice).toLocaleString()}</span>
-                )}
-                <span className="font-bold text-xl text-slate-900">₮{unitPrice.toLocaleString()}</span>
-              </div>
+      <div className="max-w-7xl mx-auto px-0 sm:px-6 lg:px-8 pb-16 lg:pb-24">
+        <div className="lg:grid lg:grid-cols-2 lg:gap-x-12 xl:gap-x-16">
+          
+          {/* Product Gallery - Left Side */}
+          <div className="lg:max-w-lg lg:self-start lg:sticky lg:top-24 w-full">
+            <div className="sm:rounded-3xl overflow-hidden sm:border sm:border-slate-100 bg-slate-50 relative group">
+              <ProductGallery product={{
+                name: product.name,
+                imageUrl: product.imageUrl,
+                images: product.images,
+                isPreOrder: product.isPreOrder
+              }} />
             </div>
-            <div className="flex justify-between items-center">
-              <span className="text-slate-500 text-sm">Үлдэгдэл:</span>
-              <span className={`font-bold ${product.isPreOrder || availableStock > 0 ? "text-green-600" : "text-red-500"}`}>
-                {product.isPreOrder 
-                  ? "Хязгааргүй (Урьдчилсан)"
-                  : availableStock > 0 ? `${availableStock} ширхэг` : "Дууссан"
-                }
-              </span>
-            </div>
-            {deliveryFee > 0 && (
-              <div className="flex justify-between items-center border-t border-slate-100 pt-3">
-                <span className="text-slate-500 text-sm flex items-center gap-1.5">
-                  <Truck className="w-4 h-4 text-indigo-400" /> Хүргэлтийн үнэ:
-                </span>
-                <span className="font-semibold text-slate-800">
-                  ₮{deliveryFee.toLocaleString()}
-                </span>
-              </div>
-            )}
             
-            {/* Delivery Estimate */}
-            <div className="flex items-center gap-2 mt-2 bg-indigo-50/50 p-3 rounded-lg border border-indigo-100/50">
-              <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center shrink-0">
-                <Truck className="w-4 h-4 text-indigo-600" />
+            {/* Trust Badges - Desktop only */}
+            <div className="hidden lg:grid grid-cols-2 gap-4 mt-8">
+              <div className="flex items-center gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+                  <ShieldCheck className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900">Баталгаат</h4>
+                  <p className="text-xs text-slate-500">100% найдвартай</p>
+                </div>
               </div>
-              <div>
-                <p className="text-xs text-slate-500 font-medium">Хүргэгдэх хугацаа</p>
-                <p className="text-sm font-bold text-slate-800">
-                  {(() => {
-                    const DAY_NAMES = ["Ням", "Даваа", "Мягмар", "Лхагва", "Пүрэв", "Баасан", "Бямба"]
-                    const scheduleDays = (shopSettings.delivery_schedule_days || "3,6").split(",").map(Number)
-                    const dayNames = scheduleDays.map((d: number) => DAY_NAMES[d]).filter(Boolean).join(", ")
-                    return dayNames ? `🚚 Хүргэлт ${dayNames} гарагт гарна` : "Бэлэн байгаа"
-                  })()}
-                </p>
-                <p className="text-[11px] text-slate-400 mt-0.5">Товлосон өдрөөс 24-72 цагийн дотор хүргэгдэнэ</p>
-              </div>
-            </div>
-
-            {/* Trust Badges */}
-            <div className="grid grid-cols-2 gap-2 mt-2 pt-3 border-t border-slate-100">
-              <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 bg-slate-50 p-2 rounded-md">
-                <span className="text-green-500 text-lg leading-none">✓</span> 100% Баталгаат
-              </div>
-              <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 bg-slate-50 p-2 rounded-md">
-                <span className="text-green-500 text-lg leading-none">✓</span> Найдвартай
+              <div className="flex items-center gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                  <Zap className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900">Шуурхай</h4>
+                  <p className="text-xs text-slate-500">Шууд бэлэн</p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Checkout Form Side */}
-        <div id="order-form" className="md:w-1/2 p-8 scroll-mt-6 hover:scroll-mt-6">
-          <h2 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
-            <ShoppingBag className="w-5 h-5 text-indigo-500" /> Захиалга өгөх
-          </h2>
-          <ProductOrderForm
-            productId={product.id}
-            unitPrice={unitPrice}
-            deliveryFee={deliveryFee}
-            remainingQuantity={availableStock}
-            termsOfService={shopSettings.terms_of_service}
-            deliveryTerms={shopSettings.delivery_terms}
-            isPreOrder={product.isPreOrder}
-            options={product.options as any}
-            variants={product.variants as any}
-            deliveryScheduleDays={shopSettings.delivery_schedule_days || "3,6"}
-          />
-        </div>
+          {/* Product Info - Right Side */}
+          <div className="mt-8 px-4 sm:px-0 lg:mt-0">
+            {product.category && (
+              <p className="text-sm font-semibold text-[#E21B22] tracking-wide uppercase mb-2">
+                {product.category.name}
+              </p>
+            )}
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mb-4 leading-tight">
+              {product.name}
+            </h1>
+            
+            <div className="flex items-end gap-3 mb-6">
+              <p className="text-4xl font-black text-[#1B3561] tracking-tighter">
+                ₮{unitPrice.toLocaleString()}
+              </p>
+              {product.comparePrice && Number(product.comparePrice) > unitPrice && (
+                <p className="text-lg text-slate-400 line-through decoration-slate-300 font-medium mb-1">
+                  ₮{Number(product.comparePrice).toLocaleString()}
+                </p>
+              )}
+            </div>
 
+            <div className="prose prose-sm sm:prose-base text-slate-600 mb-8 max-w-none">
+              <p className="leading-relaxed whitespace-pre-wrap">
+                {product.description || "Тайлбар оруулаагүй байна."}
+              </p>
+            </div>
+
+            <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-slate-600 font-medium">Үлдэгдэл</span>
+                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-bold ${product.isPreOrder || availableStock > 0 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                  {product.isPreOrder 
+                    ? "Хязгааргүй"
+                    : availableStock > 0 ? `${availableStock} ширхэг бэлэн` : "Дууссан"
+                  }
+                </span>
+              </div>
+              
+              <div className="flex items-center justify-between border-t border-slate-200/60 pt-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
+                    <Truck className="w-4 h-4 text-indigo-600" />
+                  </div>
+                  <span className="text-slate-600 font-medium">Хүргэлт</span>
+                </div>
+                <span className="font-bold text-slate-900">
+                  {deliveryFee > 0 ? `₮${deliveryFee.toLocaleString()}` : "Үнэгүй"}
+                </span>
+              </div>
+            </div>
+
+            <div id="order-form" className="scroll-mt-24">
+              <h2 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+                Сонголт
+              </h2>
+              <ProductActions
+                productId={product.id}
+                name={product.name}
+                imageUrl={product.imageUrl}
+                unitPrice={unitPrice}
+                deliveryFee={deliveryFee}
+                remainingQuantity={availableStock}
+                isPreOrder={product.isPreOrder}
+                options={product.options as any}
+                variants={product.variants as any}
+              />
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
 
-    {/* Sticky Mobile Buy Button */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t p-4 z-40 shadow-[0_-4px_15px_-3px_rgba(0,0,0,0.1)] pb-safe-bottom">
+      {/* Sticky Mobile Buy Button */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-200/50 p-4 z-40 shadow-[0_-8px_30px_-15px_rgba(0,0,0,0.1)] pb-safe-bottom">
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0 flex-1">
             <p className="text-xs text-slate-500 font-medium truncate mb-0.5">
               {product.name}
             </p>
-            <p className="text-lg font-bold text-slate-900 leading-none">
+            <p className="text-lg font-black text-[#1B3561] tracking-tight leading-none">
               ₮{unitPrice.toLocaleString()}
             </p>
           </div>
-          <Link href="#order-form" className="bg-[#4F46E5] text-white px-8 py-3 rounded-xl font-bold text-sm shrink-0 shadow-sm shadow-indigo-200">
-            Захиалах
+          <Link href="#order-form" className="bg-[#E21B22] hover:bg-[#c8161d] active:scale-95 transition-all text-white px-8 py-3 rounded-xl font-bold text-sm shrink-0 shadow-lg shadow-red-200">
+            Сонгох
           </Link>
         </div>
       </div>
       
       {relatedProducts.length > 0 && (
-        <div className="max-w-4xl mx-auto px-4 pb-12">
-          <h3 className="text-lg font-bold text-slate-900 mb-4">Танд санал болгох</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {relatedProducts.map(p => (
-              <Link key={p.id} href={`/product/${p.slug}`} className="bg-white rounded-xl border p-3 hover:shadow-md transition-shadow">
-                <div className="aspect-square bg-slate-100 rounded-lg overflow-hidden mb-2">
-                  {p.imageUrl ? (
-                    <ProductImage src={p.imageUrl} alt={p.name} width={200} height={200} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-slate-300">
-                      <Package className="w-8 h-8" />
-                    </div>
-                  )}
-                </div>
-                <p className="text-sm font-semibold text-slate-800 truncate">{p.name}</p>
-                <p className="text-sm font-bold text-indigo-600">₮{Number(p.price).toLocaleString()}</p>
-              </Link>
-            ))}
+        <div className="bg-slate-50 border-t border-slate-100 py-16 lg:py-24">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h3 className="text-2xl font-bold text-slate-900 mb-8 tracking-tight">Танд санал болгох</h3>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+              {relatedProducts.map(p => (
+                <Link key={p.id} href={`/product/${p.slug}`} className="group bg-white rounded-2xl border border-slate-200/50 p-4 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
+                  <div className="aspect-[4/5] bg-slate-100 rounded-xl overflow-hidden mb-4 relative">
+                    {p.imageUrl ? (
+                      <ProductImage src={p.imageUrl} alt={p.name} fill className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-slate-300">
+                        <Package className="w-10 h-10" />
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-sm sm:text-base font-semibold text-slate-800 line-clamp-2 mb-2 group-hover:text-[#E21B22] transition-colors">{p.name}</p>
+                  <div className="mt-auto">
+                    <p className="text-base sm:text-lg font-black text-[#1B3561] tracking-tight">₮{Number(p.price).toLocaleString()}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
       )}
-    </>
+    </div>
   )
 }

@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
+import { createQPayInvoiceForOrder } from "./qpay-actions"
 
 // ═══════════════════════════════════════════════════
 // CHECKOUT — Race condition + Idempotency + Stock Lock
@@ -16,6 +17,8 @@ interface CheckoutInput {
   deliveryDate?: string
   wantsDelivery: boolean
   note?: string
+  paymentMethod?: "QPAY" | "BANK_TRANSFER"
+  userId?: string
   items: {
     productId: string
     variantId?: string
@@ -130,6 +133,8 @@ export async function checkout(input: CheckoutInput) {
       const totalAmount = subtotal + deliveryFee
 
       // ──── 5. ORDER ҮҮСГЭХ ────
+      const paymentMethod = input.paymentMethod || "BANK_TRANSFER"
+
       const order = await tx.order.create({
         data: {
           idempotencyKey: input.idempotencyKey,
@@ -146,6 +151,7 @@ export async function checkout(input: CheckoutInput) {
           stockReservedAt: new Date(),
           note: input.note?.trim(),
           creationSource: "WEB",
+          userId: input.userId || undefined,
           // OrderItems
           items: {
             create: snapshots.map(s => ({
@@ -162,7 +168,7 @@ export async function checkout(input: CheckoutInput) {
           // Payment бичлэг
           payments: {
             create: {
-              method: "BANK_TRANSFER",
+              method: paymentMethod,
               amount: totalAmount,
               status: "PENDING",
             }
@@ -180,9 +186,33 @@ export async function checkout(input: CheckoutInput) {
     revalidatePath("/admin/orders")
     revalidatePath("/")
 
+    const paymentMethod = input.paymentMethod || "BANK_TRANSFER"
+    const payment = result.payments[0]
+
+    // ──── 6. QPay INVOICE ҮҮСГЭХ (хэрэв QPay сонгосон бол) ────
+    let qpayData: any = null
+    if (paymentMethod === "QPAY" && payment) {
+      const qpayResult = await createQPayInvoiceForOrder(result.id, payment.id)
+      if (qpayResult.success) {
+        qpayData = {
+          invoiceId: qpayResult.invoiceId,
+          qrImage: qpayResult.qrImage,
+          qrText: qpayResult.qrText,
+          urls: qpayResult.urls,
+          paymentId: payment.id,
+        }
+      } else {
+        console.error("[Checkout] QPay invoice failed:", qpayResult.error)
+        // QPay invoice амжилтгүй ч захиалга амжилттай — банк шилжүүлгээр үргэлжлүүлнэ
+      }
+    }
+
     return {
       success: true,
       order: JSON.parse(JSON.stringify(result)),
+      paymentMethod,
+      paymentId: payment?.id,
+      qpayData,
     }
 
   } catch (error: any) {

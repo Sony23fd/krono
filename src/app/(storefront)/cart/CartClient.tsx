@@ -2,14 +2,15 @@
 
 import { useCart } from "@/context/CartContext"
 import { useState, useRef, useCallback, useEffect } from "react"
-import { Trash2, Minus, Plus, ShoppingCart, Truck, ShoppingBag, Package, AlertCircle, Info, CheckCircle2, Loader2, MessageSquare } from "lucide-react"
+import { Trash2, Minus, Plus, ShoppingCart, Truck, ShoppingBag, Package, AlertCircle, Info, CheckCircle2, Loader2, MessageSquare, CreditCard, Banknote, MapPin } from "lucide-react"
 import { checkout, validateCartStock } from "@/app/actions/checkout-actions"
 import { startPhoneVerification, checkPhoneVerified } from "@/app/actions/verify-actions"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useToast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 import { getUpcomingDeliveryDates } from "@/lib/utils"
 import { isValidPhone } from "@/lib/customer-utils"
+import { useCustomerAuth } from "@/context/CustomerAuthContext"
 
 export function CartClient({ 
   termsOfService, 
@@ -27,15 +28,22 @@ export function CartClient({
   phoneVerificationEnabled?: boolean;
 }) {
   const { items, removeItem, updateQty, clearCart, totalPrice } = useCart()
+  const { customer, updateAddress } = useCustomerAuth()
   const router = useRouter()
-  const { toast } = useToast()
-  const [wantsDelivery, setWantsDelivery] = useState(false)
+  const wantsDelivery = true
+  const paymentMethod = "QPAY"
   const [submitting, setSubmitting] = useState(false)
   const [isRedirecting, setIsRedirecting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [phoneError, setPhoneError] = useState<string | null>(null)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [selectedDeliveryDate, setSelectedDeliveryDate] = useState<string | null>(null)
+  
+  // ─── Address State ───
+  const [useSavedAddress, setUseSavedAddress] = useState(false)
+  useEffect(() => {
+    if (customer?.address) setUseSavedAddress(true)
+  }, [customer?.address])
 
   // ─── Phone Verification State ───
   const [phoneVerified, setPhoneVerified] = useState(false)
@@ -116,7 +124,7 @@ export function CartClient({
           // Save to localStorage for persistence
           const phoneInput = document.querySelector('input[name="phoneNumber"]') as HTMLInputElement
           if (phoneInput) saveVerifiedPhone(phoneInput.value.replace(/\D/g, ""))
-          toast({ title: "✅ Утас баталгаажлаа!", description: "Та захиалгаа үргэлжлүүлж болно." })
+          toast.success("Утас амжилттай баталгаажлаа!")
         } else if (data.status === "EXPIRED") {
           if (pollRef.current) clearInterval(pollRef.current)
           setVerifyError("Хугацаа дууслаа. Дахин оролдоно уу.")
@@ -157,7 +165,7 @@ export function CartClient({
       setPhoneVerified(true)
       saveVerifiedPhone(digits)
       setVerifyLoading(false)
-      toast({ title: "✅ Утас баталгаажлаа!", description: "Та захиалгаа үргэлжлүүлж болно." })
+      toast.success("Утас амжилттай баталгаажлаа!")
       return
     }
 
@@ -226,7 +234,7 @@ export function CartClient({
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
         <div className="relative w-24 h-24 mb-6">
-          <div className="absolute inset-0 border-4 border-indigo-100 rounded-full"></div>
+          <div className="absolute inset-0 border-4 border-blue-100 rounded-full"></div>
           <div className="absolute inset-0 border-4 border-[#4F46E5] rounded-full border-t-transparent animate-spin"></div>
           <Package className="absolute inset-0 m-auto w-8 h-8 text-[#4F46E5] animate-pulse" />
         </div>
@@ -257,8 +265,13 @@ export function CartClient({
     try {
       const customerName = formData.get("customerName") as string
       const phoneNumber = formData.get("phoneNumber") as string
-      const accountNumber = formData.get("accountNumber") as string
+      const accountNumber = ""
       const deliveryAddress = formData.get("deliveryAddress") as string
+      const saveAddress = formData.get("saveAddress") === "true"
+
+      if (saveAddress && customer) {
+        updateAddress(deliveryAddress)
+      }
 
       // Pre-validate stock (non-locking, UI feedback)
       const stockCheck = await validateCartStock(
@@ -282,8 +295,11 @@ export function CartClient({
         deliveryDate: (wantsDelivery && !hasPreOrder && selectedDeliveryDate) ? selectedDeliveryDate : undefined,
         wantsDelivery: hasPreOrder ? false : wantsDelivery,
         note: undefined,
+        paymentMethod,
+        userId: customer?.id,
         items: items.map(item => ({
-          productId: item.batchId,
+          productId: item.productId || item.batchId, // fallback for legacy carts
+          variantId: item.variantId,
           quantity: item.qty,
         })),
       })
@@ -294,11 +310,12 @@ export function CartClient({
         return
       }
 
-      toast({ title: "Амжилттай", description: "Захиалга үүсгэгдлээ." })
+      toast.success("Захиалга амжилттай үүсгэгдлээ")
       setIsRedirecting(true)
       clearCart()
-      // Redirect to order page
-      router.push(`/order-manual/ref/${result.order.orderNumber}`)
+
+      // QPay бол order-pending хуудас руу, банк бол order-manual руу
+      router.push(`/order-pending/ref/${result.order.orderNumber}`)
     } catch (e: any) {
       setError(e.message || "Алдаа гарлаа")
       setSubmitting(false)
@@ -308,7 +325,7 @@ export function CartClient({
   return (
     <div className="max-w-5xl mx-auto px-4 py-12">
       <h1 className="text-2xl font-bold text-slate-900 mb-8 flex items-center gap-3">
-        <ShoppingCart className="w-6 h-6 text-indigo-500" />
+        <ShoppingCart className="w-6 h-6 text-[#1B3561]" />
         Миний сагс
         <span className="text-base font-normal text-slate-400">({items.length} бараа)</span>
       </h1>
@@ -317,8 +334,8 @@ export function CartClient({
         {/* Cart Items */}
         <div className="lg:col-span-3 space-y-3">
           {items.map(item => (
-            <div key={item.batchId} className="bg-white rounded-xl border p-4 flex gap-4 items-start">
-              <div className="w-16 h-16 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0">
+            <div key={item.batchId} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 hover:shadow-md transition-shadow flex gap-4 items-start">
+              <div className="w-20 h-20 bg-slate-50 rounded-xl border border-slate-100/50 overflow-hidden flex-shrink-0">
                 {item.imageUrl ? (
                   <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
                 ) : (
@@ -335,20 +352,20 @@ export function CartClient({
                     <span className="shrink-0 px-1.5 py-0.5 bg-amber-100 text-amber-700 border border-amber-200 text-[10px] font-bold rounded uppercase">Урьдчилсан захиалга</span>
                   )}
                 </div>
-                <p className="text-sm text-indigo-600 font-semibold mt-1">₮{item.unitPrice.toLocaleString()}</p>
+                <p className="text-sm text-[#E21B22] font-semibold mt-1">₮{item.unitPrice.toLocaleString()}</p>
 
                 {/* Qty controls */}
                 <div className="flex items-center gap-2 mt-3">
                   <button
                     onClick={() => updateQty(item.batchId, item.qty - 1)}
-                    className="w-7 h-7 rounded-full border flex items-center justify-center hover:bg-slate-100 transition-colors"
+                    className="w-8 h-8 rounded-full border border-slate-200 bg-slate-50 text-slate-600 hover:text-slate-900 flex items-center justify-center hover:bg-slate-100 transition-colors"
                   >
                     <Minus className="w-3 h-3" />
                   </button>
                   <span className="min-w-[24px] text-center font-semibold text-slate-900 text-sm">{item.qty}</span>
                   <button
                     onClick={() => updateQty(item.batchId, item.qty + 1)}
-                    className="w-7 h-7 rounded-full border flex items-center justify-center hover:bg-slate-100 transition-colors"
+                    className="w-8 h-8 rounded-full border border-slate-200 bg-slate-50 text-slate-600 hover:text-slate-900 flex items-center justify-center hover:bg-slate-100 transition-colors"
                   >
                     <Plus className="w-3 h-3" />
                   </button>
@@ -386,80 +403,89 @@ export function CartClient({
               if (!agreedToTerms) { setError("Нөхцөлүүдтэй зөвшөөрнө үү"); return }
               await handleCheckout(fd)
             }}
-            className="bg-white rounded-xl border p-6 space-y-5 sticky top-6"
+            className="bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/40 p-6 sm:p-8 space-y-6 sticky top-24"
           >
             <h2 className="font-bold text-slate-900 text-lg">Захиалгын мэдээлэл</h2>
 
-            {/* Accuracy notice */}
-            <div className="flex gap-2 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg px-3 py-2.5">
-              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-              <p className="text-xs leading-relaxed">
-                Мэдээллээ <strong>үнэн зөв</strong> оруулна уу. Утасны болон дансны дугаар нь захиалгыг баталгаажуулах гол баримт болно. Мөн хүргүүлэх хаягаа зөв бичнэ үү. Баярлалаа
-              </p>
-            </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Таны нэр</label>
-              <input name="customerName" required placeholder="Жишээ: Отгоо" className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Утасны дугаар</label>
-              <div className="flex flex-col gap-2">
-                <input
-                  name="phoneNumber"
-                  type="tel"
-                  inputMode="numeric"
-                  required
-                  maxLength={8}
-                  placeholder="Утасны дугаар"
-                  onChange={e => validatePhone(e.target.value)}
-                  className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 ${phoneVerified ? "bg-green-50 border-green-300 text-green-800" : phoneError ? "border-red-400 focus:ring-red-300" : "focus:ring-indigo-300"}`}
-                />
-                
-                {phoneError && (
-                  <p className="text-xs text-red-500 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" /> {phoneError}
-                  </p>
-                )}
-                {verifyError && (
-                  <p className="text-xs text-red-500 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" /> {verifyError}
-                  </p>
-                )}
 
-                {!phoneVerified && phoneVerificationEnabled && (
-                  <button
-                    type="button"
-                    disabled={!!phoneError || verifyLoading || !!verifySessionId}
-                    onClick={() => {
-                      const phoneInput = document.querySelector('input[name="phoneNumber"]') as HTMLInputElement
-                      if (phoneInput) handleVerifyPhone(phoneInput.value)
-                    }}
-                    className="flex items-center justify-center gap-1.5 px-3 py-2.5 w-full bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {verifyLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageSquare className="w-4 h-4" />}
-                    {verifyLoading ? "Уншиж байна..." : "Утасны дугаар баталгаажуулах"}
-                  </button>
-                )}
-
-                {phoneVerified && phoneVerificationEnabled && (
-                  <div className="flex items-center justify-center gap-1 text-green-600 text-sm font-semibold px-3 py-2.5 bg-green-50 border border-green-200 rounded-lg w-full">
-                    <CheckCircle2 className="w-4 h-4" /> Амжилттай баталгаажсан
-                  </div>
-                )}
+            {customer ? (
+              <div className="bg-[#1B3561]/5 border border-[#1B3561]/10 rounded-2xl p-4 flex items-center justify-between mb-4">
+                <div>
+                  <p className="text-xs text-slate-500 font-semibold mb-1 uppercase tracking-wider">Захиалагч</p>
+                  <p className="font-bold text-[#1B3561] text-lg">{customer.name}</p>
+                  <p className="text-sm font-medium text-slate-600 mt-0.5">{customer.phone}</p>
+                </div>
+                <div className="w-12 h-12 rounded-full bg-[#1B3561] flex items-center justify-center shadow-md shadow-blue-900/20">
+                  <span className="text-white font-bold text-lg">{customer.name.charAt(0).toUpperCase()}</span>
+                </div>
+                <input type="hidden" name="customerName" value={customer.name} />
+                <input type="hidden" name="phoneNumber" value={customer.phone} />
               </div>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Таны нэр</label>
+                  <input name="customerName" required placeholder="Жишээ: Отгоо" className="w-full border border-slate-200 bg-slate-50 rounded-xl px-4 py-2.5 text-sm focus:bg-white transition-colors focus:outline-none focus:ring-2 focus:ring-[#1B3561]/30" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Утасны дугаар</label>
+                  <div className="flex flex-col gap-2">
+                    <input
+                      name="phoneNumber"
+                      type="tel"
+                      inputMode="numeric"
+                      required
+                      maxLength={8}
+                      placeholder="Утасны дугаар"
+                      onChange={e => validatePhone(e.target.value)}
+                      className={`w-full border border-slate-200 bg-slate-50 rounded-xl px-4 py-2.5 text-sm focus:bg-white transition-colors focus:outline-none focus:ring-2 ${phoneVerified ? "bg-green-50 border-green-300 text-green-800" : phoneError ? "border-red-400 focus:ring-red-300" : "focus:ring-[#1B3561]/30"}`}
+                    />
+                    
+                    {phoneError && (
+                      <p className="text-xs text-red-500 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" /> {phoneError}
+                      </p>
+                    )}
+                    {verifyError && (
+                      <p className="text-xs text-red-500 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" /> {verifyError}
+                      </p>
+                    )}
+
+                    {!phoneVerified && phoneVerificationEnabled && (
+                      <button
+                        type="button"
+                        disabled={!!phoneError || verifyLoading || !!verifySessionId}
+                        onClick={() => {
+                          const phoneInput = document.querySelector('input[name="phoneNumber"]') as HTMLInputElement
+                          if (phoneInput) handleVerifyPhone(phoneInput.value)
+                        }}
+                        className="flex items-center justify-center gap-1.5 px-3 py-2.5 w-full bg-[#1B3561] text-white text-sm font-semibold rounded-lg hover:bg-blue-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {verifyLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageSquare className="w-4 h-4" />}
+                        {verifyLoading ? "Уншиж байна..." : "Утасны дугаар баталгаажуулах"}
+                      </button>
+                    )}
+
+                    {phoneVerified && phoneVerificationEnabled && (
+                      <div className="flex items-center justify-center gap-1 text-green-600 text-sm font-semibold px-3 py-2.5 bg-green-50 border border-green-200 rounded-lg w-full">
+                        <CheckCircle2 className="w-4 h-4" /> Амжилттай баталгаажсан
+                      </div>
+                    )}
+                  </div>
 
               {/* SMS Verification Instructions */}
               {verifySessionId && !phoneVerified && (
-                <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 space-y-3 mt-2">
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3 mt-2">
                   <div className="flex items-start gap-2">
-                    <MessageSquare className="w-5 h-5 text-indigo-500 shrink-0 mt-0.5" />
+                    <MessageSquare className="w-5 h-5 text-[#1B3561] shrink-0 mt-0.5" />
                     <div className="space-y-1.5">
-                      <p className="text-sm font-semibold text-indigo-900">SMS баталгаажуулалт</p>
+                      <p className="text-sm font-semibold text-[#1B3561]">SMS баталгаажуулалт</p>
                       {verifyInstruction && (
-                        <p className="text-xs text-indigo-700 leading-relaxed">{verifyInstruction}</p>
+                        <p className="text-xs text-blue-700 leading-relaxed">{verifyInstruction}</p>
                       )}
-                      <p className="text-xs text-indigo-600">
+                      <p className="text-xs text-[#E21B22]">
                         Доорх товчийг дарж SMS мессежээ илгээнэ үү. Илгээсний дараа автоматаар баталгаажна.
                       </p>
                     </div>
@@ -468,7 +494,7 @@ export function CartClient({
                   {verifySmsUri && (
                     <a
                       href={verifySmsUri}
-                      className="flex items-center justify-center gap-2 w-full py-3 bg-indigo-600 text-white rounded-lg font-semibold text-sm hover:bg-indigo-700 transition-colors shadow-sm"
+                      className="flex items-center justify-center gap-2 w-full py-3 bg-[#1B3561] text-white rounded-lg font-semibold text-sm hover:bg-blue-900 transition-colors shadow-sm"
                     >
                       <MessageSquare className="w-4 h-4" />
                       📱 SMS илгээх (144773)
@@ -476,7 +502,7 @@ export function CartClient({
                   )}
 
                   <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 text-xs text-indigo-500">
+                    <div className="flex items-center gap-2 text-xs text-[#1B3561]">
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                       SMS хүлээж байна...
                     </div>
@@ -494,69 +520,32 @@ export function CartClient({
                             setVerifySessionId(null);
                             const phoneInput = document.querySelector('input[name="phoneNumber"]') as HTMLInputElement;
                             if (phoneInput) saveVerifiedPhone(phoneInput.value.replace(/\D/g, ""));
-                            toast({ title: "✅ Утас баталгаажлаа!", description: "Та захиалгаа үргэлжлүүлж болно." });
+                            toast.success("Утас амжилттай баталгаажлаа!")
                           } else {
-                            toast({ title: "Баталгаажаагүй байна", description: "Хэрэв та мессеж илгээсэн бол түр хүлээгээд дахин шалгана уу." });
+                            toast.info("Баталгаажаагүй байна. SMS илгээсэн бол түр хүлээнэ үү.")
                           }
                         } catch {}
                         setVerifyLoading(false);
                       }}
-                      className="text-xs bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg font-medium hover:bg-indigo-200 transition-colors"
+                      className="text-xs bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg font-medium hover:bg-blue-200 transition-colors"
                     >
                       Гараар шалгах
                     </button>
                   </div>
                 </div>
               )}
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Дансны дугаар</label>
-              <input
-                name="accountNumber"
-                type="tel"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                required
-                placeholder="Жишээ: 5000123456"
-                onInput={(e) => {
-                  // Strip non-digit characters as user types
-                  const target = e.target as HTMLInputElement
-                  target.value = target.value.replace(/\D/g, "")
-                }}
-                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
-              />
-              <p className="text-xs text-amber-600 flex items-center gap-1.5 bg-amber-50 border border-amber-100 rounded-md px-2 py-1.5">
-                <AlertCircle className="w-3 h-3 shrink-0" /> IBAN оруулах шаардлагагүй! Зөвхөн дансны тоон дугаарыг бичнэ үү.
-              </p>
-            </div>
-
-            {/* Delivery toggle */}
+                </div>
+              </>
+            )}
+            {/* Delivery Form */}
             {!hasPreOrder ? (
               <div className="space-y-3">
-                <label className="text-sm font-medium text-slate-700">Хүлээн авах хэлбэр</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button type="button" onClick={() => setWantsDelivery(false)}
-                    className={`border-2 rounded-xl p-3 text-center transition-all text-sm ${!wantsDelivery ? "border-indigo-500 bg-indigo-50" : "border-slate-200 hover:bg-slate-50"}`}>
-                    <ShoppingBag className={`w-4 h-4 mx-auto mb-1 ${!wantsDelivery ? "text-indigo-500" : "text-slate-500"}`} />
-                    <p className="font-semibold text-slate-700">Өөрөө ирнэ</p>
-                    <p className="text-xs text-slate-400">Үнэгүй</p>
-                  </button>
-                  <button type="button" onClick={() => setWantsDelivery(true)}
-                    className={`border-2 rounded-xl p-3 text-center transition-all text-sm ${wantsDelivery ? "border-indigo-500 bg-indigo-50" : "border-slate-200 hover:bg-slate-50"}`}>
-                    <Truck className={`w-4 h-4 mx-auto mb-1 ${wantsDelivery ? "text-indigo-500" : "text-slate-500"}`} />
-                    <p className="font-semibold text-slate-700">Хүргэлтээр</p>
-                    {singleDeliveryFee > 0
-                      ? <p className="text-xs text-indigo-500 font-medium">+₮{singleDeliveryFee.toLocaleString()}</p>
-                      : <p className="text-xs text-green-500">+Хүргэлтийн үнэ</p>
-                    }
-                  </button>
-                </div>
                 {wantsDelivery && (
                   <div className="space-y-3 mt-4 border-t pt-4">
                     <label className="text-sm font-medium text-slate-700 block mb-2">Хүргүүлэх өдөр сонгох</label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {getUpcomingDeliveryDates(deliveryScheduleDays, 2).map((opt, i) => (
-                        <label key={i} className={`flex items-start gap-3 p-3 rounded-lg border-2 cursor-pointer transition-colors ${selectedDeliveryDate === opt.date.toISOString() ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 hover:bg-slate-50'}`}>
+                        <label key={i} className={`flex items-start gap-3 p-3 rounded-lg border-2 cursor-pointer transition-colors ${selectedDeliveryDate === opt.date.toISOString() ? 'border-[#1B3561] bg-blue-50' : 'border-slate-200 hover:bg-slate-50'}`}>
                           <input 
                             type="radio" 
                             name="deliveryDateChoice" 
@@ -567,7 +556,7 @@ export function CartClient({
                             value={opt.date.toISOString()} 
                           />
                           <div>
-                            <p className={`text-sm font-bold ${selectedDeliveryDate === opt.date.toISOString() ? 'text-indigo-900' : 'text-slate-700'}`}>{opt.formatted}</p>
+                            <p className={`text-sm font-bold ${selectedDeliveryDate === opt.date.toISOString() ? 'text-[#1B3561]' : 'text-slate-700'}`}>{opt.formatted}</p>
                             <p className="text-[11px] text-slate-500 mt-0.5">Товлосон өдрөөс хойш 24-72ц дотор</p>
                           </div>
                         </label>
@@ -604,10 +593,45 @@ export function CartClient({
             {wantsDelivery && !hasPreOrder && (
               <div className="space-y-3">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Хүргүүлэх хаяг</label>
-                  <textarea name="deliveryAddress" required={wantsDelivery} rows={2}
-                    placeholder="Дүүрэг, Хороо, Байр, Тоот..."
-                    className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 resize-none" />
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-slate-700">Хүргүүлэх хаяг</label>
+                    {customer?.address && (
+                      <button 
+                        type="button" 
+                        onClick={() => setUseSavedAddress(!useSavedAddress)}
+                        className="text-xs text-[#1B3561] font-medium hover:underline flex items-center gap-1"
+                      >
+                        <MapPin className="w-3 h-3" />
+                        {useSavedAddress ? "Шинэ хаяг оруулах" : "Хадгалсан хаяг ашиглах"}
+                      </button>
+                    )}
+                  </div>
+                  
+                  {useSavedAddress && customer?.address ? (
+                    <div className="bg-[#1B3561]/5 border border-[#1B3561]/20 rounded-xl p-4 shadow-inner">
+                      <div className="flex gap-3">
+                        <MapPin className="w-5 h-5 text-[#1B3561] shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-[10px] font-bold text-[#1B3561] uppercase tracking-wider mb-1">Үндсэн хаяг</p>
+                          <p className="text-sm text-slate-800 leading-relaxed font-medium">{customer.address}</p>
+                        </div>
+                      </div>
+                      <input type="hidden" name="deliveryAddress" value={customer.address} />
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <textarea name="deliveryAddress" required={wantsDelivery} rows={2}
+                        placeholder="Дүүрэг, Хороо, Байр, Тоот..."
+                        className="w-full border border-slate-200 bg-slate-50 rounded-xl px-4 py-2.5 text-sm focus:bg-white transition-colors focus:outline-none focus:ring-2 focus:ring-[#1B3561]/30 resize-none shadow-sm" />
+                      
+                      {customer && (
+                        <label className="flex items-center gap-2 cursor-pointer bg-slate-50 p-2 rounded-lg border border-slate-100">
+                          <input type="checkbox" name="saveAddress" value="true" className="accent-[#1B3561] rounded w-4 h-4" defaultChecked />
+                          <span className="text-xs font-medium text-slate-600">Энэ хаягийг миний бүртгэлд хадгалах</span>
+                        </label>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -626,7 +650,7 @@ export function CartClient({
                   </p>
                 )}
                 <label className="flex items-center gap-2 cursor-pointer pt-1">
-                  <input type="checkbox" checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)} className="accent-indigo-600" />
+                  <input type="checkbox" checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)} className="accent-[#E21B22]" />
                   <span className="text-xs text-slate-700 font-medium">Дээрх нөхцөлүүдтэй танилцаж, зөвшөөрч байна</span>
                 </label>
               </div>
@@ -646,7 +670,7 @@ export function CartClient({
               )}
               <div className="flex justify-between font-bold text-slate-900 text-base pt-1">
                 <span>Нийт төлөх</span>
-                <span className="text-indigo-600">₮{grandTotal.toLocaleString()}</span>
+                <span className="text-[#E21B22]">₮{grandTotal.toLocaleString()}</span>
               </div>
             </div>
 
@@ -659,9 +683,9 @@ export function CartClient({
             <button
               type="submit"
               disabled={submitting || !agreedToTerms || !!phoneError}
-              className="w-full bg-[#4F46E5] hover:bg-[#4338ca] text-white py-3 rounded-xl font-bold text-sm transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full bg-[#E21B22] hover:bg-[#c9181e] text-white py-4 rounded-2xl font-bold text-[15px] shadow-lg shadow-red-500/20 active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {submitting ? "Илгээж байна..." : "📦 Захиалга илгээх"}
+              {submitting ? "Илгээж байна..." : "📱 QPay-ээр төлөх"}
             </button>
           </form>
         </div>

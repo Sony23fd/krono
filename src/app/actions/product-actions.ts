@@ -74,21 +74,103 @@ export async function getProducts(filters?: {
   }
 }
 
-export async function getActiveProducts() {
+export async function getActiveProducts(filters?: {
+  categorySlug?: string
+  type?: "all" | "ready" | "preorder"
+  search?: string
+  sort?: "newest" | "oldest" | "price_asc" | "price_desc" | "stock_asc" | "stock_desc"
+  page?: number
+  limit?: number
+}) {
   try {
+    const page = filters?.page || 1
+    const limit = filters?.limit || 24
+    const where: any = { status: "ACTIVE" }
+
+    if (filters?.categorySlug && filters.categorySlug !== "all") {
+      where.category = { slug: filters.categorySlug }
+    }
+
+    if (filters?.type === "ready") {
+      where.isPreOrder = false
+      where.stockQuantity = { gt: 0 }
+    } else if (filters?.type === "preorder") {
+      where.isPreOrder = true
+    } else {
+      where.OR = [
+        { isPreOrder: true },
+        { isPreOrder: false, stockQuantity: { gt: 0 } },
+      ]
+    }
+
+    if (filters?.search?.trim()) {
+      const q = filters.search.trim()
+      where.AND = [
+        ...(where.AND || []),
+        {
+          OR: [
+            { name: { contains: q, mode: "insensitive" } },
+            { sku: { contains: q, mode: "insensitive" } },
+            { description: { contains: q, mode: "insensitive" } },
+          ],
+        },
+      ]
+    }
+
+    let orderBy: any = { createdAt: "desc" }
+    switch (filters?.sort) {
+      case "oldest": orderBy = { createdAt: "asc" }; break
+      case "price_asc": orderBy = { price: "asc" }; break
+      case "price_desc": orderBy = { price: "desc" }; break
+      case "stock_asc": orderBy = { stockQuantity: "asc" }; break
+      case "stock_desc": orderBy = { stockQuantity: "desc" }; break
+    }
+
+    const [products, total] = await Promise.all([
+      db.product.findMany({
+        where,
+        include: {
+          category: { select: { id: true, name: true, slug: true } },
+          variants: { orderBy: { createdAt: "asc" } },
+        },
+        orderBy,
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      db.product.count({ where }),
+    ])
+
+    const enriched = products.map(p => ({
+      ...p,
+      availableStock: p.stockQuantity - p.reservedStock,
+    }))
+
+    return { 
+      success: true, 
+      products: JSON.parse(JSON.stringify(enriched)),
+      total,
+      totalPages: Math.ceil(total / limit),
+      currentPage: page,
+    }
+  } catch (error: any) {
+    return { success: false, error: error.message, products: [], total: 0, totalPages: 0, currentPage: 1 }
+  }
+}
+
+export async function getProductsByIds(ids: string[]) {
+  try {
+    if (!ids || ids.length === 0) return { success: true, products: [] }
+    
     const products = await db.product.findMany({
       where: {
-        status: "ACTIVE",
-        stockQuantity: { gt: 0 },
+        id: { in: ids },
       },
       include: {
         category: { select: { id: true, name: true, slug: true } },
         variants: { orderBy: { createdAt: "asc" } },
       },
-      orderBy: { createdAt: "desc" },
     })
 
-    // Available stock тооцоолж нэмэх
     const enriched = products.map(p => ({
       ...p,
       availableStock: p.stockQuantity - p.reservedStock,
@@ -287,6 +369,19 @@ export async function getCategories() {
     return { success: true, categories: JSON.parse(JSON.stringify(categories)) }
   } catch (error: any) {
     return { success: false, error: error.message, categories: [] }
+  }
+}
+
+export async function getCategoryBySlug(slug: string) {
+  try {
+    const category = await db.category.findFirst({
+      where: { slug },
+      include: { _count: { select: { products: true } } },
+    })
+    if (!category) return { success: false, error: "Ангилал олдсонгүй" }
+    return { success: true, category: JSON.parse(JSON.stringify(category)) }
+  } catch (error: any) {
+    return { success: false, error: error.message, category: null }
   }
 }
 

@@ -8,7 +8,7 @@ import { Truck, ShoppingBag, AlertCircle, Info } from "lucide-react"
 import { useCart } from "@/context/CartContext"
 import { checkout } from "@/app/actions/checkout-actions"
 import { useRouter } from "next/navigation"
-import { useToast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 import { Package } from "lucide-react"
 import { getUpcomingDeliveryDates } from "@/lib/utils"
 import { isValidPhone } from "@/lib/customer-utils"
@@ -50,7 +50,6 @@ export function ProductOrderForm({ productId, unitPrice, deliveryFee, remainingQ
   const variantStock = variants?.reduce((acc, v) => ({ ...acc, [v.name]: v.stockQuantity }), {} as Record<string, number>) || null
   const router = useRouter()
   const { removeItem } = useCart()
-  const { toast } = useToast()
   const [wantsDelivery, setWantsDelivery] = useState(false)
   const [qty, setQty] = useState(1)
   const [submitting, setSubmitting] = useState(false)
@@ -152,9 +151,9 @@ export function ProductOrderForm({ productId, unitPrice, deliveryFee, remainingQ
 
     if (result.success) {
       removeItem(productId)
-      toast({ title: "Амжилттай", description: "Захиалга үүсгэлээ." })
+      toast.success("Захиалга амжилттай үүсгэлээ")
       setIsRedirecting(true)
-      router.push(`/order-manual/ref/${result.order?.orderNumber}`)
+      router.push(`/order-pending/ref/${result.order?.orderNumber}`)
     } else {
       setError(result.error ?? "Алдаа гарлаа")
       setSubmitting(false)
@@ -221,7 +220,7 @@ export function ProductOrderForm({ productId, unitPrice, deliveryFee, remainingQ
       {options && options.length > 0 && (
         <div className="space-y-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
           <h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-            <Package className="w-4 h-4 text-[#4e3dc7]" /> Сонголт
+            <Package className="w-4 h-4 text-[#1B3561]" /> Сонголт
           </h3>
           <div className="space-y-3">
             {options.map((opt, i) => (
@@ -243,8 +242,8 @@ export function ProductOrderForm({ productId, unitPrice, deliveryFee, remainingQ
                         className={`text-sm px-3 py-1.5 rounded-lg border font-medium transition-all ${soldOut
                             ? "bg-slate-100 border-slate-200 text-slate-300 cursor-not-allowed line-through"
                             : isSelected
-                              ? "bg-[#4e3dc7] border-[#4e3dc7] text-white shadow-sm shadow-indigo-200"
-                              : "bg-white border-slate-200 text-slate-700 hover:border-indigo-300 hover:bg-indigo-50"
+                              ? "bg-[#1B3561] border-[#1B3561] text-white shadow-md shadow-blue-900/20"
+                              : "bg-white border-slate-200 text-slate-700 hover:border-[#1B3561] hover:bg-slate-50"
                           }`}
                       >
                         {val}
@@ -388,7 +387,7 @@ export function ProductOrderForm({ productId, unitPrice, deliveryFee, remainingQ
         )}
         <div className="flex justify-between font-bold text-slate-900 text-base border-t pt-2">
           <span>Нийт төлөх</span>
-          <span className="text-indigo-600">₮{totalAmount.toLocaleString()}</span>
+          <span className="text-[#E21B22] text-xl">₮{totalAmount.toLocaleString()}</span>
         </div>
       </div>
 
@@ -401,9 +400,9 @@ export function ProductOrderForm({ productId, unitPrice, deliveryFee, remainingQ
       <Button
         type="submit"
         disabled={submitting || !canSubmit}
-        className="w-full bg-[#4F46E5] hover:bg-[#4338ca] py-6 text-base font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
+        className="w-full bg-[#E21B22] hover:bg-[#c8161d] active:scale-[0.98] py-7 text-base sm:text-lg font-bold shadow-xl shadow-red-500/20 rounded-xl disabled:opacity-60 disabled:cursor-not-allowed transition-all"
       >
-        {submitting ? "Илгээж байна..." : (isPreOrder || currentStock > 0) ? "✅ Захиалга баталгаажуулах" : "Дууссан"}
+        {submitting ? "Илгээж байна..." : (isPreOrder || currentStock > 0) ? "Захиалга баталгаажуулах" : "Дууссан"}
       </Button>
 
       {!agreedToTerms && (termsOfService || deliveryTerms) && (

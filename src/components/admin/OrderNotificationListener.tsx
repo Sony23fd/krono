@@ -174,7 +174,7 @@ export function OrderNotificationListener() {
                         <p className="text-xs font-bold text-green-600 mt-0.5">₮{Number(n.totalAmount).toLocaleString()}</p>
                       </Link>
                     ) : (
-                      <Link href="/admin/orders/search" onClick={() => setVisible(false)} className="block px-4 py-3">
+                      <Link href="/admin/orders" onClick={() => setVisible(false)} className="block px-4 py-3">
                         <div className="flex justify-between items-start mb-1">
                           <p className="font-semibold text-amber-700 text-sm flex items-center gap-1">
                             <Truck className="w-3.5 h-3.5 text-amber-500" /> 🚚 Хүргэлт захиалга

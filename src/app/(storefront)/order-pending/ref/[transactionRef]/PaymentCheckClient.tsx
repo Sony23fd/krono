@@ -3,21 +3,20 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { RefreshCw } from "lucide-react"
-import { useToast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 
 export function PaymentCheckClient({ transactionRef }: { transactionRef: string }) {
   const [isChecking, setIsChecking] = useState(false)
   const router = useRouter()
-  const { toast } = useToast()
 
   async function handleCheck() {
     setIsChecking(true)
     try {
       // Хуудсыг refresh хийнэ → server-side data шинэчлэгдэнэ
       router.refresh()
-      toast({ title: "Шинэчлэгдлээ", description: "Төлбөрийн төлөвийг шалгаж байна..." })
+      toast.info("Төлбөрийн төлөвийг шалгаж байна...")
     } catch {
-      toast({ title: "Алдаа", description: "Сервертэй холбогдож чадсангүй", variant: "destructive" })
+      toast.error("Сервертэй холбогдож чадсангүй")
     } finally {
       setIsChecking(false)
     }

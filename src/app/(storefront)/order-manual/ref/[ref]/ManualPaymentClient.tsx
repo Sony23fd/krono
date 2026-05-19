@@ -1,16 +1,15 @@
 "use client"
 import { Copy, Check } from "lucide-react"
 import { useState } from "react"
-import { useToast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 
 export function ManualPaymentClient({ label, value, large = false }: { label?: string, value: string, large?: boolean }) {
   const [copied, setCopied] = useState(false)
-  const { toast } = useToast()
 
   function handleCopy() {
     navigator.clipboard.writeText(value)
     setCopied(true)
-    toast({ title: "Хуулагдлаа", description: value })
+    toast.success("Хуулагдлаа: " + value)
     setTimeout(() => setCopied(false), 2000)
   }
 

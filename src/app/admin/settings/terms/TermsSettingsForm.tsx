@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { saveShopSetting } from "@/app/actions/settings-actions"
 import { CheckCircle2, Loader2 } from "lucide-react"
-import { useToast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 
 const FIELDS = [
   {
@@ -27,7 +27,6 @@ const FIELDS = [
 ]
 
 export function TermsSettingsForm({ settings }: { settings: Record<string, string> }) {
-  const { toast } = useToast()
   const [values, setValues] = useState(settings)
   const [saving, setSaving] = useState<string | null>(null)
 
@@ -36,9 +35,9 @@ export function TermsSettingsForm({ settings }: { settings: Record<string, strin
     const result = await saveShopSetting(key, values[key] ?? "")
     setSaving(null)
     if (result.success) {
-      toast({ title: "Амжилттай", description: "Нөхцөл хадгалагдлаа." })
+      toast.success("Нөхцөл хадгалагдлаа")
     } else {
-      toast({ variant: "destructive", title: "Алдаа", description: result.error })
+      toast.error(result.error || "Алдаа гарлаа")
     }
   }
 

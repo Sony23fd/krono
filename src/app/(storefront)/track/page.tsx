@@ -12,6 +12,8 @@ import {
   AlertTriangle
 } from "lucide-react"
 import PhoneTracker from "./PhoneTracker"
+import { TrackAutoQuery } from "./TrackAutoQuery"
+import { Suspense } from "react"
 
 export const dynamic = "force-dynamic"
 
@@ -55,6 +57,10 @@ export default async function TrackOrderPage({
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
+      {/* Нэвтэрсэн хэрэглэгчийн утсыг автоматаар хайх */}
+      <Suspense fallback={null}>
+        <TrackAutoQuery />
+      </Suspense>
       {/* Global Delivery Delay Warning */}
       {settings.delivery_delay_active === "true" && (
         <div className="mb-8 bg-amber-50 border-2 border-amber-200 rounded-2xl p-5 shadow-sm flex gap-4">

@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useToast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 import { Loader2, Plus, Shield, Truck, Database, Edit2, Trash2 } from "lucide-react"
 
 interface User {
@@ -22,7 +22,6 @@ interface User {
 
 export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
   const router = useRouter()
-  const { toast } = useToast()
   
   const [users, setUsers] = useState<User[]>(initialUsers)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -81,21 +80,14 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
         throw new Error(data.error || "Үүсгэхэд алдаа гарлаа")
       }
       
-      toast({
-        title: "Амжилттай!",
-        description: "Шинэ хэрэглэгч нэмэгдлээ.",
-      })
+      toast.success("Шинэ хэрэглэгч нэмэгдлээ")
       
       setUsers(prev => [data.user, ...prev])
       setIsModalOpen(false)
       resetForm()
       router.refresh()
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Алдаа",
-        description: error.message,
-      })
+      toast.error(error.message)
     } finally {
       setIsSubmitting(false)
     }
@@ -120,21 +112,14 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
         throw new Error(data.error || "Шинэчлэхэд алдаа гарлаа")
       }
       
-      toast({
-        title: "Амжилттай!",
-        description: "Хэрэглэгчийн мэдээлэл шинэчлэгдлээ.",
-      })
+      toast.success("Хэрэглэгчийн мэдээлэл шинэчлэгдлээ")
       
       setUsers(prev => prev.map(u => u.id === editingUser.id ? { ...u, ...data.user } : u))
       setIsEditModalOpen(false)
       resetForm()
       router.refresh()
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Алдаа",
-        description: error.message,
-      })
+      toast.error(error.message)
     } finally {
       setIsSubmitting(false)
     }
@@ -156,21 +141,14 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
         throw new Error(data.error || "Устгахад алдаа гарлаа")
       }
       
-      toast({
-        title: "Амжилттай!",
-        description: "Хэрэглэгч устгагдлаа.",
-      })
+      toast.success("Хэрэглэгч устгагдлаа")
       
       setUsers(prev => prev.filter(u => u.id !== deletingUserId))
       setIsDeleteModalOpen(false)
       setDeletingUserId(null)
       router.refresh()
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Алдаа",
-        description: error.message,
-      })
+      toast.error(error.message)
     } finally {
       setIsSubmitting(false)
     }

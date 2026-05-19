@@ -12,7 +12,7 @@ export default async function ActivityLogPage({
   searchParams: Promise<{ page?: string; q?: string; actionType?: string; days?: string; adminName?: string }>
 }) {
   const admin = await getCurrentAdmin()
-  if (!admin || admin.role !== "ADMIN") redirect("/admin/orders/search")
+  if (!admin || admin.role !== "ADMIN") redirect("/admin/orders")
 
   const { page: pageStr, q, actionType, days, adminName } = await searchParams
   const page = parseInt(pageStr || "1")

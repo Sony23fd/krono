@@ -3,7 +3,9 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react"
 
 export interface CartItem {
-  batchId: string
+  batchId: string // Used as unique identifier for the cart line item (productId or productId-variantId)
+  productId: string // The actual database productId
+  variantId?: string // Optional variantId
   name: string
   imageUrl?: string | null
   unitPrice: number

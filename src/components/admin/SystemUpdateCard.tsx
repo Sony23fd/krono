@@ -4,11 +4,11 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Loader2, RefreshCw, AlertTriangle, CheckCircle2, XCircle } from "lucide-react"
-import { useToast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 import { updateSystemFromServer } from "@/app/actions/system-actions"
 
 export function SystemUpdateCard() {
-  const { toast } = useToast()
+
   const [isUpdating, setIsUpdating] = useState(false)
   const [status, setStatus] = useState<"idle" | "updating" | "success" | "error">("idle")
   const [errorMsg, setErrorMsg] = useState("")
@@ -29,27 +29,17 @@ export function SystemUpdateCard() {
       
       if (res.success) {
         setStatus("success")
-        toast({
-          title: "Шинэчлэлт амжилттай",
-          description: res.message,
-        })
+        toast.success("Шинэчлэлт амжилттай: " + res.message)
       } else {
         setStatus("error")
         setErrorMsg(res.error || "Шинэчлэх явцад алдаа гарлаа.")
-        toast({
-          variant: "destructive",
-          title: "Алдаа",
-          description: res.error,
-        })
+        toast.error(res.error || "Алдаа гарлаа")
       }
     } catch (error: any) {
       // If we get a network error while pm2 is restarting, it's actually success
       console.log("Caught expected restart error:", error)
       setStatus("success")
-      toast({
-        title: "Шинэчлэлт эхэллээ",
-        description: "Сервер дахин ачаалж байна. Хэдэн секундын дараа сайтаа дахин ачаална уу.",
-      })
+      toast.success("Шинэчлэлт эхэллээ. Сервер дахин ачаалж байна.")
     } finally {
       setIsUpdating(false)
     }

@@ -1,43 +1,54 @@
-import { ShoppingBag, Plane, CheckCircle2 } from "lucide-react";
+import { MousePointerClick, CreditCard, Truck } from "lucide-react";
 
 export function HowItWorks() {
   const steps = [
     {
-      icon: <ShoppingBag className="w-8 h-8 text-[#4e3dc7]" />,
-      title: "1. Захиалах",
-      desc: "Та хүссэн бараагаа сонгон сагслаад, урьдчилгаа эсвэл бүтэн төлбөрөө төлж баталгаажуулна."
+      icon: <MousePointerClick className="w-8 h-8 text-[#1B3561]" />,
+      title: "1. Сонголтоо хийх",
+      desc: "Та манай дэлгүүрт бэлэн байгаа чанартай бараануудаас хүссэнээ сонгон сагсандаа нэмнэ."
     },
     {
-      icon: <Plane className="w-8 h-8 text-[#4e3dc7]" />,
-      title: "2. Тээвэрлэгдэх",
-      desc: "Захиалга хаагдмагц Солонгосоос шууд ачигдаж, Улаанбаатар руу хурдан шуурхай тээвэрлэгдэнэ."
+      icon: <CreditCard className="w-8 h-8 text-[#E21B22]" />,
+      title: "2. Захиалах",
+      desc: "Сагсан дахь бараагаа шалгаад, төлбөрөө хялбархан төлж захиалгаа баталгаажуулна."
     },
     {
-      icon: <CheckCircle2 className="w-8 h-8 text-[#4e3dc7]" />,
+      icon: <Truck className="w-8 h-8 text-[#1B3561]" />,
       title: "3. Хүлээн авах",
-      desc: "Бараа Монголд ирмэгц та өөрийн сонгосон хаягаар хүргүүлж авах эсвэл ирж авна."
+      desc: "Таны захиалсан бараа хамгийн богино хугацаанд таны гарт найдвартай хүргэгдэх болно."
     }
   ];
 
   return (
-    <div id="how-it-works" className="py-24 bg-white relative">
-      <div className="max-w-6xl mx-auto px-4 z-10 relative">
+    <div id="how-it-works" className="py-24 bg-slate-50 relative overflow-hidden">
+      {/* Decorative background elements */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+        <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] rounded-full bg-blue-100/50 blur-[100px]"></div>
+        <div className="absolute top-[60%] -right-[10%] w-[40%] h-[40%] rounded-full bg-red-100/30 blur-[100px]"></div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 z-10 relative">
         <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Хэрхэн ажилладаг вэ?</h2>
-          <p className="mt-4 text-slate-600 max-w-2xl mx-auto">Хамгийн хялбар бөгөөд ойлгомжтой 3 алхамт үйл явц</p>
+          <h2 className="text-3xl md:text-4xl font-extrabold text-[#1B3561] tracking-tight">Хэрхэн ажилладаг вэ?</h2>
+          <p className="mt-4 text-slate-600 max-w-2xl mx-auto text-lg">Худалдан авалт хийх хамгийн хялбар 3 алхам</p>
         </div>
         
-        <div className="grid md:grid-cols-3 gap-8 lg:gap-12 relative px-4 text-center">
-          {/* Connecting line for desktop */}
-          <div className="hidden md:block absolute top-[40px] left-[15%] w-[70%] h-0.5 bg-gradient-to-r from-transparent via-indigo-100 to-transparent -z-10"></div>
+        <div className="grid md:grid-cols-3 gap-8 lg:gap-12 relative px-4">
           
           {steps.map((step, i) => (
-            <div key={i} className="flex flex-col items-center group bg-white">
-              <div className="w-20 h-20 rounded-2xl bg-indigo-50/50 border border-indigo-100/50 flex items-center justify-center mb-6 shadow-sm group-hover:bg-[#4e3dc7]/10 transition-colors backdrop-blur-sm">
-                {step.icon}
+            <div key={i} className="flex flex-col items-center group relative">
+              {/* Connector line */}
+              {i !== steps.length - 1 && (
+                <div className="hidden md:block absolute top-12 left-[60%] w-[80%] h-[2px] bg-gradient-to-r from-slate-200 to-transparent -z-10"></div>
+              )}
+              
+              <div className="bg-white rounded-3xl p-8 w-full border border-slate-100 shadow-xl shadow-slate-200/40 text-center hover:-translate-y-2 transition-transform duration-500 relative z-10">
+                <div className={`w-20 h-20 mx-auto rounded-2xl flex items-center justify-center mb-6 shadow-sm transition-colors duration-300 ${i === 1 ? 'bg-red-50 group-hover:bg-red-100' : 'bg-blue-50 group-hover:bg-blue-100'}`}>
+                  {step.icon}
+                </div>
+                <h3 className="text-xl font-bold text-slate-900 mb-3">{step.title}</h3>
+                <p className="text-slate-500 leading-relaxed">{step.desc}</p>
               </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3">{step.title}</h3>
-              <p className="text-slate-500 leading-relaxed max-w-[280px]">{step.desc}</p>
             </div>
           ))}
         </div>
@@ -45,3 +56,4 @@ export function HowItWorks() {
     </div>
   )
 }
+

@@ -34,7 +34,6 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const protocol = request.headers.get("x-forwarded-proto") || "https"
 
-
   // Skip API routes and statics (for /admin protection)
   if (
     pathname.startsWith("/api/admin/login") ||
@@ -72,7 +71,7 @@ export async function middleware(request: NextRequest) {
   if (session.role === "CARGO_ADMIN") {
     const isAllowed = CARGO_ADMIN_ALLOWED_ROUTES.some(r => pathname.startsWith(r))
     if (!isAllowed) {
-      const fallback = new URL("/admin/orders/search", request.url)
+      const fallback = new URL("/admin/orders", request.url)
       return NextResponse.redirect(fallback)
     }
   }
