@@ -19,11 +19,16 @@ interface CheckoutInput {
   note?: string
   paymentMethod?: "QPAY" | "BANK_TRANSFER"
   userId?: string
+  receiptType?: string
+  companyRegistryNumber?: string
+  allowSubstitution?: boolean
   items: {
     productId: string
     variantId?: string
     quantity: number
   }[]
+  loyaltyCardNumber?: string
+  loyaltyAction?: string
 }
 
 export async function checkout(input: CheckoutInput) {
@@ -120,7 +125,7 @@ export async function checkout(input: CheckoutInput) {
         })
       }
 
-      // ──── 4. НИЙТ ДҮН ────
+      // ──── 4. НИЙТ ДҮН БА ХӨНГӨЛӨЛТ (LOYALTY) ────
       const subtotal = snapshots.reduce((sum, s) => sum + s.unitPrice * s.quantity, 0)
 
       // Хүргэлтийн төлбөр тохиргооноос авах
@@ -130,7 +135,38 @@ export async function checkout(input: CheckoutInput) {
         deliveryFee = Number(setting?.value || 6000)
       }
 
-      const totalAmount = subtotal + deliveryFee
+      let totalAmount = subtotal + deliveryFee
+      let discount = 0
+      let loyaltyPointsUsed = 0
+      let loyaltyPointsEarned = 0
+
+      // Loyalty тооцоолол
+      if (input.loyaltyCardNumber && input.loyaltyAction) {
+        const card = await tx.loyaltyCard.findUnique({ where: { cardNumber: input.loyaltyCardNumber } })
+        if (card) {
+          if (input.loyaltyAction === "SPEND" && card.pointsBalance > 0) {
+            // 1 оноо = 1 төгрөг
+            loyaltyPointsUsed = Math.min(card.pointsBalance, totalAmount)
+            discount = loyaltyPointsUsed
+            totalAmount -= discount
+            
+            // Оноо хасах
+            await tx.loyaltyCard.update({
+              where: { id: card.id },
+              data: { pointsBalance: { decrement: loyaltyPointsUsed } }
+            })
+          } else if (input.loyaltyAction === "EARN") {
+            // Дэд дүнгийн 3%-ийг цуглуулах
+            loyaltyPointsEarned = Math.floor(subtotal * 0.03)
+            
+            // Оноо нэмэх
+            await tx.loyaltyCard.update({
+              where: { id: card.id },
+              data: { pointsBalance: { increment: loyaltyPointsEarned } }
+            })
+          }
+        }
+      }
 
       // ──── 5. ORDER ҮҮСГЭХ ────
       const paymentMethod = input.paymentMethod || "BANK_TRANSFER"
@@ -146,12 +182,20 @@ export async function checkout(input: CheckoutInput) {
           wantsDelivery: input.wantsDelivery,
           subtotal,
           deliveryFee,
+          discount,
           totalAmount,
           orderStatus: "PENDING",
           stockReservedAt: new Date(),
           note: input.note?.trim(),
           creationSource: "WEB",
           userId: input.userId || undefined,
+          receiptType: input.receiptType || "individual",
+          companyRegistryNumber: input.companyRegistryNumber?.trim() || null,
+          allowSubstitution: input.allowSubstitution !== false,
+          loyaltyCardNumber: input.loyaltyCardNumber || null,
+          loyaltyAction: input.loyaltyAction || null,
+          loyaltyPointsUsed,
+          loyaltyPointsEarned,
           // OrderItems
           items: {
             create: snapshots.map(s => ({

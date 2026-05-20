@@ -39,6 +39,18 @@ export function CartClient({
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [selectedDeliveryDate, setSelectedDeliveryDate] = useState<string | null>(null)
   
+  // ─── New Checkout Fields ───
+  const [receiptType, setReceiptType] = useState("individual")
+  const [companyRegNo, setCompanyRegNo] = useState("")
+  const [allowSubstitution, setAllowSubstitution] = useState(true)
+
+  // ─── Loyalty Card State ───
+  const [loyaltyCardNumber, setLoyaltyCardNumber] = useState("")
+  const [loyaltyStatus, setLoyaltyStatus] = useState<"idle" | "verifying" | "valid" | "invalid">("idle")
+  const [loyaltyBalance, setLoyaltyBalance] = useState(0)
+  const [loyaltyAction, setLoyaltyAction] = useState<"EARN" | "SPEND">("EARN")
+  const [loyaltyError, setLoyaltyError] = useState<string | null>(null)
+
   // ─── Address State ───
   const [useSavedAddress, setUseSavedAddress] = useState(false)
   useEffect(() => {
@@ -219,6 +231,39 @@ export function CartClient({
     if (pollRef.current) clearInterval(pollRef.current)
   }
 
+  async function verifyLoyaltyCard() {
+    if (!loyaltyCardNumber.trim()) {
+      setLoyaltyError("Картны дугаар оруулна уу.")
+      return
+    }
+    setLoyaltyStatus("verifying")
+    setLoyaltyError(null)
+
+    try {
+      const res = await fetch("/api/loyalty/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cardNumber: loyaltyCardNumber })
+      })
+      const data = await res.json()
+      if (res.ok && data.isValid) {
+        setLoyaltyStatus("valid")
+        setLoyaltyBalance(data.balance)
+        // Auto select EARN or SPEND
+        if (data.balance > 0) setLoyaltyAction("SPEND")
+        else setLoyaltyAction("EARN")
+      } else {
+        setLoyaltyStatus("invalid")
+        setLoyaltyError(data.error || "Карт олдсонгүй.")
+        setLoyaltyBalance(0)
+      }
+    } catch (error) {
+      setLoyaltyStatus("invalid")
+      setLoyaltyError("Холболтын алдаа.")
+      setLoyaltyBalance(0)
+    }
+  }
+
   const hasPreOrder = items.some(i => i.isPreOrder)
   const hasInStock = items.some(i => !i.isPreOrder)
   const isMixedCart = hasPreOrder && hasInStock
@@ -228,7 +273,23 @@ export function CartClient({
   const singleDeliveryFee = (wantsDelivery && !hasPreOrder)
     ? (maxItemFee > 0 ? maxItemFee : globalDeliveryFee)
     : 0
-  const grandTotal = totalPrice + singleDeliveryFee
+  
+  // Base Grand Total
+  const baseGrandTotal = totalPrice + singleDeliveryFee
+
+  // Loyalty Calculations
+  let loyaltyDiscount = 0
+  let expectedPointsEarned = 0
+
+  if (loyaltyStatus === "valid") {
+    if (loyaltyAction === "SPEND" && loyaltyBalance > 0) {
+      loyaltyDiscount = Math.min(loyaltyBalance, baseGrandTotal)
+    } else if (loyaltyAction === "EARN") {
+      expectedPointsEarned = Math.floor(totalPrice * 0.03) // 3% of subtotal
+    }
+  }
+
+  const grandTotal = baseGrandTotal - loyaltyDiscount
 
   if (isRedirecting) {
     return (
@@ -268,6 +329,11 @@ export function CartClient({
       const accountNumber = ""
       const deliveryAddress = formData.get("deliveryAddress") as string
       const saveAddress = formData.get("saveAddress") === "true"
+      
+      const deliveryNotes = formData.get("deliveryNotes") as string
+      const allowSubst = formData.get("allowSubstitution") === "true"
+      const rType = formData.get("receiptType") as string
+      const cRegNo = formData.get("companyRegNo") as string
 
       if (saveAddress && customer) {
         updateAddress(deliveryAddress)
@@ -294,9 +360,14 @@ export function CartClient({
         deliveryAddress: (wantsDelivery && !hasPreOrder) ? deliveryAddress : undefined,
         deliveryDate: (wantsDelivery && !hasPreOrder && selectedDeliveryDate) ? selectedDeliveryDate : undefined,
         wantsDelivery: hasPreOrder ? false : wantsDelivery,
-        note: undefined,
+        note: deliveryNotes,
         paymentMethod,
         userId: customer?.id,
+        receiptType: rType,
+        companyRegistryNumber: rType === "organization" ? cRegNo : undefined,
+        allowSubstitution: allowSubst,
+        loyaltyCardNumber: loyaltyStatus === "valid" ? loyaltyCardNumber : undefined,
+        loyaltyAction: loyaltyStatus === "valid" ? loyaltyAction : undefined,
         items: items.map(item => ({
           productId: item.productId || item.batchId, // fallback for legacy carts
           variantId: item.variantId,
@@ -632,9 +703,152 @@ export function CartClient({
                       )}
                     </div>
                   )}
+
+                  <div className="pt-2">
+                    <label className="text-sm font-medium text-slate-700 mb-1 block">Хүргэлтэд нэмэлтээр хэлэх зүйлс</label>
+                    <textarea name="deliveryNotes" rows={2}
+                        placeholder="Орцны код, нэмэлт зааварчилгаа..."
+                        className="w-full border border-slate-200 bg-slate-50 rounded-xl px-4 py-2.5 text-sm focus:bg-white transition-colors focus:outline-none focus:ring-2 focus:ring-[#1B3561]/30 resize-none shadow-sm" />
+                  </div>
                 </div>
               </div>
             )}
+
+            {/* Loyalty Card Section */}
+            <div className="pt-2">
+              <label className="text-sm font-medium text-slate-700 block mb-2">Хөнгөлөлтийн карт</label>
+              <div className="flex gap-2 mb-2">
+                <input
+                  type="text"
+                  value={loyaltyCardNumber}
+                  onChange={e => {
+                    setLoyaltyCardNumber(e.target.value)
+                    if (loyaltyStatus !== "idle") setLoyaltyStatus("idle")
+                  }}
+                  placeholder="Картын дугаар"
+                  className="flex-1 border border-slate-200 bg-slate-50 rounded-xl px-4 py-2.5 text-sm focus:bg-white transition-colors focus:outline-none focus:ring-2 focus:ring-[#1B3561]/30 shadow-sm"
+                />
+                <button
+                  type="button"
+                  onClick={verifyLoyaltyCard}
+                  disabled={loyaltyStatus === "verifying" || !loyaltyCardNumber.trim()}
+                  className="bg-[#1B3561] text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-[#1B3561]/90 transition-colors disabled:opacity-50"
+                >
+                  {loyaltyStatus === "verifying" ? <Loader2 className="w-4 h-4 animate-spin" /> : "Шалгах"}
+                </button>
+              </div>
+              
+              {loyaltyError && (
+                <p className="text-red-500 text-xs mt-1 font-medium flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" /> {loyaltyError}
+                </p>
+              )}
+
+              {loyaltyStatus === "valid" && (
+                <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-xl mt-3 animate-in fade-in slide-in-from-top-2">
+                  <p className="text-sm font-bold text-emerald-800 mb-3">Таны үлдэгдэл: {loyaltyBalance.toLocaleString()} оноо</p>
+                  
+                  <div className="space-y-3">
+                    <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${loyaltyAction === "SPEND" ? "border-emerald-500 bg-white" : "border-emerald-200/50 bg-emerald-50/50 opacity-60"}`}>
+                      <input 
+                        type="radio" 
+                        name="loyaltyAction" 
+                        value="SPEND" 
+                        checked={loyaltyAction === "SPEND"}
+                        onChange={() => setLoyaltyAction("SPEND")}
+                        disabled={loyaltyBalance <= 0}
+                        className="mt-0.5 accent-emerald-600 w-4 h-4"
+                      />
+                      <div>
+                        <p className="text-sm font-bold text-slate-800">Оноог ашиглах</p>
+                        <p className="text-xs text-slate-500 mt-0.5">Таны төлөх дүнгээс {Math.min(loyaltyBalance, baseGrandTotal).toLocaleString()} ₮ хасагдана</p>
+                      </div>
+                    </label>
+
+                    <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${loyaltyAction === "EARN" ? "border-emerald-500 bg-white" : "border-emerald-200/50 bg-emerald-50/50 opacity-60"}`}>
+                      <input 
+                        type="radio" 
+                        name="loyaltyAction" 
+                        value="EARN" 
+                        checked={loyaltyAction === "EARN"}
+                        onChange={() => setLoyaltyAction("EARN")}
+                        className="mt-0.5 accent-emerald-600 w-4 h-4"
+                      />
+                      <div>
+                        <p className="text-sm font-bold text-slate-800">Оноо цуглуулах</p>
+                        <p className="text-xs text-slate-500 mt-0.5">Энэ худалдан авалтаас {expectedPointsEarned.toLocaleString()} оноо шинээр цугларна</p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* E-barimt Section */}
+            <div className="space-y-3 pt-2">
+              <label className="text-sm font-medium text-slate-700 block">И-Баримт</label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input 
+                    type="radio" 
+                    name="receiptType" 
+                    value="individual" 
+                    checked={receiptType === "individual"} 
+                    onChange={() => setReceiptType("individual")}
+                    className="accent-[#1B3561]" 
+                  />
+                  <span className="text-sm text-slate-700 font-medium">Хувь хүн</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input 
+                    type="radio" 
+                    name="receiptType" 
+                    value="organization" 
+                    checked={receiptType === "organization"} 
+                    onChange={() => setReceiptType("organization")}
+                    className="accent-[#1B3561]" 
+                  />
+                  <span className="text-sm text-slate-700 font-medium">Байгууллага</span>
+                </label>
+              </div>
+
+              {receiptType === "organization" && (
+                <div className="animate-in fade-in slide-in-from-top-2 duration-200 mt-2">
+                  <label className="text-sm font-medium text-slate-700 mb-1 block">Байгууллагын регистрийн дугаар</label>
+                  <input 
+                    type="text" 
+                    name="companyRegNo" 
+                    required 
+                    value={companyRegNo}
+                    onChange={e => setCompanyRegNo(e.target.value)}
+                    placeholder="Жишээ: 1234567"
+                    className="w-full border border-slate-200 bg-white rounded-xl px-4 py-2.5 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1B3561]/30 shadow-sm transition-all" 
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Substitution Preference */}
+            <div className="pt-2">
+              <label className="flex items-start gap-2.5 cursor-pointer bg-slate-50 p-3 rounded-lg border border-slate-200">
+                <input 
+                  type="checkbox" 
+                  name="allowSubstitution" 
+                  value="true" 
+                  checked={allowSubstitution}
+                  onChange={e => setAllowSubstitution(e.target.checked)}
+                  className="accent-[#1B3561] mt-0.5 rounded w-4 h-4 shrink-0" 
+                />
+                <div className="space-y-0.5 flex-1">
+                  <span className="text-sm font-medium text-slate-700 block leading-tight">
+                    Хэрэв тухайн барааны үлдэгдэл дууссан тохиолдолд ижил төстэй бараагаар орлуулахыг зөвшөөрөх
+                  </span>
+                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                    Дэлгүүрийн ажилтан аль болох ижил брэнд, хэмжээтэй бараагаар орлуулах болно.
+                  </p>
+                </div>
+              </label>
+            </div>
 
             {/* Combined Terms — ABOVE total */}
             {(termsOfService || (wantsDelivery && deliveryTerms)) && (
@@ -668,10 +882,21 @@ export function CartClient({
                   <span>+₮{singleDeliveryFee.toLocaleString()}</span>
                 </div>
               )}
+              {loyaltyDiscount > 0 && (
+                <div className="flex justify-between text-sm text-emerald-600 font-medium">
+                  <span>Онооны хөнгөлөлт</span>
+                  <span>-₮{loyaltyDiscount.toLocaleString()}</span>
+                </div>
+              )}
               <div className="flex justify-between font-bold text-slate-900 text-base pt-1">
                 <span>Нийт төлөх</span>
                 <span className="text-[#E21B22]">₮{grandTotal.toLocaleString()}</span>
               </div>
+              {loyaltyStatus === "valid" && loyaltyAction === "EARN" && expectedPointsEarned > 0 && (
+                <div className="text-right text-xs text-emerald-600 mt-1">
+                  Та {expectedPointsEarned.toLocaleString()} оноо цуглуулах гэж байна
+                </div>
+              )}
             </div>
 
             {error && (

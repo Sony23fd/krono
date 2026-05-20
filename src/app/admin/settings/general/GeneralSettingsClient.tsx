@@ -46,6 +46,10 @@ export function GeneralSettingsClient({ initialSettings, userRole }: Props) {
   const [isUploading, setIsUploading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
+  const [promoTitle, setPromoTitle] = useState(initialSettings["promo_title"] || "СУПЕР ХЯМДРАЛ")
+  const [promoSubtitle, setPromoSubtitle] = useState(initialSettings["promo_subtitle"] || "Зөвхөн өнөөдөр")
+  const [promoLink, setPromoLink] = useState(initialSettings["promo_link"] || "/shop?sale=true")
+
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -138,6 +142,11 @@ export function GeneralSettingsClient({ initialSettings, userRole }: Props) {
         body: JSON.stringify({ key: "hero_carousel_images", value: JSON.stringify(carouselImages) }),
       })
       if (!resCarousel.ok) throw new Error("Carousel хадгалахад алдаа гарлаа")
+
+      // Save promo settings
+      await fetch("/api/admin/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "promo_title", value: promoTitle }) })
+      await fetch("/api/admin/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "promo_subtitle", value: promoSubtitle }) })
+      await fetch("/api/admin/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "promo_link", value: promoLink }) })
 
       toast.success("Тохиргоонууд хадгалагдлаа")
       router.refresh()
@@ -361,6 +370,47 @@ export function GeneralSettingsClient({ initialSettings, userRole }: Props) {
                     <span className="text-[10px] font-semibold uppercase">Оруулах</span>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-6 border-t border-slate-100 space-y-4">
+            <div className="space-y-0.5">
+              <label className="text-base font-semibold text-slate-800">"СУПЕР ХЯМДРАЛ" Баннер (Promo Slider)</label>
+              <p className="text-sm text-slate-500">
+                Нүүр хуудасны хямдралтай барааны хажуудах онцгой саналын текстийг солих
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Том Гарчиг</label>
+                <input
+                  type="text"
+                  value={promoTitle}
+                  onChange={e => setPromoTitle(e.target.value)}
+                  placeholder="СУПЕР ХЯМДРАЛ"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Дэд Гарчиг</label>
+                <input
+                  type="text"
+                  value={promoSubtitle}
+                  onChange={e => setPromoSubtitle(e.target.value)}
+                  placeholder="Зөвхөн өнөөдөр"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-sm font-medium">Холбоос (Линк)</label>
+                <input
+                  type="text"
+                  value={promoLink}
+                  onChange={e => setPromoLink(e.target.value)}
+                  placeholder="/shop?sale=true"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                />
               </div>
             </div>
           </div>

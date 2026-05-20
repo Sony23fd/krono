@@ -74,6 +74,9 @@ model Product {
   status        ProductStatus  @default(ACTIVE)
   options       Json?
   isPreOrder    Boolean        @default(false)
+  isFeatured    Boolean        @default(false)
+  requiresAgeVerification Boolean @default(false)
+  customBadge   String?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   category      Category?      @relation(fields: [categoryId], references: [id])
@@ -165,6 +168,9 @@ model Order {
   stockReservedAt    DateTime?
   stockReleasedAt    DateTime?
   note               String?
+  receiptType        String?        @default("individual")
+  companyRegistryNumber String?
+  allowSubstitution  Boolean        @default(true)
   cancellationReason String?
   creationSource     CreationSource @default(WEB)
   createdAt          DateTime       @default(now())
@@ -172,6 +178,12 @@ model Order {
   items              OrderItem[]
   payments           Payment[]
   user               User?          @relation(fields: [userId], references: [id])
+  
+  // Loyalty Info
+  loyaltyCardNumber  String?
+  loyaltyAction      String?        // "SPEND" or "EARN"
+  loyaltyPointsUsed  Int            @default(0)
+  loyaltyPointsEarned Int           @default(0)
 
   @@index([orderStatus])
   @@index([customerPhone])
@@ -294,4 +306,33 @@ model VisitorLog {
 
   @@index([createdAt])
   @@index([path])
+}
+
+// ═══════════════════════════════════════
+// БАННЕР (Slider)
+// ═══════════════════════════════════════
+model Banner {
+  id        String   @id @default(cuid())
+  title     String?
+  imageUrl  String
+  linkUrl   String?
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+}
+
+// ═══════════════════════════════════════
+// LOYALTY CARD
+// ═══════════════════════════════════════
+model LoyaltyCard {
+  id            String   @id @default(cuid())
+  cardNumber    String   @unique
+  pointsBalance Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([cardNumber])
 }

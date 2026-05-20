@@ -106,6 +106,9 @@ export function EditProductSheet({ product }: EditProductSheetProps) {
       price: Number(formData.get("price") || 0),
       weight: Number(formData.get("weight") || 0),
       options: formattedOptions.length > 0 ? formattedOptions : [],
+      isFeatured: formData.get("isFeatured") === "on",
+      requiresAgeVerification: formData.get("requiresAgeVerification") === "on",
+      customBadge: (formData.get("customBadge") as string) || undefined,
     })
 
     setLoading(false)
@@ -133,6 +136,12 @@ export function EditProductSheet({ product }: EditProductSheetProps) {
           <div className="space-y-2">
             <label htmlFor="name" className="text-sm font-medium">Барааны нэр</label>
             <Input id="name" name="name" required defaultValue={product.name} />
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="customBadge" className="text-sm font-medium">Тусгай Badge (Шошго)</label>
+            <Input id="customBadge" name="customBadge" defaultValue={product.customBadge || ""} placeholder="Жнь: Шинэ, Хит, Цөөн үлдсэн..." />
+            <p className="text-[10px] text-slate-400 font-medium italic">* Хоосон орхивол нөөцтэй үед "Нөөцтэй" гэж гарна.</p>
           </div>
 
           <div className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
@@ -237,6 +246,21 @@ export function EditProductSheet({ product }: EditProductSheetProps) {
               />
             </div>
           </div>
+          {/* Product Flags */}
+          <div className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
+            <label className="text-sm font-medium text-slate-800">Барааны тохиргоо</label>
+            <div className="space-y-2">
+              <label className="flex items-center gap-2.5 cursor-pointer">
+                <input type="checkbox" name="isFeatured" defaultChecked={product.isFeatured} className="w-4 h-4 rounded border-slate-300 text-amber-500 focus:ring-amber-500" />
+                <span className="text-sm text-slate-700">⭐ Онцлох бараа</span>
+              </label>
+              <label className="flex items-center gap-2.5 cursor-pointer">
+                <input type="checkbox" name="requiresAgeVerification" defaultChecked={product.requiresAgeVerification} className="w-4 h-4 rounded border-slate-300 text-red-600 focus:ring-red-600" />
+                <span className="text-sm text-slate-700">🛡️ 21+ насны хязгаар шаардах</span>
+              </label>
+            </div>
+          </div>
+
           <Button type="submit" disabled={loading} className="w-full bg-[#4F46E5] hover:bg-[#4338ca] mt-6 py-6 font-bold shadow-md">
             {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
             ӨӨРЧЛӨЛТИЙГ ХАДГАЛАХ

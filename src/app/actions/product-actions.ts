@@ -217,6 +217,7 @@ export async function createProduct(data: {
   categoryId?: string
   imageUrl?: string
   isPreOrder?: boolean
+  customBadge?: string
   options?: any
   variants?: { sku: string; name: string; price?: number; stockQuantity: number; options: any }[]
 }) {
@@ -240,6 +241,7 @@ export async function createProduct(data: {
         weight: data.weight || 0,
         imageUrl: data.imageUrl,
         isPreOrder: data.isPreOrder || false,
+        customBadge: data.customBadge?.trim() || null,
         options: data.options,
         status: data.stockQuantity > 0 ? "ACTIVE" : "OUT_OF_STOCK",
         ...(data.categoryId && { categoryId: data.categoryId }),
@@ -283,6 +285,9 @@ export async function updateProduct(productId: string, data: {
   imageUrl?: string
   status?: string
   isPreOrder?: boolean
+  isFeatured?: boolean
+  requiresAgeVerification?: boolean
+  customBadge?: string
   options?: any
   images?: string[]
 }) {
@@ -317,6 +322,9 @@ export async function updateProduct(productId: string, data: {
         ...(data.imageUrl !== undefined && { imageUrl: data.imageUrl }),
         ...(data.status !== undefined && { status: data.status as any }),
         ...(data.isPreOrder !== undefined && { isPreOrder: data.isPreOrder }),
+        ...(data.isFeatured !== undefined && { isFeatured: data.isFeatured }),
+        ...(data.requiresAgeVerification !== undefined && { requiresAgeVerification: data.requiresAgeVerification }),
+        ...(data.customBadge !== undefined && { customBadge: data.customBadge?.trim() || null }),
         ...(data.options !== undefined && { options: data.options }),
         ...(data.images !== undefined && { images: data.images }),
       },

@@ -81,6 +81,7 @@ export function CreateProductSheet({ categories }: { categories: any[] }) {
       price: Number(formData.get("price") || 0),
       weight: Number(formData.get("weight") || 0),
       categoryId: selectedCategoryId || undefined,
+      customBadge: (formData.get("customBadge") as string) || undefined,
       options: formattedOptions.length > 0 ? formattedOptions : undefined,
     })
     setLoading(false)
@@ -110,6 +111,12 @@ export function CreateProductSheet({ categories }: { categories: any[] }) {
           <div className="space-y-2">
             <label htmlFor="name" className="text-sm font-medium">Барааны нэр</label>
             <Input id="name" name="name" required placeholder="Нэр..." />
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="customBadge" className="text-sm font-medium">Тусгай Badge (Шошго)</label>
+            <Input id="customBadge" name="customBadge" placeholder="Жнь: Шинэ, Хит, Цөөн үлдсэн..." />
+            <p className="text-[10px] text-slate-400 font-medium italic">* Хоосон орхивол нөөцтэй үед "Нөөцтэй" гэж гарна.</p>
           </div>
 
           <div className="space-y-2">

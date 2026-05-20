@@ -1,37 +1,39 @@
-import { getActiveProducts } from "@/app/actions/product-actions"
-import { HeroSection } from "@/components/storefront/home/HeroSection"
+import { getBanners, getFeaturedProducts, getSaleProducts, getPromoSettings } from "@/app/actions/home-actions"
+import { HeroSlider } from "@/components/storefront/home/HeroSlider"
+import { ProductSliderSection } from "@/components/storefront/home/ProductSliderSection"
+import { PromoSliderSection } from "@/components/storefront/home/PromoSliderSection"
 import { HowItWorks } from "@/components/storefront/home/HowItWorks"
-import { ActiveBatchesList } from "@/components/storefront/home/ActiveBatchesList"
-import { LiveTicker } from "@/components/storefront/home/LiveTicker"
 
 export const dynamic = "force-dynamic"
 
 export default async function StorefrontHomePage() {
-  const { products, success } = await getActiveProducts()
+  const [{ banners }, { products: featuredProducts }, { products: saleProducts }, { config }] = await Promise.all([
+    getBanners(),
+    getFeaturedProducts(),
+    getSaleProducts(),
+    getPromoSettings()
+  ])
 
   return (
     <div className="bg-white min-h-screen">
-      <HeroSection />
-      {/* Active Ready Stock */}
-      <ActiveBatchesList 
-        batches={success && products ? products.filter((p: any) => !p.isPreOrder).slice(0, 8) : []} 
-        title="Монголд бэлэн байгаа"
-        subtitle="Яг одоо бэлэн байгаа барааг шууд авах боломжтой"
-        badge="Онцлох бараа"
-        theme="ready"
-        viewAllLink="/shop?type=ready"
+      <div className="max-w-7xl mx-auto md:px-4">
+        <HeroSlider banners={banners || []} />
+      </div>
+
+      <ProductSliderSection
+        title="Онцлох бараа"
+        products={featuredProducts || []}
+        viewAllLink="/shop"
       />
-      
-      {/* Pre-Orders */}
-      <ActiveBatchesList 
-        batches={success && products ? products.filter((p: any) => p.isPreOrder).slice(0, 8) : []} 
-        title="Урьдчилсан захиалга"
-        subtitle="Урьдчилж захиалаад илүү хямдаар аваарай"
-        badge="Тун удахгүй ирэх"
-        theme="preorder"
-        viewAllLink="/shop?type=preorder"
+
+      <PromoSliderSection
+        title="Онцгой санал"
+        promoTitle={config?.promo_title || "СУПЕР ХЯМДРАЛ"}
+        promoSubtitle={config?.promo_subtitle || "Зөвхөн өнөөдөр"}
+        promoLink={config?.promo_link || "/shop?sale=true"}
+        products={saleProducts || []}
       />
-      
+
       <HowItWorks />
     </div>
   )

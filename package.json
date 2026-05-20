@@ -43,6 +43,7 @@
     "shadcn": "^4.0.6",
     "sonner": "^2.0.7",
     "ssh2": "^1.17.0",
+    "swiper": "^12.1.4",
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.2.4",
     "tsx": "^4.21.0",

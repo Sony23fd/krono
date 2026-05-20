@@ -1,5 +1,6 @@
 "use client"
 import { useCart } from "@/context/CartContext"
+import { useAgeVerification } from "@/context/AgeVerificationContext"
 import { ShoppingCart, Check, Plus, Minus } from "lucide-react"
 import { useState } from "react"
 
@@ -10,19 +11,29 @@ interface Props {
   unitPrice: number
   deliveryFee: number
   isPreOrder?: boolean
+  requiresAgeVerification?: boolean
 }
 
-export function AddToCartButton({ batchId, name, imageUrl, unitPrice, deliveryFee, isPreOrder }: Props) {
+export function AddToCartButton({ batchId, name, imageUrl, unitPrice, deliveryFee, isPreOrder, requiresAgeVerification }: Props) {
   const { addItem, items } = useCart()
+  const { checkAge } = useAgeVerification()
   const [added, setAdded] = useState(false)
   const [quantity, setQuantity] = useState(1)
   const inCart = items.some(i => i.batchId === batchId)
 
-  function handleAdd() {
+  function doAdd() {
     addItem({ batchId, productId: batchId, name, imageUrl, unitPrice, deliveryFee, isPreOrder, qty: quantity })
     setAdded(true)
     setQuantity(1)
     setTimeout(() => setAdded(false), 1500)
+  }
+
+  function handleAdd() {
+    if (requiresAgeVerification) {
+      checkAge(() => doAdd())
+    } else {
+      doAdd()
+    }
   }
 
   if (inCart) {

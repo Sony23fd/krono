@@ -2,6 +2,7 @@ import { ReactNode } from "react"
 import { MapPin, Clock, Truck, ShieldCheck, Mail, Phone, Instagram, Facebook, Search, Heart, User, LogOut, ChevronDown, ShoppingCart } from "lucide-react"
 import { CartProvider } from "@/context/CartContext"
 import { FavoritesProvider } from "@/context/FavoritesContext"
+import { AgeVerificationProvider } from "@/context/AgeVerificationContext"
 import { CustomerAuthProvider } from "@/context/CustomerAuthContext"
 import { CartIcon } from "@/components/storefront/CartIcon"
 import { CartBadgeIcon } from "@/components/storefront/CartBadgeIcon"
@@ -73,6 +74,7 @@ export default async function StorefrontLayout({ children }: { children: ReactNo
     <CustomerAuthProvider>
       <FavoritesProvider>
         <CartProvider>
+        <AgeVerificationProvider>
         {/* Navigation / Top Header */}
       {/* Navigation / Top Header */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-lg border-b border-slate-100 shadow-sm" suppressHydrationWarning>
@@ -194,14 +196,28 @@ export default async function StorefrontLayout({ children }: { children: ReactNo
                   +976 1234 5678
                 </a>
               </div>
+              <div className="mt-4 rounded-xl overflow-hidden shadow-sm h-32 relative">
+                <iframe
+                  width="100%"
+                  height="100%"
+                  frameBorder="0"
+                  style={{ border: 0 }}
+                  src="https://maps.google.com/maps?q=Bileg+Supermarket+Ulaanbaatar&t=&z=13&ie=UTF8&iwloc=&output=embed"
+                  allowFullScreen
+                ></iframe>
+              </div>
             </div>
 
             <div className="space-y-4">
               <h3 className="text-white font-semibold text-sm uppercase tracking-wider mb-6">Цагийн хуваарь</h3>
               <ul className="text-sm space-y-3">
                 <li className="flex justify-between items-center pb-2 border-b border-white/5">
-                  <span className="text-slate-400">Даваа - Ням</span>
-                  <span className="text-[#00A651] font-medium">08:00 - 00:00</span>
+                  <span className="text-slate-400">Дэлгүүр (Даваа - Ням)</span>
+                  <span className="text-[#00A651] font-medium">24 Цаг</span>
+                </li>
+                <li className="flex justify-between items-center pb-2 border-b border-white/5">
+                  <span className="text-slate-400">Хүргэлт (Өдөр бүр)</span>
+                  <span className="text-[#00A651] font-medium">09:00 - 22:00</span>
                 </li>
               </ul>
             </div>
@@ -232,6 +248,7 @@ export default async function StorefrontLayout({ children }: { children: ReactNo
           </div>
         </div>
       </footer>
+      </AgeVerificationProvider>
       </CartProvider>
     </FavoritesProvider>
     </CustomerAuthProvider>

@@ -6,10 +6,15 @@ import { AddToCartButton } from "@/components/storefront/AddToCartButton"
 import { Heart, CheckCircle2 } from "lucide-react"
 import { useFavorites } from "@/context/FavoritesContext"
 
-export function ProductCard({ product, index = 0 }: { product: any, index?: number }) {
+export function ProductCard({ product, index = 0, theme = "default" }: { product: any, index?: number, theme?: "default" | "featured" | "sale" }) {
   const isPreOrder = Boolean(product.isPreOrder);
   const stockQty = product.remainingQuantity ?? product.stockQuantity;
   const hasStock = stockQty > 0;
+  
+  const price = Number(product.price) || 0;
+  const comparePrice = Number(product.comparePrice) || 0;
+  const hasDiscount = comparePrice > price;
+  const discountPercentage = hasDiscount ? Math.round(((comparePrice - price) / comparePrice) * 100) : 0;
   
   const { isFavorite, toggleFavorite } = useFavorites()
   const isFav = isFavorite(product.id)
@@ -48,11 +53,18 @@ export function ProductCard({ product, index = 0 }: { product: any, index?: numb
           <div className="absolute inset-0 flex items-center justify-center text-slate-300 font-medium text-sm">Зураггүй</div>
         )}
 
-        {/* Stock Badge */}
-        {hasStock && (
-          <div className="absolute top-2 left-2 bg-white/95 backdrop-blur-sm px-2 py-0.5 rounded-md text-[10px] md:text-xs font-bold text-emerald-700 flex items-center gap-1 shadow-sm border border-emerald-100" suppressHydrationWarning>
-            <CheckCircle2 className="w-3 h-3 md:w-3.5 md:h-3.5 text-emerald-500" />
-            <span>Нөөцтэй</span>
+        {/* Discount Badge */}
+        {hasDiscount && (
+          <div className="absolute top-2 left-2 bg-[#E21B22] text-white px-2 py-0.5 rounded-md text-[10px] md:text-xs font-bold flex items-center shadow-sm" suppressHydrationWarning>
+            <span>-{discountPercentage}%</span>
+          </div>
+        )}
+        
+        {/* Stock/Custom Badge (shifted right if discount exists) */}
+        {(product.customBadge || hasStock) && (
+          <div className={`absolute top-2 ${hasDiscount ? 'left-14 md:left-16' : 'left-2'} bg-white/95 backdrop-blur-sm px-2 py-0.5 rounded-md text-[10px] md:text-xs font-bold text-emerald-700 flex items-center gap-1 shadow-sm border border-emerald-100`} suppressHydrationWarning>
+            {!product.customBadge && <CheckCircle2 className="w-3 h-3 md:w-3.5 md:h-3.5 text-emerald-500" />}
+            <span>{product.customBadge || "Нөөцтэй"}</span>
           </div>
         )}
 
@@ -75,9 +87,16 @@ export function ProductCard({ product, index = 0 }: { product: any, index?: numb
         <div className="mt-auto pt-1 md:pt-2">
           {/* Price */}
           <div className="mb-2 md:mb-2.5">
-            <p className="text-lg md:text-xl font-black text-[#1B3561] tracking-tight">
-              ₮{Number(product.price).toLocaleString()}
-            </p>
+            <div className="flex items-end gap-2">
+              <p className="text-lg md:text-xl font-black text-[#1B3561] tracking-tight">
+                ₮{price.toLocaleString()}
+              </p>
+              {hasDiscount && (
+                <p className="text-xs md:text-sm font-medium text-slate-400 line-through mb-0.5">
+                  ₮{comparePrice.toLocaleString()}
+                </p>
+              )}
+            </div>
             <div className="flex items-center gap-2 mt-0.5">
               {Number(product.deliveryFee) > 0 && (
                 <span className="text-[10px] md:text-[11px] text-slate-400 font-medium">+₮{Number(product.deliveryFee).toLocaleString()} хүргэлт</span>
@@ -92,9 +111,10 @@ export function ProductCard({ product, index = 0 }: { product: any, index?: numb
             batchId={product.id}
             name={product.name}
             imageUrl={product.imageUrl}
-            unitPrice={Number(product.price)}
+            unitPrice={price}
             deliveryFee={Number(product.deliveryFee || 0)}
             isPreOrder={product.isPreOrder}
+            requiresAgeVerification={product.requiresAgeVerification}
           />
         </div>
       </div>
