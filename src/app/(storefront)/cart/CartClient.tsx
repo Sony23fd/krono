@@ -18,7 +18,8 @@ export function CartClient({
   qpayEnabled, 
   globalDeliveryFee = 0, 
   deliveryScheduleDays = "3,6",
-  phoneVerificationEnabled = true
+  phoneVerificationEnabled = true,
+  loyaltyPercent
 }: { 
   termsOfService?: string; 
   deliveryTerms?: string; 
@@ -26,6 +27,7 @@ export function CartClient({
   globalDeliveryFee?: number;
   deliveryScheduleDays?: string;
   phoneVerificationEnabled?: boolean;
+  loyaltyPercent?: number;
 }) {
   const { items, removeItem, updateQty, clearCart, totalPrice } = useCart()
   const { customer, updateAddress } = useCustomerAuth()
@@ -285,7 +287,8 @@ export function CartClient({
     if (loyaltyAction === "SPEND" && loyaltyBalance > 0) {
       loyaltyDiscount = Math.min(loyaltyBalance, baseGrandTotal)
     } else if (loyaltyAction === "EARN") {
-      expectedPointsEarned = Math.floor(totalPrice * 0.03) // 3% of subtotal
+      const earnRate = loyaltyPercent ? (loyaltyPercent / 100) : 0.03;
+      expectedPointsEarned = Math.floor(totalPrice * earnRate) 
     }
   }
 
@@ -307,14 +310,14 @@ export function CartClient({
 
   if (items.length === 0) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-24 text-center">
-        <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
-          <ShoppingCart className="w-9 h-9 text-slate-300" />
+      <div className="max-w-2xl mx-auto px-4 py-24 text-center flex flex-col items-center">
+        <div className="w-48 h-48 mb-6 relative hover:scale-105 transition-transform duration-300">
+          <img src="/rabbit-mascot.png" alt="Happy Rabbit" className="object-contain w-full h-full drop-shadow-lg" />
         </div>
-        <h1 className="text-2xl font-bold text-slate-800 mb-2">Таны сагс хоосон байна</h1>
-        <p className="text-slate-500 mb-8 text-sm">Нүүр хуудсаас бараа сонгоорой</p>
-        <Link href="/" className="inline-flex items-center gap-2 bg-[#4F46E5] text-white px-6 py-3 rounded-xl font-semibold hover:bg-[#4338ca] transition-colors">
-          <Package className="w-4 h-4" /> Бараа үзэх
+        <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800 mb-3 tracking-tight">Таны сагс хоосон байна өө! 🥕</h1>
+        <p className="text-slate-500 mb-8 text-base">Манай амттай, шинэхэн бараануудаас сонголтоо хийгээрэй.</p>
+        <Link href="/" className="inline-flex items-center gap-2 bg-[#F26522] text-white px-8 py-3.5 rounded-full font-bold hover:bg-[#E85B1C] transition-colors shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50">
+          <Package className="w-5 h-5" /> Дэлгүүр хэсэх
         </Link>
       </div>
     )
@@ -423,7 +426,7 @@ export function CartClient({
                     <span className="shrink-0 px-1.5 py-0.5 bg-amber-100 text-amber-700 border border-amber-200 text-[10px] font-bold rounded uppercase">Урьдчилсан захиалга</span>
                   )}
                 </div>
-                <p className="text-sm text-[#E21B22] font-semibold mt-1">₮{item.unitPrice.toLocaleString()}</p>
+                <p className="text-sm text-[#F26522] font-semibold mt-1">₮{item.unitPrice.toLocaleString()}</p>
 
                 {/* Qty controls */}
                 <div className="flex items-center gap-2 mt-3">
@@ -556,7 +559,7 @@ export function CartClient({
                       {verifyInstruction && (
                         <p className="text-xs text-blue-700 leading-relaxed">{verifyInstruction}</p>
                       )}
-                      <p className="text-xs text-[#E21B22]">
+                      <p className="text-xs text-[#F26522]">
                         Доорх товчийг дарж SMS мессежээ илгээнэ үү. Илгээсний дараа автоматаар баталгаажна.
                       </p>
                     </div>
@@ -864,7 +867,7 @@ export function CartClient({
                   </p>
                 )}
                 <label className="flex items-center gap-2 cursor-pointer pt-1">
-                  <input type="checkbox" checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)} className="accent-[#E21B22]" />
+                  <input type="checkbox" checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)} className="accent-[#F26522]" />
                   <span className="text-xs text-slate-700 font-medium">Дээрх нөхцөлүүдтэй танилцаж, зөвшөөрч байна</span>
                 </label>
               </div>
@@ -890,7 +893,7 @@ export function CartClient({
               )}
               <div className="flex justify-between font-bold text-slate-900 text-base pt-1">
                 <span>Нийт төлөх</span>
-                <span className="text-[#E21B22]">₮{grandTotal.toLocaleString()}</span>
+                <span className="text-[#F26522]">₮{grandTotal.toLocaleString()}</span>
               </div>
               {loyaltyStatus === "valid" && loyaltyAction === "EARN" && expectedPointsEarned > 0 && (
                 <div className="text-right text-xs text-emerald-600 mt-1">
@@ -908,10 +911,19 @@ export function CartClient({
             <button
               type="submit"
               disabled={submitting || !agreedToTerms || !!phoneError}
-              className="w-full bg-[#E21B22] hover:bg-[#c9181e] text-white py-4 rounded-2xl font-bold text-[15px] shadow-lg shadow-red-500/20 active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full bg-[#F26522] hover:bg-[#c9181e] text-white py-4 rounded-2xl font-bold text-[15px] shadow-lg shadow-red-500/20 active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {submitting ? "Илгээж байна..." : "📱 QPay-ээр төлөх"}
             </button>
+
+            {!customer && (
+              <p className="text-center text-xs text-slate-500">
+                Бүртгэлтэй хэрэглэгч?{" "}
+                <Link href="/register" className="text-[#1B3561] font-medium hover:underline">
+                  Бүртгүүлэх
+                </Link>
+              </p>
+            )}
           </form>
         </div>
       </div>

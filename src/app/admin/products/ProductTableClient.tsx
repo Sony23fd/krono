@@ -52,7 +52,7 @@ export function ProductTableClient({ products, categories, search }: ProductTabl
                   type="checkbox"
                   checked={allSelected}
                   onChange={toggleAll}
-                  className="w-4 h-4 rounded border-slate-300 text-[#e63946] focus:ring-[#e63946] cursor-pointer"
+                  className="w-4 h-4 rounded border-slate-300 text-[#F26522] focus:ring-[#F26522] cursor-pointer"
                 />
               </th>
               <th className="px-4 py-3.5">SKU</th>
@@ -70,13 +70,13 @@ export function ProductTableClient({ products, categories, search }: ProductTabl
                 const availableStock = product.stockQuantity - product.reservedStock
                 const isChecked = selectedIds.includes(product.id)
                 return (
-                  <tr key={product.id} className={`hover:bg-slate-50/50 transition-colors ${isChecked ? "bg-blue-50/50" : ""}`}>
+                  <tr key={product.id} className={`transition-colors ${isChecked ? "bg-blue-50/50" : availableStock > 0 && availableStock < 5 ? "bg-red-50/30 hover:bg-red-50/50" : "hover:bg-slate-50/50"}`}>
                     <td className="px-3 py-4">
                       <input
                         type="checkbox"
                         checked={isChecked}
                         onChange={() => toggleOne(product.id)}
-                        className="w-4 h-4 rounded border-slate-300 text-[#e63946] focus:ring-[#e63946] cursor-pointer"
+                        className="w-4 h-4 rounded border-slate-300 text-[#F26522] focus:ring-[#F26522] cursor-pointer"
                       />
                     </td>
                     <td className="px-4 py-4 font-mono text-[11px] text-slate-400">{product.sku}</td>
@@ -102,6 +102,11 @@ export function ProductTableClient({ products, categories, search }: ProductTabl
                           {product.requiresAgeVerification && (
                             <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700">
                               <ShieldAlert className="w-2.5 h-2.5" /> 21+
+                            </span>
+                          )}
+                          {availableStock > 0 && availableStock < 5 && (
+                            <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700 animate-pulse">
+                              ⚠️ Дуусаж буй
                             </span>
                           )}
                         </div>
@@ -148,7 +153,7 @@ export function ProductTableClient({ products, categories, search }: ProductTabl
                     </td>
 
                     <td className="px-4 py-4 text-center">
-                      <EditProductSheet product={product} />
+                      <EditProductSheet product={product} categories={categories} />
                     </td>
                   </tr>
                 )
@@ -172,13 +177,13 @@ export function ProductTableClient({ products, categories, search }: ProductTabl
             const availableStock = product.stockQuantity - product.reservedStock
             const isChecked = selectedIds.includes(product.id)
             return (
-              <div key={product.id} className={`bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 ${isChecked ? "ring-2 ring-[#e63946]/30" : ""}`}>
+              <div key={product.id} className={`rounded-2xl border shadow-sm p-4 ${availableStock > 0 && availableStock < 5 ? "bg-red-50/10 border-red-200/80" : "bg-white border-slate-200/80"} ${isChecked ? "ring-2 ring-[#F26522]/30" : ""}`}>
                 <div className="flex items-start gap-3 mb-3">
                   <input
                     type="checkbox"
                     checked={isChecked}
                     onChange={() => toggleOne(product.id)}
-                    className="w-4 h-4 mt-1 rounded border-slate-300 text-[#e63946] focus:ring-[#e63946] cursor-pointer shrink-0"
+                    className="w-4 h-4 mt-1 rounded border-slate-300 text-[#F26522] focus:ring-[#F26522] cursor-pointer shrink-0"
                   />
                   <div className="flex-1 min-w-0">
                     <h3 className="font-bold text-slate-900 text-sm leading-snug truncate">{product.name}</h3>
@@ -197,6 +202,11 @@ export function ProductTableClient({ products, categories, search }: ProductTabl
                       {product.requiresAgeVerification && (
                         <span className="inline-flex items-center gap-0.5 text-[10px] font-bold bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
                           <ShieldAlert className="w-2.5 h-2.5" /> 21+
+                        </span>
+                      )}
+                      {availableStock > 0 && availableStock < 5 && (
+                        <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700 animate-pulse">
+                          ⚠️ Дуусаж буй
                         </span>
                       )}
                     </div>
@@ -225,7 +235,7 @@ export function ProductTableClient({ products, categories, search }: ProductTabl
                       }`}>{availableStock}</p>
                     </div>
                   </div>
-                  <EditProductSheet product={product} />
+                  <EditProductSheet product={product} categories={categories} />
                 </div>
               </div>
             )

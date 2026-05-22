@@ -100,6 +100,38 @@ export function BulkActionsBar({ selectedIds, categories, onClear }: BulkActions
           <span className="hidden sm:inline">21+ хасах</span>
         </button>
 
+        {/* Set Active */}
+        <button
+          onClick={() => executeBulkAction("set_status", { value: "ACTIVE" })}
+          disabled={loading}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-300 text-xs font-semibold transition-colors"
+        >
+          <span className="hidden sm:inline">Идэвхтэй</span>
+        </button>
+
+        {/* Set Draft */}
+        <button
+          onClick={() => executeBulkAction("set_status", { value: "DRAFT" })}
+          disabled={loading}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-semibold transition-colors"
+        >
+          <span className="hidden sm:inline">Ноорог</span>
+        </button>
+
+        {/* Archive / Delete */}
+        <button
+          onClick={() => {
+            if (confirm("Сонгосон бараануудыг архивлах уу?")) {
+              executeBulkAction("set_status", { value: "ARCHIVED" })
+            }
+          }}
+          disabled={loading}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-300 text-xs font-semibold transition-colors"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">Устгах</span>
+        </button>
+
         {/* Loading spinner */}
         {loading && <Loader2 className="w-4 h-4 animate-spin text-white/60" />}
 
@@ -122,7 +154,7 @@ export function BulkActionsBar({ selectedIds, categories, onClear }: BulkActions
             <select
               value={selectedCategoryId}
               onChange={e => setSelectedCategoryId(e.target.value)}
-              className="w-full h-11 rounded-xl border border-slate-200 px-3 text-sm font-medium focus:ring-2 focus:ring-[#e63946] focus:border-transparent outline-none mb-4"
+              className="w-full h-11 rounded-xl border border-slate-200 px-3 text-sm font-medium focus:ring-2 focus:ring-[#F26522] focus:border-transparent outline-none mb-4"
             >
               <option value="">Ангилал сонгох...</option>
               {categories.map(cat => (
@@ -145,7 +177,7 @@ export function BulkActionsBar({ selectedIds, categories, onClear }: BulkActions
                   setSelectedCategoryId("")
                 }}
                 disabled={loading || !selectedCategoryId}
-                className="flex-1 h-10 rounded-xl bg-[#e63946] text-white text-sm font-bold hover:bg-[#c8161d] disabled:opacity-50 transition-colors"
+                className="flex-1 h-10 rounded-xl bg-[#F26522] text-white text-sm font-bold hover:bg-[#E85B1C] disabled:opacity-50 transition-colors"
               >
                 {loading ? <Loader2 className="w-4 h-4 mx-auto animate-spin" /> : "Шилжүүлэх"}
               </button>

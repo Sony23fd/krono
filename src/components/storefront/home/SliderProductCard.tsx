@@ -43,15 +43,15 @@ export function SliderProductCard({ product }: { product: any }) {
 
         {/* Discount Badge */}
         {hasDiscount && (
-          <div className="absolute top-2 left-2 bg-[#E21B22] text-white px-2 py-1 rounded-md text-xs font-bold shadow-sm" suppressHydrationWarning>
+          <div className="absolute top-2 left-2 bg-[#F26522] text-white px-2 py-1 rounded-md text-xs font-bold shadow-sm" suppressHydrationWarning>
             -{discountPercentage}%
           </div>
         )}
 
-        {/* Custom Badge / Stock Badge */}
-        {(product.customBadge || (stockQty > 0)) && (
+        {/* Custom Badge */}
+        {product.customBadge && (
           <div className={`absolute top-2 ${hasDiscount ? 'left-[4.5rem]' : 'left-2'} bg-white/95 backdrop-blur-sm px-2 py-1 rounded-md text-[10px] md:text-xs font-bold text-emerald-700 flex items-center gap-1 shadow-sm border border-emerald-100`} suppressHydrationWarning>
-            <span>{product.customBadge || "Нөөцтэй"}</span>
+            <span>{product.customBadge}</span>
           </div>
         )}
 
@@ -60,13 +60,13 @@ export function SliderProductCard({ product }: { product: any }) {
           onClick={handleFavoriteClick}
           className="absolute top-2 right-2 w-8 h-8 rounded-full bg-transparent border border-gray-200 flex items-center justify-center hover:bg-white transition-all z-10"
         >
-          <Heart className={`w-4 h-4 ${isFav ? 'fill-[#E21B22] text-[#E21B22]' : 'text-gray-400'}`} />
+          <Heart className={`w-4 h-4 ${isFav ? 'fill-[#F26522] text-[#F26522]' : 'text-gray-400'}`} />
         </button>
       </Link>
 
       <div className="flex-1 flex flex-col gap-1.5">
         <Link href={`/product/${product.id}`}>
-          <h3 className="font-semibold text-gray-900 text-sm leading-snug hover:text-[#E21B22] transition-colors line-clamp-2">
+          <h3 className="font-semibold text-gray-900 text-sm leading-snug hover:text-[#F26522] transition-colors line-clamp-2">
             {product.name}
           </h3>
         </Link>

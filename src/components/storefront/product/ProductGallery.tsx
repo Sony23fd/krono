@@ -48,7 +48,7 @@ export function ProductGallery({ product }: { product: any }) {
               key={idx}
               onClick={() => setActiveImage(img)}
               className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden shrink-0 border-2 transition-all shadow-sm ${
-                activeImage === img ? "border-[#E21B22] opacity-100 ring-2 ring-red-100 ring-offset-1" : "border-transparent opacity-60 hover:opacity-100"
+                activeImage === img ? "border-[#F26522] opacity-100 ring-2 ring-red-100 ring-offset-1" : "border-transparent opacity-60 hover:opacity-100"
               }`}
             >
               <ProductImage

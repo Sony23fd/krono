@@ -10,9 +10,18 @@ interface Customer {
   address?: string
 }
 
+interface AuthVerificationState {
+  verificationRequired?: boolean
+  sessionId?: string
+  smsUri?: string
+  displayInstruction?: string
+  expiresAt?: string
+  status?: "PENDING" | "VERIFIED" | "EXPIRED"
+}
+
 interface CustomerAuthContextType {
   customer: Customer | null
-  login: (name: string, phone: string) => Promise<boolean>
+  login: (name: string, phone: string) => Promise<{ success: boolean; error?: string } & AuthVerificationState>
   logout: () => void
   updateAddress: (address: string) => Promise<void>
   updateProfile: (name: string, address: string) => Promise<void>
@@ -56,20 +65,39 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
    * Нэвтрэх / Бүртгүүлэх
    * Баазад User бүртгэж, localStorage-д хадгална
    */
-  const login = useCallback(async (name: string, phone: string): Promise<boolean> => {
+  const login = useCallback(async (name: string, phone: string): Promise<{ success: boolean; error?: string } & AuthVerificationState> => {
     setIsLoggingIn(true)
     try {
-      const { registerOrLoginCustomer } = await import("@/app/actions/customer-auth-actions")
-      const result = await registerOrLoginCustomer(phone, name)
-      
-      if (result.success && result.customer) {
+      const { beginCustomerAuth } = await import("@/app/actions/customer-auth-actions")
+      const result = await beginCustomerAuth(phone, name)
+
+      if (result.success) {
         setCustomer(result.customer)
         localStorage.setItem(STORAGE_KEY, JSON.stringify(result.customer))
-        return true
+        return { success: true }
       }
-      return false
+
+      // Check if verification is required
+      if ("verificationRequired" in result && result.verificationRequired) {
+        return {
+          success: false,
+          verificationRequired: true,
+          sessionId: result.sessionId,
+          smsUri: result.smsUri,
+          displayInstruction: result.displayInstruction,
+          expiresAt: result.expiresAt,
+          status: result.status,
+        }
+      }
+
+      // Error case
+      const errorResult = result as { success: false; error?: string }
+      return {
+        success: false,
+        error: errorResult.error || "Нэвтрэхэд алдаа гарлаа",
+      }
     } catch {
-      return false
+      return { success: false, error: "Нэвтрэхэд алдаа гарлаа" }
     } finally {
       setIsLoggingIn(false)
     }

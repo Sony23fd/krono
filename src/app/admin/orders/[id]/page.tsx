@@ -1,8 +1,9 @@
 import { db } from "@/lib/db"
 import { notFound } from "next/navigation"
-import { ArrowLeft, Package, User, CreditCard, Clock, Banknote } from "lucide-react"
+import { ArrowLeft, Package, User, CreditCard, Clock, Banknote, ShieldCheck, Zap, RefreshCw } from "lucide-react"
 import Link from "next/link"
 import { OrderActionsClient } from "./OrderActionsClient"
+import { ManualVerifyButton } from "./ManualVerifyButton"
 
 export const dynamic = "force-dynamic"
 
@@ -33,6 +34,26 @@ const PAYMENT_METHOD_LABELS: Record<string, string> = {
   CARD: "Карт",
 }
 
+const VERIFICATION_METHOD_LABELS: Record<string, string> = {
+  AUTO: "🔄 QPay Callback",
+  CLIENT: "⚡ Автомат (Client Poll)",
+  ADMIN: "👤 Админ шалгалт",
+  MANUAL: "👤 Админ шалгалт",
+  UNKNOWN: "❓ Тодорхойгүй",
+}
+
+function formatDateTime(date: Date | string): string {
+  const d = typeof date === "string" ? new Date(date) : date
+  return d.toLocaleString("mn-MN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  })
+}
+
 export default async function AdminOrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
 
@@ -48,6 +69,9 @@ export default async function AdminOrderDetailPage({ params }: { params: Promise
 
   const payment = order.payments[0]
   const paymentMethod = payment?.method || "BANK_TRANSFER"
+  const isQPay = paymentMethod === "QPAY"
+  const isPaid = order.orderStatus === "PAID"
+  const isPending = order.orderStatus === "PENDING"
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -61,7 +85,7 @@ export default async function AdminOrderDetailPage({ params }: { params: Promise
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Захиалга #{order.orderNumber}</h1>
             <p className="text-sm text-slate-500 mt-1">
-              {new Date(order.createdAt).toLocaleString("mn-MN")} · {order.creationSource}
+              {formatDateTime(order.createdAt)} · {order.creationSource}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -71,6 +95,62 @@ export default async function AdminOrderDetailPage({ params }: { params: Promise
           </div>
         </div>
       </div>
+
+      {/* QPay Verification Status */}
+      {isQPay && (
+        <div className={`rounded-xl border p-4 ${
+          isPaid
+            ? "bg-emerald-50 border-emerald-200"
+            : isPending
+            ? "bg-blue-50 border-blue-200"
+            : "bg-slate-50 border-slate-200"
+        }`}>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                isPaid ? "bg-emerald-100" : "bg-blue-100"
+              }`}>
+                {isPaid ? (
+                  <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                ) : (
+                  <Zap className="w-5 h-5 text-blue-600" />
+                )}
+              </div>
+              <div>
+                <p className={`font-bold text-sm ${isPaid ? "text-emerald-800" : "text-blue-800"}`}>
+                  {isPaid ? "✅ QPay төлбөр баталгаажсан" : "⏳ QPay төлбөр хүлээгдэж байна"}
+                </p>
+                <div className="text-xs text-slate-600 mt-1 space-y-0.5">
+                  {payment?.externalRef && (
+                    <p>📋 Invoice ID: <span className="font-mono font-medium">{payment.externalRef}</span></p>
+                  )}
+                  {payment?.qpayVerifiedAt && (
+                    <>
+                      <p>✅ Баталгаажсан: <strong>{formatDateTime(payment.qpayVerifiedAt)}</strong></p>
+                      {payment.qpayVerifiedBy && (
+                        <p>🔐 Арга: <strong>{VERIFICATION_METHOD_LABELS[payment.qpayVerifiedBy] || payment.qpayVerifiedBy}</strong></p>
+                      )}
+                    </>
+                  )}
+                  {payment?.lastQpayCheckAt && (
+                    <p>🔍 Сүүлд шалгасан: {formatDateTime(payment.lastQpayCheckAt)}</p>
+                  )}
+                  {!isPaid && !payment?.qpayVerifiedAt && (
+                    <p>⏰ Төлбөр хүлээгдэж байна. QPay-ээр төлбөр хийсэн бол шалгаад баталгаажуулна.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+            {isPending && (
+              <ManualVerifyButton
+                paymentId={payment.id}
+                orderId={order.id}
+                orderNumber={order.orderNumber}
+              />
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Customer info */}
       <div className="bg-white rounded-xl border p-6 space-y-3">
@@ -141,11 +221,15 @@ export default async function AdminOrderDetailPage({ params }: { params: Promise
           <CreditCard className="w-4 h-4" /> Төлбөрийн мэдээлэл
         </h2>
         {payment ? (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
             <div>
               <p className="text-slate-400 text-xs">Төлбөрийн арга</p>
               <p className="font-medium text-slate-800 flex items-center gap-1.5">
-                {paymentMethod === "QPAY" ? <CreditCard className="w-3.5 h-3.5 text-red-500" /> : <Banknote className="w-3.5 h-3.5 text-blue-500" />}
+                {paymentMethod === "QPAY" ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-semibold">QPay</span>
+                ) : (
+                  <Banknote className="w-3.5 h-3.5 text-blue-500" />
+                )}
                 {PAYMENT_METHOD_LABELS[paymentMethod] || paymentMethod}
               </p>
             </div>
@@ -158,12 +242,12 @@ export default async function AdminOrderDetailPage({ params }: { params: Promise
             <div>
               <p className="text-slate-400 text-xs">Төлсөн огноо</p>
               <p className="font-medium text-slate-800">
-                {payment.paidAt ? new Date(payment.paidAt).toLocaleString("mn-MN") : "—"}
+                {payment.paidAt ? formatDateTime(payment.paidAt) : "—"}
               </p>
             </div>
             {payment.externalRef && (
-              <div className="sm:col-span-3">
-                <p className="text-slate-400 text-xs">Гадаад лавлагаа</p>
+              <div>
+                <p className="text-slate-400 text-xs">Invoice ID</p>
                 <p className="font-mono text-xs text-slate-600 bg-slate-50 px-2 py-1 rounded">{payment.externalRef}</p>
               </div>
             )}
@@ -172,14 +256,6 @@ export default async function AdminOrderDetailPage({ params }: { params: Promise
           <p className="text-sm text-slate-500 italic">Төлбөрийн мэдээлэл байхгүй</p>
         )}
       </div>
-
-      {/* Cancellation reason */}
-      {order.orderStatus === "CANCELLED" && order.cancellationReason && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-5">
-          <p className="text-xs text-red-500 font-bold uppercase tracking-wider mb-1">Цуцлагдсан шалтгаан</p>
-          <p className="text-sm text-red-800 italic">"{order.cancellationReason}"</p>
-        </div>
-      )}
 
       {/* Timeline */}
       <div className="bg-white rounded-xl border p-6 space-y-3">
@@ -190,20 +266,27 @@ export default async function AdminOrderDetailPage({ params }: { params: Promise
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-blue-500" />
             <span className="text-slate-400">Үүсгэсэн:</span>
-            <span className="font-medium text-slate-800">{new Date(order.createdAt).toLocaleString("mn-MN")}</span>
+            <span className="font-medium text-slate-800">{formatDateTime(order.createdAt)}</span>
           </div>
           {order.stockReservedAt && (
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-amber-500" />
               <span className="text-slate-400">Нөөц түгжигдсэн:</span>
-              <span className="font-medium text-slate-800">{new Date(order.stockReservedAt).toLocaleString("mn-MN")}</span>
+              <span className="font-medium text-slate-800">{formatDateTime(order.stockReservedAt)}</span>
             </div>
           )}
           {order.stockReleasedAt && (
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-red-500" />
               <span className="text-slate-400">Нөөц буцаагдсан:</span>
-              <span className="font-medium text-slate-800">{new Date(order.stockReleasedAt).toLocaleString("mn-MN")}</span>
+              <span className="font-medium text-slate-800">{formatDateTime(order.stockReleasedAt)}</span>
+            </div>
+          )}
+          {isPaid && payment?.paidAt && (
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span className="text-slate-400">Төлбөр баталгаажсан:</span>
+              <span className="font-medium text-emerald-700">{formatDateTime(payment.paidAt)}</span>
             </div>
           )}
         </div>

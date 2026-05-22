@@ -54,7 +54,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     <div className="bg-white min-h-screen pb-20 md:pb-0">
       {/* Premium Breadcrumb / Back button */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-        <Link href="/" className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-[#E21B22] transition-colors">
+        <Link href="/" className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-[#F26522] transition-colors">
           <ArrowLeft className="w-4 h-4" />
           Буцах
         </Link>
@@ -100,7 +100,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           {/* Product Info - Right Side */}
           <div className="mt-8 px-4 sm:px-0 lg:mt-0">
             {product.category && (
-              <p className="text-sm font-semibold text-[#E21B22] tracking-wide uppercase mb-2">
+              <p className="text-sm font-semibold text-[#F26522] tracking-wide uppercase mb-2">
                 {product.category.name}
               </p>
             )}
@@ -180,7 +180,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               ₮{unitPrice.toLocaleString()}
             </p>
           </div>
-          <Link href="#order-form" className="bg-[#E21B22] hover:bg-[#c8161d] active:scale-95 transition-all text-white px-8 py-3 rounded-xl font-bold text-sm shrink-0 shadow-lg shadow-red-200">
+          <Link href="#order-form" className="bg-[#F26522] hover:bg-[#E85B1C] active:scale-95 transition-all text-white px-8 py-3 rounded-xl font-bold text-sm shrink-0 shadow-lg shadow-red-200">
             Сонгох
           </Link>
         </div>
@@ -202,7 +202,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                       </div>
                     )}
                   </div>
-                  <p className="text-sm sm:text-base font-semibold text-slate-800 line-clamp-2 mb-2 group-hover:text-[#E21B22] transition-colors">{p.name}</p>
+                  <p className="text-sm sm:text-base font-semibold text-slate-800 line-clamp-2 mb-2 group-hover:text-[#F26522] transition-colors">{p.name}</p>
                   <div className="mt-auto">
                     <p className="text-base sm:text-lg font-black text-[#1B3561] tracking-tight">₮{Number(p.price).toLocaleString()}</p>
                   </div>

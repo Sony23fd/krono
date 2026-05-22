@@ -94,7 +94,7 @@ export function AgeVerificationProvider({ children }: { children: ReactNode }) {
               </button>
               <button
                 onClick={handleConfirm}
-                className="flex-1 h-12 rounded-xl bg-[#E21B22] text-white text-sm font-bold hover:bg-[#c8161d] shadow-lg shadow-red-500/25 transition-all active:scale-[0.97]"
+                className="flex-1 h-12 rounded-xl bg-[#F26522] text-white text-sm font-bold hover:bg-[#E85B1C] shadow-lg shadow-red-500/25 transition-all active:scale-[0.97]"
               >
                 Тийм, би 21 хүрсэн
               </button>

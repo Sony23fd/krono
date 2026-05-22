@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Eye, EyeOff } from "lucide-react"
+import Link from "next/link"
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("")
@@ -40,7 +41,7 @@ export default function AdminLoginPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-14 h-14 bg-[#e63946] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-red-900/30">
+          <div className="w-14 h-14 bg-[#F26522] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-red-900/30">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7">
               <path d="M12 2L2 7l10 5 10-5-10-5z"/>
               <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
@@ -107,11 +108,17 @@ export default function AdminLoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-[#e63946] text-white font-semibold rounded-xl hover:bg-[#c8161d] disabled:opacity-60 transition-colors shadow-sm"
+              className="w-full py-3 bg-[#F26522] text-white font-semibold rounded-xl hover:bg-[#E85B1C] disabled:opacity-60 transition-colors shadow-sm"
             >
               {loading ? "Нэвтэрч байна..." : "Нэвтрэх"}
             </button>
           </form>
+
+          <div className="mt-4 text-center">
+            <Link href="/register" className="text-sm text-[#1B3561] hover:underline font-medium">
+              Шинэ хэрэглэгч? Бүртгүүлэх
+            </Link>
+          </div>
         </div>
 
         <p className="text-center text-slate-500 text-xs mt-6">© 2026 Билэг Супермаркет · Зөвхөн эрх бүхий хэрэглэгчдэд</p>

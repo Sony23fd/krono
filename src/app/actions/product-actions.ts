@@ -30,7 +30,12 @@ export async function getProducts(filters?: {
     }
 
     if (filters?.status && filters.status !== "ALL") {
-      where.status = filters.status
+      if (filters.status === "LOW_STOCK") {
+        where.status = "ACTIVE"
+        where.stockQuantity = { lt: 5, gt: 0 }
+      } else {
+        where.status = filters.status
+      }
     }
 
     if (filters?.categoryId && filters.categoryId !== "ALL") {
@@ -406,3 +411,74 @@ export async function createCategory(data: { name: string; imageUrl?: string }) 
     return { success: false, error: error.message }
   }
 }
+
+// ═══════════════════════════════════════════════════
+// EXCEL IMPORT
+// ═══════════════════════════════════════════════════
+
+export async function importProducts(rows: any[], defaultCategoryId?: string) {
+  try {
+    if (!rows || rows.length === 0) return { success: false, error: "Хоосон байна" }
+    
+    let importedCount = 0
+    let updatedCount = 0
+
+    for (const row of rows) {
+      if (!row.SKU || !row["Барааны нэр"]) continue
+
+      const sku = String(row.SKU).trim()
+      const name = String(row["Барааны нэр"]).trim()
+      const price = Number(row["Үнэ"]) || 0
+      const stockQuantity = Number(row["Үлдэгдэл"]) || 0
+      const weight = Number(row["Жин"]) || 0
+      const status = row["Статус"] || (stockQuantity > 0 ? "ACTIVE" : "OUT_OF_STOCK")
+      const customBadge = row["Тусгай тэмдэг"] || null
+      
+      let slug = name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9\-а-яөүё]/gi, "") + `-${sku.toLowerCase()}`
+
+      const existing = await db.product.findUnique({ where: { sku } })
+
+      if (existing) {
+        await db.product.update({
+          where: { sku },
+          data: {
+            name,
+            price,
+            stockQuantity,
+            weight,
+            status,
+            customBadge,
+            ...(defaultCategoryId && { categoryId: defaultCategoryId }),
+            ...(row["Харьцуулах үнэ"] && { comparePrice: Number(row["Харьцуулах үнэ"]) })
+          }
+        })
+        updatedCount++
+      } else {
+        await db.product.create({
+          data: {
+            sku,
+            name,
+            slug,
+            price,
+            stockQuantity,
+            weight,
+            status,
+            customBadge,
+            ...(defaultCategoryId && { categoryId: defaultCategoryId }),
+            ...(row["Харьцуулах үнэ"] && { comparePrice: Number(row["Харьцуулах үнэ"]) })
+          }
+        })
+        importedCount++
+      }
+    }
+
+    revalidatePath("/admin/products")
+    revalidatePath("/")
+    
+    return { success: true, imported: importedCount, updated: updatedCount }
+  } catch (error: any) {
+    console.error("[ImportProducts Error]", error)
+    return { success: false, error: error.message }
+  }
+}
+

@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useCustomerAuth } from "@/context/CustomerAuthContext"
-import { User, Phone, LogOut, Loader2, Package } from "lucide-react"
+import { User, Phone, LogOut, Loader2, Package, Shield, RefreshCcw, CheckCircle2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import Link from "next/link"
@@ -13,20 +13,113 @@ export default function ProfilePage() {
   
   const [name, setName] = useState("")
   const [phone, setPhone] = useState("")
+  const [verificationSessionId, setVerificationSessionId] = useState<string | null>(null)
+  const [verificationSmsUri, setVerificationSmsUri] = useState<string | null>(null)
+  const [verificationInstruction, setVerificationInstruction] = useState<string | null>(null)
+  const [verificationExpiresAt, setVerificationExpiresAt] = useState<string | null>(null)
+  const [verificationError, setVerificationError] = useState<string | null>(null)
+  const [verificationLoading, setVerificationLoading] = useState(false)
+  const [verificationSuccess, setVerificationSuccess] = useState(false)
+  const [pendingName, setPendingName] = useState("")
+  const [pendingPhone, setPendingPhone] = useState("")
+  const pollRef = useRef<NodeJS.Timeout | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current)
+      }
+    }
+  }, [])
 
   if (!isReady) return <div className="min-h-[50vh] flex items-center justify-center">Ачаалж байна...</div>
 
+  const startPolling = (sessionId: string, expiresAt: number) => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current)
+    }
+
+    pollRef.current = setInterval(async () => {
+      if (Date.now() > expiresAt) {
+        if (pollRef.current) {
+          clearInterval(pollRef.current)
+        }
+        setVerificationError("Хугацаа дууслаа. Дахин оролдоно уу.")
+        setVerificationSessionId(null)
+        setVerificationSmsUri(null)
+        setVerificationInstruction(null)
+        setVerificationExpiresAt(null)
+        return
+      }
+
+      try {
+        const res = await fetch(`/api/verify-mn/status/${sessionId}`, { cache: "no-store" })
+        if (!res.ok) return
+        const data = await res.json()
+        if (data.status === "VERIFIED") {
+          if (pollRef.current) {
+            clearInterval(pollRef.current)
+          }
+          setVerificationSuccess(true)
+          setVerificationError(null)
+          setVerificationLoading(true)
+          const finalResult = await login(pendingName, pendingPhone)
+          setVerificationLoading(false)
+          if (finalResult.success) {
+            toast.success("Амжилттай бүртгэгдлээ!")
+            router.push("/")
+          } else {
+            toast.error(finalResult.error || "Бүртгэлд алдаа гарлаа")
+          }
+        } else if (data.status === "EXPIRED") {
+          if (pollRef.current) {
+            clearInterval(pollRef.current)
+          }
+          setVerificationError("Хугацаа дууслаа. Дахин оролдоно уу.")
+          setVerificationSessionId(null)
+          setVerificationSmsUri(null)
+          setVerificationInstruction(null)
+          setVerificationExpiresAt(null)
+        }
+      } catch {
+        // ignore polling errors
+      }
+    }, 3000)
+  }
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (name && phone) {
-      const success = await login(name, phone)
-      if (success) {
-        toast.success("Амжилттай нэвтэрлээ!")
-        router.push("/")
-      } else {
-        toast.error("Нэвтрэхэд алдаа гарлаа")
-      }
+    if (!name || !phone) return
+
+    setVerificationError(null)
+    setVerificationLoading(true)
+
+    const result = await login(name, phone)
+    setVerificationLoading(false)
+
+    if (result.success) {
+      toast.success("Амжилттай нэвтэрлээ!")
+      router.push("/")
+      return
     }
+
+    if (result.verificationRequired && result.sessionId) {
+      setPendingName(name)
+      setPendingPhone(phone)
+      setVerificationSessionId(result.sessionId)
+      setVerificationSmsUri(result.smsUri || null)
+      setVerificationInstruction(result.displayInstruction || null)
+      setVerificationExpiresAt(result.expiresAt || null)
+      setVerificationError(null)
+      setVerificationSuccess(false)
+
+      if (result.expiresAt) {
+        startPolling(result.sessionId, new Date(result.expiresAt).getTime())
+      }
+      return
+    }
+
+    toast.error(result.error || "Нэвтрэхэд алдаа гарлаа")
   }
 
   const [isEditing, setIsEditing] = useState(false)
@@ -220,6 +313,99 @@ export default function ProfilePage() {
           {isLoggingIn ? <><Loader2 className="w-4 h-4 animate-spin" /> Нэвтэрж байна...</> : "Нэвтрэх"}
         </button>
       </form>
+
+      {verificationSessionId && (
+        <div className="mt-6 bg-slate-50 border border-slate-200 rounded-3xl p-6 shadow-sm">
+          <div className="flex flex-col items-center text-center gap-4">
+            <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-600">
+              {verificationSuccess ? <CheckCircle2 className="w-7 h-7" /> : <Shield className="w-7 h-7" />}
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-slate-900 mb-2">Утас баталгаажуулах</h2>
+              <p className="text-sm text-slate-500">{verificationInstruction || "Та Verify.mn рүү 144773 дугаарт SMS илгээнэ үү."}</p>
+            </div>
+          </div>
+
+          {verificationError && (
+            <div className="mt-4 rounded-2xl bg-red-50 border border-red-100 p-4 text-sm text-red-700">
+              {verificationError}
+            </div>
+          )}
+
+          <div className="mt-4 grid gap-3">
+            {verificationSmsUri ? (
+              <a
+                href={verificationSmsUri}
+                className="block w-full text-center bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-slate-800 transition"
+              >
+                📱 SMS илгээх
+              </a>
+            ) : (
+              <div className="block w-full text-center bg-slate-200 text-slate-600 py-3 rounded-xl font-bold">
+                SMS холбоос бэлэн болоогүй байна
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={async () => {
+                if (!verificationSessionId) return
+                setVerificationLoading(true)
+                setVerificationError(null)
+                try {
+                  const res = await fetch(`/api/verify-mn/status/${verificationSessionId}`, { cache: "no-store" })
+                  if (!res.ok) {
+                    setVerificationError("Статус шалгахад алдаа гарлаа")
+                    return
+                  }
+                  const data = await res.json()
+                  if (data.status === "VERIFIED") {
+                    setVerificationSuccess(true)
+                    const finalResult = await login(pendingName, pendingPhone)
+                    if (finalResult.success) {
+                      toast.success("Амжилттай бүртгэгдлээ!")
+                      router.push("/")
+                    } else {
+                      setVerificationError(finalResult.error || "Бүртгэлд алдаа гарлаа")
+                    }
+                  } else if (data.status === "EXPIRED") {
+                    setVerificationError("Хугацаа дууслаа. Дахин оролдоно уу.")
+                    setVerificationSessionId(null)
+                    setVerificationSmsUri(null)
+                    setVerificationInstruction(null)
+                    setVerificationExpiresAt(null)
+                  } else {
+                    setVerificationError("Баталгаажаагүй байна. Хэрвээ та мессеж илгээсэн бол түр хүлээгээд дахин шалгана уу.")
+                  }
+                } catch {
+                  setVerificationError("Статус шалгахад алдаа гарлаа")
+                } finally {
+                  setVerificationLoading(false)
+                }
+              }}
+              className="block w-full bg-indigo-50 text-indigo-700 py-3 rounded-xl font-bold hover:bg-indigo-100 transition"
+              disabled={verificationLoading}
+            >
+              {verificationLoading ? <span className="inline-flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Хүлээж байна...</span> : <span className="inline-flex items-center gap-2"><RefreshCcw className="w-4 h-4" /> Баталгаажсан эсэхийг шалгах</span>}
+            </button>
+
+            {process.env.NODE_ENV === "development" && (
+              <a
+                href={`/api/verify-mn/mock-verify?sessionId=${verificationSessionId}`}
+                className="block w-full text-center bg-emerald-100 text-emerald-700 py-3 rounded-xl font-bold hover:bg-emerald-200 transition"
+              >
+                🧪 DEV: Callback-ыг гараар шалгах
+              </a>
+            )}
+          </div>
+
+          {verificationExpiresAt && (
+            <p className="mt-4 text-xs text-slate-400 text-center">
+              Баталгаажуулалт дуусах цаг: {new Date(verificationExpiresAt).toLocaleString()}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   )
 }

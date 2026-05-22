@@ -90,7 +90,7 @@ export function ShopFilters({ categories, selectedCategorySlug }: { categories?:
               onClick={() => setCategory("all")}
               className={clsx(
                 "px-4 py-2 text-sm font-semibold rounded-full transition-all whitespace-nowrap",
-                currentCategory === "all" ? "bg-[#E21B22] text-white shadow-md shadow-red-500/20" : "bg-white border border-slate-200 text-slate-600 hover:border-[#1B3561] hover:text-[#1B3561]"
+                currentCategory === "all" ? "bg-[#F26522] text-white shadow-md shadow-red-500/20" : "bg-white border border-slate-200 text-slate-600 hover:border-[#1B3561] hover:text-[#1B3561]"
               )}
             >
               Бүх ангилал
@@ -101,7 +101,7 @@ export function ShopFilters({ categories, selectedCategorySlug }: { categories?:
                 onClick={() => setCategory(category.slug)}
                 className={clsx(
                   "px-4 py-2 text-sm font-semibold rounded-full transition-all whitespace-nowrap",
-                  currentCategory === category.slug ? "bg-[#E21B22] text-white shadow-md shadow-red-500/20" : "bg-white border border-slate-200 text-slate-600 hover:border-[#1B3561] hover:text-[#1B3561]"
+                  currentCategory === category.slug ? "bg-[#F26522] text-white shadow-md shadow-red-500/20" : "bg-white border border-slate-200 text-slate-600 hover:border-[#1B3561] hover:text-[#1B3561]"
                 )}
               >
                 {category.name}

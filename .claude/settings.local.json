@@ -4,7 +4,8 @@
       "Bash(xargs grep:*)",
       "Bash(grep -E \"\\\\.\\(tsx?|jsx?\\)$\")",
       "Bash(wc -l /d/tursh/shooop/src/components/storefront/home/*.tsx)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(npx prisma *)"
     ]
   }
 }

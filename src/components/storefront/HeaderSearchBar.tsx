@@ -35,7 +35,7 @@ export function HeaderSearchBar({ categories }: { categories: Category[] }) {
   }, [])
 
   return (
-    <form action="/shop" className="flex items-center w-full h-11 md:h-12 rounded-full border-2 border-[#e63946] bg-white overflow-visible group focus-within:ring-4 focus-within:ring-[#e63946]/15 transition-all relative">
+    <form action="/shop" className="flex items-center w-full h-12 md:h-14 rounded-full border-2 border-[#F26522] bg-white overflow-visible group focus-within:ring-4 focus-within:ring-[#F26522]/20 transition-all relative shadow-sm">
       {/* Hidden input to submit category */}
       <input type="hidden" name="category" value={selected} />
 
@@ -44,7 +44,7 @@ export function HeaderSearchBar({ categories }: { categories: Category[] }) {
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-1.5 h-full pl-4 pr-3 py-2.5 bg-gray-100 hover:bg-gray-200 transition-colors text-sm font-semibold text-gray-700 rounded-l-full border-r border-gray-200 whitespace-nowrap"
+          className="flex items-center gap-2 h-full pl-5 pr-4 py-2.5 bg-gray-50 hover:bg-gray-100 transition-colors text-sm font-semibold text-gray-700 rounded-l-full border-r border-gray-200 whitespace-nowrap"
         >
           <span className="max-w-[100px] truncate">{selectedLabel}</span>
           <ChevronDown className={`w-3.5 h-3.5 text-gray-500 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
@@ -62,12 +62,12 @@ export function HeaderSearchBar({ categories }: { categories: Category[] }) {
                 onClick={() => { setSelected("all"); setIsOpen(false) }}
                 className={`w-full text-left px-4 py-2.5 text-sm flex items-center justify-between transition-colors ${
                   selected === "all"
-                    ? "bg-[#e63946]/5 text-[#e63946] font-semibold"
-                    : "text-gray-700 hover:bg-gray-50 hover:text-[#e63946]"
+                    ? "bg-[#F26522]/5 text-[#F26522] font-semibold"
+                    : "text-gray-700 hover:bg-gray-50 hover:text-[#F26522]"
                 }`}
               >
                 <span>Бүх ангилал</span>
-                {selected === "all" && <Check className="w-4 h-4 text-[#e63946]" />}
+                {selected === "all" && <Check className="w-4 h-4 text-[#F26522]" />}
               </button>
               {categories.map((cat) => (
                 <button
@@ -76,12 +76,12 @@ export function HeaderSearchBar({ categories }: { categories: Category[] }) {
                   onClick={() => { setSelected(cat.slug); setIsOpen(false) }}
                   className={`w-full text-left px-4 py-2.5 text-sm flex items-center justify-between transition-colors ${
                     selected === cat.slug
-                      ? "bg-[#e63946]/5 text-[#e63946] font-semibold"
-                      : "text-gray-700 hover:bg-gray-50 hover:text-[#e63946]"
+                      ? "bg-[#F26522]/5 text-[#F26522] font-semibold"
+                      : "text-gray-700 hover:bg-gray-50 hover:text-[#F26522]"
                   }`}
                 >
                   <span className="truncate">{cat.name}</span>
-                  {selected === cat.slug && <Check className="w-4 h-4 text-[#e63946]" />}
+                  {selected === cat.slug && <Check className="w-4 h-4 text-[#F26522]" />}
                 </button>
               ))}
             </div>
@@ -89,21 +89,19 @@ export function HeaderSearchBar({ categories }: { categories: Category[] }) {
         )}
       </div>
 
-      {/* Search Input */}
       <input
         type="text"
         name="q"
         defaultValue={query}
-        placeholder="Бараа хайх..."
-        className="flex-1 h-full px-4 md:px-5 outline-none text-sm text-slate-800 placeholder:text-slate-400 bg-transparent"
+        placeholder="Ямар бараа хайж байна вэ?"
+        className="flex-1 h-full px-4 md:px-6 outline-none text-sm md:text-base font-medium text-slate-800 placeholder:text-slate-400 bg-transparent"
       />
 
-      {/* Submit Button */}
       <button
         type="submit"
-        className="h-full px-4 md:px-5 flex items-center justify-center bg-[#e63946] text-white hover:bg-[#c8161d] transition-colors rounded-r-full"
+        className="h-full px-5 md:px-8 flex items-center justify-center bg-[#F26522] text-white hover:bg-[#E85B1C] transition-colors rounded-r-full"
       >
-        <Search className="w-4.5 h-4.5 md:w-5 md:h-5" />
+        <Search className="w-5 h-5 md:w-6 md:h-6" />
       </button>
     </form>
   )

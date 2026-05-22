@@ -40,8 +40,8 @@ export default function FavoritesPage() {
   return (
     <div className="max-w-6xl mx-auto px-4 py-12">
       <div className="flex items-center gap-3 mb-8">
-        <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center text-[#E21B22]">
-          <Heart className="w-6 h-6 fill-[#E21B22]" />
+        <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center text-[#F26522]">
+          <Heart className="w-6 h-6 fill-[#F26522]" />
         </div>
         <h1 className="text-3xl font-extrabold text-[#1B3561]">Хадгалсан бараа</h1>
       </div>

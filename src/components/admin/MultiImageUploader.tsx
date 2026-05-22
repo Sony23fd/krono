@@ -1,8 +1,9 @@
 "use client"
 
 import { useRef, useState } from "react"
-import { ImagePlus, Loader2, Star, Trash2 } from "lucide-react"
+import { ImagePlus, Loader2, Trash2, GripVertical } from "lucide-react"
 import { updateProduct } from "@/app/actions/product-actions"
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd"
 
 interface Props {
   product: any
@@ -11,11 +12,16 @@ interface Props {
 export function MultiImageUploader({ product }: Props) {
   const inputRef = useRef<HTMLInputElement>(null)
   
-  // Local state for fast UI updates
-  const [mainImage, setMainImage] = useState<string | null>(product.imageUrl || null)
-  const [additionalImages, setAdditionalImages] = useState<string[]>(
-    Array.isArray(product.images) ? product.images : []
-  )
+  const [images, setImages] = useState<string[]>(() => {
+    const list: string[] = []
+    if (product.imageUrl) list.push(product.imageUrl)
+    if (Array.isArray(product.images)) {
+      product.images.forEach((img: string) => {
+        if (!list.includes(img)) list.push(img)
+      })
+    }
+    return list
+  })
   
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -26,7 +32,6 @@ export function MultiImageUploader({ product }: Props) {
 
     const newImageUrls: string[] = []
 
-    // Upload each file sequentially to avoid overwhelming the server
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
       if (!file.type.startsWith("image/")) continue
@@ -49,23 +54,14 @@ export function MultiImageUploader({ product }: Props) {
     }
 
     if (newImageUrls.length > 0) {
-      let newMain = mainImage
-      let newAdditional = [...additionalImages]
+      const newImages = [...images, ...newImageUrls]
+      setImages(newImages)
 
-      // If no main image exists, the first uploaded becomes main
-      if (!newMain) {
-        newMain = newImageUrls[0]
-        newAdditional = [...newAdditional, ...newImageUrls.slice(1)]
-      } else {
-        newAdditional = [...newAdditional, ...newImageUrls]
-      }
+      const newMain = newImages[0] || null
+      const newAdditional = newImages.slice(1)
 
-      setMainImage(newMain)
-      setAdditionalImages(newAdditional)
-
-      // Save to DB via Server Action
       await updateProduct(product.id, {
-        imageUrl: newMain,
+        imageUrl: newMain || "",
         images: newAdditional
       })
     } else {
@@ -79,113 +75,108 @@ export function MultiImageUploader({ product }: Props) {
     if (e.target.files && e.target.files.length > 0) {
       handleFiles(e.target.files)
     }
-    // reset input
     if (inputRef.current) inputRef.current.value = ""
   }
 
-  function handleDrop(e: React.DragEvent<HTMLDivElement>) {
-    e.preventDefault()
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      handleFiles(e.dataTransfer.files)
-    }
-  }
-
-  async function setAsMain(url: string) {
-    const newAdditional = [...additionalImages.filter(img => img !== url)]
-    if (mainImage) {
-      newAdditional.push(mainImage)
-    }
-    setMainImage(url)
-    setAdditionalImages(newAdditional)
+  async function removeImage(url: string) {
+    const newImages = images.filter(img => img !== url)
+    setImages(newImages)
+    
+    const newMain = newImages[0] || null
+    const newAdditional = newImages.slice(1)
 
     await updateProduct(product.id, {
-      imageUrl: url,
+      imageUrl: newMain || "",
       images: newAdditional
     })
   }
 
-  async function removeImage(url: string, isMain: boolean) {
-    if (isMain) {
-      let newMain = null
-      let newAdditional = [...additionalImages]
-      if (newAdditional.length > 0) {
-        newMain = newAdditional[0]
-        newAdditional = newAdditional.slice(1)
-      }
-      setMainImage(newMain)
-      setAdditionalImages(newAdditional)
-      
-      await updateProduct(product.id, {
-        imageUrl: newMain || "",
-        images: newAdditional
-      })
-    } else {
-      const newAdditional = additionalImages.filter(img => img !== url)
-      setAdditionalImages(newAdditional)
-      
-      await updateProduct(product.id, {
-        images: newAdditional
-      })
-    }
-  }
+  async function onDragEnd(result: any) {
+    if (!result.destination) return
+    const items = Array.from(images)
+    const [reorderedItem] = items.splice(result.source.index, 1)
+    items.splice(result.destination.index, 0, reorderedItem)
 
-  const allImages = []
-  if (mainImage) allImages.push({ url: mainImage, isMain: true })
-  additionalImages.forEach(url => allImages.push({ url, isMain: false }))
+    setImages(items)
+
+    const newMain = items[0] || null
+    const newAdditional = items.slice(1)
+
+    await updateProduct(product.id, {
+      imageUrl: newMain || "",
+      images: newAdditional
+    })
+  }
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap gap-2" onDrop={handleDrop} onDragOver={e => e.preventDefault()}>
-        {allImages.map((img, idx) => (
-          <div key={`${img.url}-${idx}`} className={`relative group w-[72px] h-[72px] rounded-lg overflow-hidden border-2 flex-shrink-0 ${img.isMain ? 'border-amber-400' : 'border-slate-200'}`}>
-            <img src={img.url} alt="Product" className="w-full h-full object-cover" />
-            
-            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1.5">
-              <div className="flex gap-1.5">
-                {!img.isMain && (
-                  <button 
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setAsMain(img.url) }} 
-                    className="p-1.5 bg-white/20 hover:bg-white/40 rounded-full text-white transition-colors"
-                    title="Үндсэн зураг болгох"
-                  >
-                    <Star className="w-3.5 h-3.5" />
-                  </button>
+      <DragDropContext onDragEnd={onDragEnd}>
+        <Droppable droppableId="product-images" direction="horizontal">
+          {(provided) => (
+            <div 
+              className="flex flex-wrap gap-2" 
+              {...provided.droppableProps}
+              ref={provided.innerRef}
+            >
+              {images.map((url, index) => (
+                <Draggable key={url} draggableId={url} index={index}>
+                  {(provided) => (
+                    <div 
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                      className={`relative group w-[72px] h-[72px] rounded-lg overflow-hidden border-2 flex-shrink-0 ${index === 0 ? 'border-amber-400' : 'border-slate-200'}`}
+                    >
+                      <img src={url} alt="Product" className="w-full h-full object-cover" />
+                      
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1.5">
+                        <div className="flex gap-1.5">
+                          <div 
+                            {...provided.dragHandleProps}
+                            className="p-1.5 bg-white/20 hover:bg-white/40 rounded-full text-white transition-colors cursor-grab active:cursor-grabbing"
+                            title="Зөөх"
+                          >
+                            <GripVertical className="w-3.5 h-3.5" />
+                          </div>
+                          <button 
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); removeImage(url) }} 
+                            className="p-1.5 bg-red-500/80 hover:bg-red-500 rounded-full text-white transition-colors"
+                            title="Устгах"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {index === 0 && (
+                        <div className="absolute bottom-0 left-0 right-0 bg-amber-400 text-[8px] font-bold text-amber-900 text-center py-0.5">
+                          ҮНДСЭН
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </Draggable>
+              ))}
+              {provided.placeholder}
+
+              {/* Upload Button */}
+              <div
+                onClick={() => inputRef.current?.click()}
+                className="w-[72px] h-[72px] rounded-lg border-2 border-dashed border-indigo-200 bg-indigo-50/50 hover:bg-indigo-100 hover:border-indigo-400 cursor-pointer flex flex-col items-center justify-center gap-1 text-center relative flex-shrink-0 transition-colors"
+              >
+                {uploading ? (
+                  <Loader2 className="w-5 h-5 text-indigo-500 animate-spin" />
+                ) : (
+                  <>
+                    <ImagePlus className="w-5 h-5 text-indigo-400" />
+                    <span className="text-[9px] font-semibold text-indigo-600 leading-tight px-1">Нэмэх</span>
+                  </>
                 )}
-                <button 
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); removeImage(img.url, img.isMain) }} 
-                  className="p-1.5 bg-red-500/80 hover:bg-red-500 rounded-full text-white transition-colors"
-                  title="Устгах"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
               </div>
             </div>
-            
-            {img.isMain && (
-              <div className="absolute bottom-0 left-0 right-0 bg-amber-400 text-[8px] font-bold text-amber-900 text-center py-0.5">
-                ҮНДСЭН
-              </div>
-            )}
-          </div>
-        ))}
-
-        {/* Upload Button */}
-        <div
-          onClick={() => inputRef.current?.click()}
-          className="w-[72px] h-[72px] rounded-lg border-2 border-dashed border-indigo-200 bg-indigo-50/50 hover:bg-indigo-100 hover:border-indigo-400 cursor-pointer flex flex-col items-center justify-center gap-1 text-center relative flex-shrink-0 transition-colors"
-        >
-          {uploading ? (
-            <Loader2 className="w-5 h-5 text-indigo-500 animate-spin" />
-          ) : (
-            <>
-              <ImagePlus className="w-5 h-5 text-indigo-400" />
-              <span className="text-[9px] font-semibold text-indigo-600 leading-tight px-1">Нэмэх</span>
-            </>
           )}
-        </div>
-      </div>
+        </Droppable>
+      </DragDropContext>
 
       <input ref={inputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleChange} />
       

@@ -50,6 +50,8 @@ export function GeneralSettingsClient({ initialSettings, userRole }: Props) {
   const [promoSubtitle, setPromoSubtitle] = useState(initialSettings["promo_subtitle"] || "Зөвхөн өнөөдөр")
   const [promoLink, setPromoLink] = useState(initialSettings["promo_link"] || "/shop?sale=true")
 
+  const [loyaltyDiscountPercent, setLoyaltyDiscountPercent] = useState(initialSettings["loyalty_discount_percent"] || "3")
+
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -148,6 +150,9 @@ export function GeneralSettingsClient({ initialSettings, userRole }: Props) {
       await fetch("/api/admin/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "promo_subtitle", value: promoSubtitle }) })
       await fetch("/api/admin/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "promo_link", value: promoLink }) })
 
+      // Save loyalty settings
+      await fetch("/api/admin/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "loyalty_discount_percent", value: loyaltyDiscountPercent }) })
+
       toast.success("Тохиргоонууд хадгалагдлаа")
       router.refresh()
     } catch (error: any) {
@@ -173,7 +178,7 @@ export function GeneralSettingsClient({ initialSettings, userRole }: Props) {
             value={shopName}
             onChange={e => setShopName(e.target.value)}
             placeholder="Билэг Супермаркет"
-            className="w-full max-w-md px-4 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#e63946]/30 focus:border-[#e63946]/50"
+            className="w-full max-w-md px-4 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#F26522]/30 focus:border-[#F26522]/50"
           />
         </CardContent>
       </Card>
@@ -263,6 +268,26 @@ export function GeneralSettingsClient({ initialSettings, userRole }: Props) {
                 checked={phoneVerificationEnabled} 
                 onCheckedChange={setPhoneVerificationEnabled} 
               />
+            </div>
+
+            <div className="w-full pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-0.5 flex-1">
+                <label className="text-base font-semibold text-slate-800">💳 Хөнгөлөлтийн хувь (Loyalty)</label>
+                <p className="text-sm text-slate-500">
+                  Хэрэглэгч сагсны хуудсанд хөнгөлөлтийн карт оруулбал нийт дүнгээс хасагдах хөнгөлөлтийн хувь.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <input 
+                  type="number" 
+                  min="0"
+                  max="100"
+                  value={loyaltyDiscountPercent} 
+                  onChange={(e) => setLoyaltyDiscountPercent(e.target.value)} 
+                  className="w-20 px-3 py-2 border border-slate-300 rounded-lg text-sm text-center"
+                />
+                <span className="text-slate-600 font-medium">%</span>
+              </div>
             </div>
 
             <div className="w-full pt-4 border-t border-slate-100 flex items-center justify-between">

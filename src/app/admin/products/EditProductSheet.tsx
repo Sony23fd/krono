@@ -8,9 +8,11 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Pencil, Loader2, Plus, Package } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { RichTextEditor } from "@/components/admin/RichTextEditor"
 
 export interface EditProductSheetProps {
   product: any;
+  categories: any[];
 }
 
 /**
@@ -42,7 +44,7 @@ function generateVariantKeys(options: { name: string; values: string[] }[]): { k
   return combos
 }
 
-export function EditProductSheet({ product }: EditProductSheetProps) {
+export function EditProductSheet({ product, categories }: EditProductSheetProps) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [options, setOptions] = useState<{name: string, values: string}[]>([])
@@ -105,6 +107,8 @@ export function EditProductSheet({ product }: EditProductSheetProps) {
       stockQuantity: remainingQuantity,
       price: Number(formData.get("price") || 0),
       weight: Number(formData.get("weight") || 0),
+      status: formData.get("status") as string,
+      categoryId: formData.get("categoryId") as string || undefined,
       options: formattedOptions.length > 0 ? formattedOptions : [],
       isFeatured: formData.get("isFeatured") === "on",
       requiresAgeVerification: formData.get("requiresAgeVerification") === "on",
@@ -213,7 +217,25 @@ export function EditProductSheet({ product }: EditProductSheetProps) {
 
           <div className="space-y-2">
             <label htmlFor="description" className="text-sm font-medium">Тайлбар</label>
-            <Textarea id="description" name="description" defaultValue={product.description || ""} />
+            <RichTextEditor name="description" defaultValue={product.description || ""} />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="status" className="text-sm font-medium">Статус</label>
+            <select id="status" name="status" defaultValue={product.status} className="flex h-10 w-full items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="ACTIVE">Идэвхтэй</option>
+              <option value="DRAFT">Ноорог (Идэвхгүй)</option>
+              <option value="ARCHIVED">Архивласан</option>
+              <option value="OUT_OF_STOCK">Нөөц дууссан</option>
+            </select>
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="categoryId" className="text-sm font-medium">Ангилал</label>
+            <select id="categoryId" name="categoryId" defaultValue={product.categoryId || ""} className="flex h-10 w-full items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="">Сонгох...</option>
+              {categories?.map((cat) => (
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
+              ))}
+            </select>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">

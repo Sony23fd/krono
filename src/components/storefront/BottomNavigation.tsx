@@ -4,17 +4,21 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Home, LayoutGrid, ShoppingCart, User } from "lucide-react"
 import { useCart } from "@/context/CartContext"
+import { useCustomerAuth } from "@/context/CustomerAuthContext"
 
 export function BottomNavigation() {
   const pathname = usePathname()
   const { items } = useCart()
+  const { customer, isReady } = useCustomerAuth()
   const cartCount = items.reduce((sum, i) => sum + i.qty, 0)
+
+  const profileHref = isReady && customer ? "/profile" : "/login"
 
   const tabs = [
     { name: "Нүүр", href: "/", icon: Home },
     { name: "Ангилал", href: "/categories", icon: LayoutGrid },
     { name: "Сагс", href: "/cart", icon: ShoppingCart, badge: cartCount },
-    { name: "Профайл", href: "/profile", icon: User },
+    { name: "Профайл", href: profileHref, icon: User },
   ]
 
   return (
@@ -28,18 +32,18 @@ export function BottomNavigation() {
             key={tab.name}
             href={tab.href}
             className={`flex flex-col items-center justify-center w-full h-full gap-0.5 transition-all ${
-              isActive ? "text-[#E21B22]" : "text-slate-400"
+              isActive ? "text-[#F26522]" : "text-slate-400"
             }`}
           >
-            <div className={`relative flex items-center justify-center w-8 h-8 rounded-full transition-all duration-200 ${isActive ? "bg-red-50" : ""}`}>
+            <div className={`relative flex items-center justify-center w-8 h-8 rounded-full transition-all duration-200 ${isActive ? "bg-orange-50" : ""}`}>
               <Icon className={`w-5 h-5 ${isActive ? "stroke-[2.5px]" : "stroke-[1.8px]"}`} />
               {tab.badge && tab.badge > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[16px] h-4 flex items-center justify-center bg-[#E21B22] text-white text-[10px] font-bold rounded-full px-1">
+                <span className="absolute -top-1 -right-1 min-w-[16px] h-4 flex items-center justify-center bg-[#F26522] text-white text-[10px] font-bold rounded-full px-1">
                   {tab.badge > 99 ? "99+" : tab.badge}
                 </span>
               )}
             </div>
-            <span className={`text-[10px] font-semibold ${isActive ? "text-[#E21B22]" : "text-slate-500"}`}>
+            <span className={`text-[10px] font-semibold ${isActive ? "text-[#F26522]" : "text-slate-500"}`}>
               {tab.name}
             </span>
           </Link>

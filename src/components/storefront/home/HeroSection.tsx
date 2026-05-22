@@ -31,7 +31,7 @@ export async function HeroSection() {
   return (
     <div className="relative overflow-hidden min-h-[400px] md:min-h-[500px] flex items-center justify-center bg-gradient-to-br from-red-50 via-white to-red-50">
       <div className="absolute inset-0 z-0">
-        <div className="absolute top-0 right-0 w-[80%] h-full bg-[#E21B22]/5 rounded-bl-[100%]"></div>
+        <div className="absolute top-0 right-0 w-[80%] h-full bg-[#F26522]/5 rounded-bl-[100%]"></div>
         <div className="absolute bottom-0 left-0 w-[50%] h-[50%] bg-[#F26522]/5 rounded-tr-[100%]"></div>
       </div>
       
@@ -40,13 +40,13 @@ export async function HeroSection() {
         {/* Text Content */}
         <div className="flex-1 text-center md:text-left pt-10 md:pt-0">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-100 border border-red-200 mb-6">
-            <span className="w-2 h-2 rounded-full bg-[#E21B22] animate-pulse"></span>
-            <span className="text-sm font-bold text-[#E21B22]">Өдөр бүр шинэ хямдрал</span>
+            <span className="w-2 h-2 rounded-full bg-[#F26522] animate-pulse"></span>
+            <span className="text-sm font-bold text-[#F26522]">Өдөр бүр шинэ хямдрал</span>
           </div>
           
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-[#1B3561] tracking-tight leading-tight max-w-2xl">
             Таны өдөр тутмын <br className="hidden sm:block" /> 
-            <span className="text-[#E21B22]">
+            <span className="text-[#F26522]">
               супермаркет
             </span>
           </h1>

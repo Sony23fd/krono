@@ -30,7 +30,7 @@ export function ProductGridSection({
     titleClasses = "text-2xl md:text-3xl font-extrabold text-amber-600 tracking-tight"
   } else if (theme === "sale") {
     containerClasses += " bg-red-50/50 border border-red-100/50"
-    titleClasses = "text-2xl md:text-3xl font-extrabold text-[#E21B22] tracking-tight"
+    titleClasses = "text-2xl md:text-3xl font-extrabold text-[#F26522] tracking-tight"
   } else {
     containerClasses = "max-w-7xl mx-auto px-4 mb-10 md:mb-14"
   }

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Plus, Loader2, Package } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { RichTextEditor } from "@/components/admin/RichTextEditor"
 
 function generateVariantKeys(options: { name: string; values: string[] }[]): { key: string; labels: Record<string, string> }[] {
   if (options.length === 0) return []
@@ -209,7 +210,7 @@ export function CreateProductSheet({ categories }: { categories: any[] }) {
 
           <div className="space-y-2">
             <label htmlFor="description" className="text-sm font-medium">Тайлбар</label>
-            <Textarea id="description" name="description" placeholder="Барааны дэлгэрэнгүй..." />
+            <RichTextEditor name="description" placeholder="Барааны дэлгэрэнгүй..." />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">

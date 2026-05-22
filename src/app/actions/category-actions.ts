@@ -32,7 +32,7 @@ export async function getAllCategories() {
   }
 }
 
-export async function createCategory(data: { name: string; imageUrl?: string }) {
+export async function createCategory(data: { name: string; imageUrl?: string; metaTitle?: string; metaDescription?: string }) {
   try {
     const slug = data.name
       .toLowerCase()
@@ -44,6 +44,8 @@ export async function createCategory(data: { name: string; imageUrl?: string }) 
         name: data.name.trim(),
         slug: slug || `cat-${Date.now()}`,
         imageUrl: data.imageUrl,
+        metaTitle: data.metaTitle,
+        metaDescription: data.metaDescription,
       }
     })
     revalidatePath("/admin/products")
@@ -55,7 +57,7 @@ export async function createCategory(data: { name: string; imageUrl?: string }) 
   }
 }
 
-export async function updateCategory(id: string, data: { name?: string; imageUrl?: string; isActive?: boolean; sortOrder?: number }) {
+export async function updateCategory(id: string, data: { name?: string; imageUrl?: string; isActive?: boolean; sortOrder?: number; metaTitle?: string; metaDescription?: string }) {
   try {
     const existing = await db.category.findUnique({ where: { id } })
     if (!existing) return { success: false, error: "Ангилал олдсонгүй" }
@@ -73,6 +75,8 @@ export async function updateCategory(id: string, data: { name?: string; imageUrl
       data: {
         ...(data.name && { name: data.name.trim(), slug }),
         ...(data.imageUrl !== undefined && { imageUrl: data.imageUrl }),
+        ...(data.metaTitle !== undefined && { metaTitle: data.metaTitle }),
+        ...(data.metaDescription !== undefined && { metaDescription: data.metaDescription }),
         ...(data.isActive !== undefined && { isActive: data.isActive }),
         ...(data.sortOrder !== undefined && { sortOrder: data.sortOrder }),
       }
@@ -102,3 +106,20 @@ export async function deleteCategory(id: string) {
     return { success: false, error: error.message }
   }
 }
+
+export async function updateCategoryOrder(items: { id: string, sortOrder: number }[]) {
+  try {
+    const transactions = items.map(item =>
+      db.category.update({
+        where: { id: item.id },
+        data: { sortOrder: item.sortOrder }
+      })
+    )
+    await db.$transaction(transactions)
+    revalidatePath("/admin/categories")
+    return { success: true }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}
+

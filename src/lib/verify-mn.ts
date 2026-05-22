@@ -22,7 +22,7 @@ export interface VerifySession {
   createdAt: number
 }
 
-const sessionStore = new Map<string, VerifySession>()
+export const sessionStore = new Map<string, VerifySession>()
 
 // Cleanup expired sessions every 60s
 setInterval(() => {

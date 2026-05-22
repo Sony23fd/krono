@@ -24,7 +24,7 @@ export function ShopSidebar({ categories, selectedCategorySlug }: { categories?:
               className={clsx(
                 "block px-4 py-2.5 rounded-xl font-semibold transition-all duration-200",
                 currentCategory === "all"
-                  ? "bg-[#E21B22] text-white shadow-md shadow-red-500/20 translate-x-2"
+                  ? "bg-[#F26522] text-white shadow-md shadow-red-500/20 translate-x-2"
                   : "text-slate-600 hover:bg-slate-100 hover:text-[#1B3561] hover:translate-x-1"
               )}
             >
@@ -38,7 +38,7 @@ export function ShopSidebar({ categories, selectedCategorySlug }: { categories?:
                 className={clsx(
                   "block px-4 py-2.5 rounded-xl font-semibold transition-all duration-200",
                   currentCategory === category.slug
-                    ? "bg-[#E21B22] text-white shadow-md shadow-red-500/20 translate-x-2"
+                    ? "bg-[#F26522] text-white shadow-md shadow-red-500/20 translate-x-2"
                     : "text-slate-600 hover:bg-slate-100 hover:text-[#1B3561] hover:translate-x-1"
                 )}
               >

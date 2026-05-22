@@ -55,16 +55,15 @@ export function ProductCard({ product, index = 0, theme = "default" }: { product
 
         {/* Discount Badge */}
         {hasDiscount && (
-          <div className="absolute top-2 left-2 bg-[#E21B22] text-white px-2 py-0.5 rounded-md text-[10px] md:text-xs font-bold flex items-center shadow-sm" suppressHydrationWarning>
+          <div className="absolute top-2 left-2 bg-[#F26522] text-white px-2.5 py-1 rounded-tl-lg rounded-br-lg text-xs md:text-sm font-black flex items-center shadow-md shadow-orange-500/40 z-10 animate-bounce-slow" suppressHydrationWarning>
             <span>-{discountPercentage}%</span>
           </div>
         )}
         
-        {/* Stock/Custom Badge (shifted right if discount exists) */}
-        {(product.customBadge || hasStock) && (
+        {/* Custom Badge (shifted right if discount exists) */}
+        {product.customBadge && (
           <div className={`absolute top-2 ${hasDiscount ? 'left-14 md:left-16' : 'left-2'} bg-white/95 backdrop-blur-sm px-2 py-0.5 rounded-md text-[10px] md:text-xs font-bold text-emerald-700 flex items-center gap-1 shadow-sm border border-emerald-100`} suppressHydrationWarning>
-            {!product.customBadge && <CheckCircle2 className="w-3 h-3 md:w-3.5 md:h-3.5 text-emerald-500" />}
-            <span>{product.customBadge || "Нөөцтэй"}</span>
+            <span>{product.customBadge}</span>
           </div>
         )}
 
@@ -73,13 +72,13 @@ export function ProductCard({ product, index = 0, theme = "default" }: { product
           onClick={handleFavoriteClick}
           className="absolute top-2 right-2 w-7 h-7 md:w-8 md:h-8 rounded-lg bg-white/95 backdrop-blur-sm flex items-center justify-center shadow-sm border border-slate-100 hover:bg-white hover:scale-110 active:scale-95 transition-all z-10"
         >
-          <Heart className={`w-3.5 h-3.5 md:w-4 md:h-4 ${isFav ? 'fill-[#E21B22] text-[#E21B22]' : 'text-slate-400'}`} />
+          <Heart className={`w-3.5 h-3.5 md:w-4 md:h-4 ${isFav ? 'fill-[#F26522] text-[#F26522]' : 'text-slate-400'}`} />
         </button>
       </Link>
 
       <div className="flex-1 flex flex-col gap-1 md:gap-1.5">
         <Link href={`/product/${product.id}`}>
-          <h3 className="font-semibold text-[#1B3561] text-sm md:text-base leading-snug hover:text-[#E21B22] transition-colors line-clamp-2">
+          <h3 className="font-semibold text-[#1B3561] text-sm md:text-base leading-snug hover:text-[#F26522] transition-colors line-clamp-2">
             {product.name}
           </h3>
         </Link>

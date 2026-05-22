@@ -5,6 +5,7 @@ import { ProductTableClient } from "./ProductTableClient"
 import { ListSearchFilter } from "@/components/admin/ListSearchFilter"
 import Link from "next/link"
 import { ChevronLeft, ChevronRight, Package, Plus, Upload } from "lucide-react"
+import { ExcelExportImport } from "@/components/admin/ExcelExportImport"
 
 export const dynamic = "force-dynamic"
 
@@ -48,12 +49,13 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
           <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900">Бараанууд</h1>
           <p className="text-sm text-slate-500 mt-1">
             Нийт <strong className="text-slate-700">{total}</strong> бараа
-            {search && <> · "<span className="text-[#e63946] font-medium">{search}</span>" хайлт</>}
+            {search && <> · "<span className="text-[#F26522] font-medium">{search}</span>" хайлт</>}
           </p>
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <ListSearchFilter placeholder="Барааны нэрээр хайх..." />
+          <ExcelExportImport />
           <CreateProductSheet categories={categories || []} />
         </div>
       </div>
@@ -63,6 +65,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
         {[
           { key: "ALL", label: "Бүгд" },
           { key: "ACTIVE", label: "Идэвхтэй" },
+          { key: "LOW_STOCK", label: "Дуусаж буй" },
           { key: "OUT_OF_STOCK", label: "Дууссан" },
           { key: "DRAFT", label: "Ноорог" },
           { key: "ARCHIVED", label: "Архив" },

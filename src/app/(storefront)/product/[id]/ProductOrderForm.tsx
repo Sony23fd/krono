@@ -387,7 +387,7 @@ export function ProductOrderForm({ productId, unitPrice, deliveryFee, remainingQ
         )}
         <div className="flex justify-between font-bold text-slate-900 text-base border-t pt-2">
           <span>Нийт төлөх</span>
-          <span className="text-[#E21B22] text-xl">₮{totalAmount.toLocaleString()}</span>
+          <span className="text-[#F26522] text-xl">₮{totalAmount.toLocaleString()}</span>
         </div>
       </div>
 
@@ -400,7 +400,7 @@ export function ProductOrderForm({ productId, unitPrice, deliveryFee, remainingQ
       <Button
         type="submit"
         disabled={submitting || !canSubmit}
-        className="w-full bg-[#E21B22] hover:bg-[#c8161d] active:scale-[0.98] py-7 text-base sm:text-lg font-bold shadow-xl shadow-red-500/20 rounded-xl disabled:opacity-60 disabled:cursor-not-allowed transition-all"
+        className="w-full bg-[#F26522] hover:bg-[#E85B1C] active:scale-[0.98] py-7 text-base sm:text-lg font-bold shadow-xl shadow-red-500/20 rounded-xl disabled:opacity-60 disabled:cursor-not-allowed transition-all"
       >
         {submitting ? "Илгээж байна..." : (isPreOrder || currentStock > 0) ? "Захиалга баталгаажуулах" : "Дууссан"}
       </Button>

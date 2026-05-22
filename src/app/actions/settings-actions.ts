@@ -11,7 +11,7 @@ const DEFAULT_SETTINGS: Record<string, string> = {
   bank_note: "Shop",
   terms_of_service: "Захиалгаа баталгаажуулсны дараа цуцлах боломжгүй.",
   delivery_terms: "Хүргэлт нь Улаанбаатар хот дотор үйлчилнэ.",
-  qpay_enabled: "false",
+  qpay_enabled: "true",
   delivery_fee: "6000",
   delivery_schedule_days: "3,6",
   phone_verification_enabled: "false",

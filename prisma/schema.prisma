@@ -42,10 +42,12 @@ model Category {
   id        String    @id @default(cuid())
   name      String    @unique
   slug      String    @unique
-  imageUrl  String?
-  isActive  Boolean   @default(true)
-  sortOrder Int       @default(0)
-  createdAt DateTime  @default(now())
+  imageUrl        String?
+  metaTitle       String?
+  metaDescription String?
+  isActive        Boolean   @default(true)
+  sortOrder       Int       @default(0)
+  createdAt       DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   products  Product[]
 
@@ -242,6 +244,12 @@ model Payment {
   externalRef String?
   paidAt      DateTime?
   metadata    Json?
+
+  // QPay verification tracking
+  qpayVerifiedAt DateTime?  // When QPay confirmed payment
+  qpayVerifiedBy String?    // "AUTO" (QPay callback), "MANUAL" (admin), "CLIENT" (client poll)
+  lastQpayCheckAt DateTime? // Last time we checked QPay API
+
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
   order       Order         @relation(fields: [orderId], references: [id])
@@ -249,6 +257,7 @@ model Payment {
   @@index([orderId])
   @@index([externalRef])
   @@index([status])
+  @@index([qpayVerifiedAt])
 }
 
 enum PaymentMethod {
@@ -330,9 +339,11 @@ model Banner {
 model LoyaltyCard {
   id            String   @id @default(cuid())
   cardNumber    String   @unique
+  phone         String?  @unique
   pointsBalance Int      @default(0)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   
   @@index([cardNumber])
+  @@index([phone])
 }

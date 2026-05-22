@@ -142,12 +142,12 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 group hover:shadow-md transition-shadow relative overflow-hidden">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Нийт Орлого</span>
-            <div className="p-2 bg-[#e63946]/10 rounded-xl group-hover:scale-110 transition-transform">
-              <DollarSign className="h-4 w-4 text-[#e63946]" />
+            <div className="p-2 bg-[#F26522]/10 rounded-xl group-hover:scale-110 transition-transform">
+              <DollarSign className="h-4 w-4 text-[#F26522]" />
             </div>
           </div>
           <p className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">₮{totalRevenue.toLocaleString()}</p>
-          <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-[#e63946]/5 rounded-full blur-2xl"></div>
+          <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-[#F26522]/5 rounded-full blur-2xl"></div>
         </div>
 
         {/* Orders */}

@@ -71,7 +71,7 @@ export function TopHeader({ admin }: { admin?: AdminUser | null }) {
           <input
             type="text"
             placeholder="Бараа, захиалга, харилцагч хайх..."
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#e63946]/30 focus:border-[#e63946]/50 placeholder:text-slate-400 transition-all"
+            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#F26522]/30 focus:border-[#F26522]/50 placeholder:text-slate-400 transition-all"
           />
         </div>
       </div>
@@ -86,7 +86,7 @@ export function TopHeader({ admin }: { admin?: AdminUser | null }) {
         {admin && (
           <div className="hidden sm:flex items-center gap-2.5 text-sm bg-slate-50 rounded-xl px-3 py-2 border border-slate-200/80">
             <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center", 
-              admin.role === "ADMIN" ? "bg-[#e63946]/10 text-[#e63946]" : 
+              admin.role === "ADMIN" ? "bg-[#F26522]/10 text-[#F26522]" : 
               admin.role === "DATAADMIN" ? "bg-purple-100 text-purple-600" :
               "bg-sky-100 text-sky-600"
             )}>
@@ -114,7 +114,7 @@ export function TopHeader({ admin }: { admin?: AdminUser | null }) {
             size="icon"
             onClick={handleLogout}
             title="Гарах"
-            className="text-slate-400 hover:text-[#e63946] hover:bg-red-50 rounded-xl"
+            className="text-slate-400 hover:text-[#F26522] hover:bg-red-50 rounded-xl"
           >
             <LogOut className="w-4 h-4" />
           </Button>

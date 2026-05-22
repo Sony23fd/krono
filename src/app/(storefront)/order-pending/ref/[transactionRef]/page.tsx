@@ -137,7 +137,7 @@ export default async function OrderPendingByRefPage({ params }: { params: Promis
 
           <div className="flex justify-between font-bold text-slate-900 text-base border-t pt-2">
             <span>Нийт төлөх</span>
-            <span className="text-[#E21B22]">₮{totalAmount.toLocaleString()}</span>
+            <span className="text-[#F26522]">₮{totalAmount.toLocaleString()}</span>
           </div>
         </div>
 
