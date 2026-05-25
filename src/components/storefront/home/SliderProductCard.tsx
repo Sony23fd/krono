@@ -75,7 +75,7 @@ export function SliderProductCard({ product }: { product: any }) {
           {/* Price */}
           <div className="mb-3 flex items-end gap-2 flex-wrap">
             <p className="text-lg font-bold text-gray-900">
-              ₮{price.toLocaleString()}
+              ₮{price.toLocaleString()} <span className="text-sm font-medium text-gray-400">/ {product.unit || "ширхэг"}</span>
             </p>
             {hasDiscount && (
               <p className="text-sm font-medium text-gray-400 line-through mb-0.5">

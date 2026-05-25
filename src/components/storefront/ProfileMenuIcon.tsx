@@ -31,19 +31,13 @@ export function ProfileMenuIcon() {
           </button>
         </>
       ) : (
-        <div className="flex items-center gap-2 ml-2">
+        <div className="flex items-center ml-2">
           <Link
             href="/login"
             className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-[#1B3561] hover:text-[#F26522] transition-colors border border-slate-200 rounded-lg hover:border-[#F26522]"
           >
             <User className="w-4 h-4" />
             Нэвтрэх
-          </Link>
-          <Link
-            href="/register"
-            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-[#F26522] hover:bg-[#E85B1C] transition-colors rounded-lg"
-          >
-            Бүртгүүлэх
           </Link>
         </div>
       )}

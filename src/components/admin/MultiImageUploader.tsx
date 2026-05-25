@@ -162,14 +162,20 @@ export function MultiImageUploader({ product }: Props) {
               {/* Upload Button */}
               <div
                 onClick={() => inputRef.current?.click()}
-                className="w-[72px] h-[72px] rounded-lg border-2 border-dashed border-indigo-200 bg-indigo-50/50 hover:bg-indigo-100 hover:border-indigo-400 cursor-pointer flex flex-col items-center justify-center gap-1 text-center relative flex-shrink-0 transition-colors"
+                className={`w-[72px] h-[72px] rounded-lg border-2 border-dashed cursor-pointer flex flex-col items-center justify-center gap-1 text-center relative flex-shrink-0 transition-colors ${
+                  images.length === 0
+                    ? "border-red-300 bg-red-50 hover:bg-red-100"
+                    : "border-indigo-200 bg-indigo-50/50 hover:bg-indigo-100 hover:border-indigo-400"
+                }`}
               >
                 {uploading ? (
-                  <Loader2 className="w-5 h-5 text-indigo-500 animate-spin" />
+                  <Loader2 className={`w-5 h-5 animate-spin ${images.length === 0 ? "text-red-500" : "text-indigo-500"}`} />
                 ) : (
                   <>
-                    <ImagePlus className="w-5 h-5 text-indigo-400" />
-                    <span className="text-[9px] font-semibold text-indigo-600 leading-tight px-1">Нэмэх</span>
+                    <ImagePlus className={`w-5 h-5 ${images.length === 0 ? "text-red-400" : "text-indigo-400"}`} />
+                    <span className={`text-[9px] font-semibold leading-tight px-1 ${images.length === 0 ? "text-red-600" : "text-indigo-600"}`}>
+                      {images.length === 0 ? "Зураггүй!" : "Нэмэх"}
+                    </span>
                   </>
                 )}
               </div>

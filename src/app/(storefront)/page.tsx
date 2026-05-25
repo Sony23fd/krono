@@ -46,6 +46,7 @@ export default async function StorefrontHomePage() {
           promoTitle={config?.promo_title || "СУПЕР ХЯМДРАЛ"}
           promoSubtitle={config?.promo_subtitle || "Зөвхөн өнөөдөр"}
           promoLink={config?.promo_link || "/shop?sale=true"}
+          promoImage={config?.promo_image}
           products={saleProducts || []}
         />
       </div>

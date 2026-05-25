@@ -21,6 +21,21 @@ async function main() {
   })
   console.log(`✅ Admin: ${admin.email}`)
 
+  // 1.5. Data Admin хэрэглэгч
+  const dataAdminPassword = await hash("dataadmin123", 12)
+  const dataAdmin = await db.user.upsert({
+    where: { email: "dataadmin@shop.mn" },
+    update: {},
+    create: {
+      email: "dataadmin@shop.mn",
+      phone: "88888888",
+      name: "Дата Админ",
+      password: dataAdminPassword,
+      role: "DATAADMIN",
+    },
+  })
+  console.log(`✅ Data Admin: ${dataAdmin.email}`)
+
   // 2. Ангилалууд
   const categories = [
     { name: "Гоо сайхан", slug: "goo-saikhan" },

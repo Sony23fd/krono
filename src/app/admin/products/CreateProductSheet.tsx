@@ -81,6 +81,7 @@ export function CreateProductSheet({ categories }: { categories: any[] }) {
       stockQuantity: remainingQuantity,
       price: Number(formData.get("price") || 0),
       weight: Number(formData.get("weight") || 0),
+      unit: (formData.get("unit") as string) || "ширхэг",
       categoryId: selectedCategoryId || undefined,
       customBadge: (formData.get("customBadge") as string) || undefined,
       options: formattedOptions.length > 0 ? formattedOptions : undefined,
@@ -212,7 +213,7 @@ export function CreateProductSheet({ categories }: { categories: any[] }) {
             <label htmlFor="description" className="text-sm font-medium">Тайлбар</label>
             <RichTextEditor name="description" placeholder="Барааны дэлгэрэнгүй..." />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <label htmlFor="price" className="text-sm font-medium">Үнэ (₮)</label>
               <Input id="price" name="price" type="number" required placeholder="0" />
@@ -220,6 +221,10 @@ export function CreateProductSheet({ categories }: { categories: any[] }) {
             <div className="space-y-2">
               <label htmlFor="weight" className="text-sm font-medium">Жин (кг)</label>
               <Input id="weight" name="weight" type="number" step="0.01" placeholder="0.0" />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="unit" className="text-sm font-medium">Хэмжих нэгж</label>
+              <Input id="unit" name="unit" defaultValue="ширхэг" placeholder="Ширхэг, кг, гр..." />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">

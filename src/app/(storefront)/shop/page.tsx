@@ -8,12 +8,13 @@ import { Package } from "lucide-react"
 
 export const dynamic = "force-dynamic"
 
-export default async function ShopPage({ searchParams }: { searchParams: Promise<{ q?: string, category?: string, sort?: string, page?: string }> }) {
+export default async function ShopPage({ searchParams }: { searchParams: Promise<{ q?: string, category?: string, sort?: string, page?: string, sale?: string }> }) {
   const params = await searchParams
   const query = params.q?.trim() || ""
   const categorySlug = params.category?.trim() || "all"
   const sort = params.sort || "newest"
   const page = parseInt(params.page || "1")
+  const isSale = params.sale === "true"
 
   const [{ categories }, { products, total, totalPages, currentPage }] = await Promise.all([
     getCategories(),
@@ -24,6 +25,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
       sort: sort as "newest" | "oldest" | "price_asc" | "price_desc" | "stock_asc" | "stock_desc",
       page,
       limit: 24,
+      sale: isSale,
     }),
   ])
 
@@ -36,7 +38,10 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
   let theme: "ready" | "preorder" | string = "ready"
   let badge = selectedCategory ? selectedCategory.name : "Каталог"
 
-  if (query) {
+  if (isSale) {
+    title = "Хямдралтай бараанууд"
+    subtitle = "СУПЕР ХЯМДРАЛ"
+  } else if (query) {
     subtitle = `"${query}" хайлтад олдсон бараанууд`
   }
 
@@ -70,9 +75,10 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
                   totalPages={totalPages}
                   baseUrl="/shop"
                   searchParams={new URLSearchParams({
-                    q: query,
-                    category: categorySlug,
-                    sort,
+                    ...(query && { q: query }),
+                    ...(categorySlug !== "all" && { category: categorySlug }),
+                    ...(sort !== "newest" && { sort }),
+                    ...(isSale && { sale: "true" }),
                   })}
                 />
               </>

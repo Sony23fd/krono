@@ -121,8 +121,8 @@ export function BulkActionsBar({ selectedIds, categories, onClear }: BulkActions
         {/* Archive / Delete */}
         <button
           onClick={() => {
-            if (confirm("Сонгосон бараануудыг архивлах уу?")) {
-              executeBulkAction("set_status", { value: "ARCHIVED" })
+            if (confirm("Сонгосон бараануудыг устгах уу? (Архивлагдсан барааг бүр мөсөн устгана)")) {
+              executeBulkAction("delete_products")
             }
           }}
           disabled={loading}

@@ -88,7 +88,7 @@ export function ProductCard({ product, index = 0, theme = "default" }: { product
           <div className="mb-2 md:mb-2.5">
             <div className="flex items-end gap-2">
               <p className="text-lg md:text-xl font-black text-[#1B3561] tracking-tight">
-                ₮{price.toLocaleString()}
+                ₮{price.toLocaleString()} <span className="text-sm md:text-base font-bold text-slate-400">/ {product.unit || "ширхэг"}</span>
               </p>
               {hasDiscount && (
                 <p className="text-xs md:text-sm font-medium text-slate-400 line-through mb-0.5">

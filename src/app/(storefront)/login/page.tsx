@@ -145,70 +145,75 @@ export default function LoginPage() {
               <p className="text-slate-500 text-sm">Таны хуудс руу шилжиж байна...</p>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Таны нэр</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  placeholder="Жишээ: Отгоо"
-                  className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B3561]/30 transition"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Утасны дугаар</label>
-                <div className="flex flex-col gap-2">
+            <>
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Таны нэр</label>
                   <input
-                    type="tel"
-                    inputMode="numeric"
-                    value={phone}
-                    onChange={e => handlePhoneChange(e.target.value)}
-                    maxLength={8}
-                    placeholder="99112233"
-                    className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 transition ${
-                      phoneError ? "border-red-400 focus:ring-red-300" : "border-slate-200 focus:ring-[#1B3561]/30"
-                    }`}
+                    type="text"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    placeholder="Жишээ: Отгоо"
+                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B3561]/30 transition"
                   />
-                  {phoneError && (
-                    <p className="text-xs text-red-500 flex items-center gap-1">
-                      <AlertCircle className="w-3 h-3" /> {phoneError}
-                    </p>
-                  )}
                 </div>
-                <p className="text-xs text-slate-400">
-                  {phoneVerificationEnabled
-                    ? "Бүртгэлтэй хэрэглэгч бол та утасны дугаараа баталгаажуулах шаардлагатай."
-                    : "Утасны дугаараа оруулна уу."}
-                </p>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Утасны дугаар</label>
+                  <div className="flex flex-col gap-2">
+                    <input
+                      type="tel"
+                      inputMode="numeric"
+                      value={phone}
+                      onChange={e => handlePhoneChange(e.target.value)}
+                      maxLength={8}
+                      placeholder="99112233"
+                      className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 transition ${
+                        phoneError ? "border-red-400 focus:ring-red-300" : "border-slate-200 focus:ring-[#1B3561]/30"
+                      }`}
+                    />
+                    {phoneError && (
+                      <p className="text-xs text-red-500 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" /> {phoneError}
+                      </p>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    {phoneVerificationEnabled
+                      ? "Бүртгэлтэй хэрэглэгч бол та утасны дугаараа баталгаажуулах шаардлагатай."
+                      : "Утасны дугаараа оруулна уу."}
+                  </p>
+                </div>
+
+                {generalError && (
+                  <div className="bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl px-4 py-3">
+                    {generalError}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading || !!phoneError || !name.trim() || phone.length !== 8}
+                  className="w-full py-3 bg-[#F26522] text-white font-semibold rounded-xl hover:bg-[#E85B1C] disabled:opacity-60 transition-colors shadow-sm flex items-center justify-center gap-2"
+                >
+                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
+                  {loading ? "Нэвтэрч байна..." : "Нэвтрэх"}
+                  {!loading && <ArrowRight className="w-4 h-4" />}
+                </button>
+              </form>
+              
+              <div className="mt-6 pt-6 border-t border-slate-100">
+                <p className="text-center text-sm text-slate-500 mb-4">Бүртгэлгүй бол</p>
+                <Link
+                  href="/register"
+                  className="w-full py-3 border border-slate-200 text-[#1B3561] font-semibold rounded-xl hover:bg-slate-50 hover:border-[#1B3561]/30 transition-colors flex items-center justify-center"
+                >
+                  Бүртгүүлэх
+                </Link>
               </div>
-
-              {generalError && (
-                <div className="bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl px-4 py-3">
-                  {generalError}
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={loading || !!phoneError || !name.trim() || phone.length !== 8}
-                className="w-full py-3 bg-[#F26522] text-white font-semibold rounded-xl hover:bg-[#E85B1C] disabled:opacity-60 transition-colors shadow-sm flex items-center justify-center gap-2"
-              >
-                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
-                {loading ? "Нэвтэрч байна..." : "Нэвтрэх"}
-                {!loading && <ArrowRight className="w-4 h-4" />}
-              </button>
-            </form>
+            </>
           )}
         </div>
-
-        <p className="text-center text-slate-500 text-xs mt-6">
-          Бүртгэлгүй хэрэглэгч?{" "}
-          <Link href="/register" className="text-[#1B3561] font-medium hover:underline">
-            Бүртгүүлэх
-          </Link>
-        </p>
       </div>
     </div>
   )

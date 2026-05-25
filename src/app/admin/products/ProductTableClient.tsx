@@ -125,7 +125,7 @@ export function ProductTableClient({ products, categories, search }: ProductTabl
                     </td>
 
                     <td className="px-4 py-4 text-right">
-                      <span className="font-bold text-slate-900 text-[13px]">₮{Number(product.price).toLocaleString()}</span>
+                      <span className="font-bold text-slate-900 text-[13px]">₮{Number(product.price).toLocaleString()} <span className="text-[10px] font-normal text-slate-400">/ {product.unit || "ширхэг"}</span></span>
                       {Number(product.deliveryFee) > 0 && (
                         <p className="text-[10px] text-slate-400 mt-0.5">+₮{Number(product.deliveryFee).toLocaleString()}</p>
                       )}
@@ -224,7 +224,7 @@ export function ProductTableClient({ products, categories, search }: ProductTabl
                   <div className="flex items-center gap-4">
                     <div>
                       <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Үнэ</p>
-                      <p className="font-black text-slate-900">₮{Number(product.price).toLocaleString()}</p>
+                      <p className="font-black text-slate-900">₮{Number(product.price).toLocaleString()} <span className="text-[10px] font-normal text-slate-500">/ {product.unit || "ширхэг"}</span></p>
                     </div>
                     <div>
                       <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Үлдэгдэл</p>

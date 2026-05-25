@@ -107,6 +107,7 @@ export function EditProductSheet({ product, categories }: EditProductSheetProps)
       stockQuantity: remainingQuantity,
       price: Number(formData.get("price") || 0),
       weight: Number(formData.get("weight") || 0),
+      unit: (formData.get("unit") as string) || "ширхэг",
       status: formData.get("status") as string,
       categoryId: formData.get("categoryId") as string || undefined,
       options: formattedOptions.length > 0 ? formattedOptions : [],
@@ -237,7 +238,7 @@ export function EditProductSheet({ product, categories }: EditProductSheetProps)
               ))}
             </select>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <label htmlFor="price" className="text-sm font-medium">Үнэ (₮)</label>
               <Input id="price" name="price" type="number" required defaultValue={Number(product.price)} />
@@ -245,6 +246,10 @@ export function EditProductSheet({ product, categories }: EditProductSheetProps)
             <div className="space-y-2">
               <label htmlFor="weight" className="text-sm font-medium">Жин (кг)</label>
               <Input id="weight" name="weight" type="number" step="0.01" defaultValue={Number(product.weight || 0)} />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="unit" className="text-sm font-medium">Хэмжих нэгж</label>
+              <Input id="unit" name="unit" defaultValue={product.unit || "ширхэг"} placeholder="Ширхэг, кг, гр..." />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">

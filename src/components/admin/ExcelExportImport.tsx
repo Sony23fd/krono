@@ -2,15 +2,18 @@
 
 import { useState, useRef } from "react"
 import { Download, Upload, Loader2 } from "lucide-react"
-import { importProducts } from "@/app/actions/product-actions"
-import * as xlsx from "xlsx"
+import { useRouter, useSearchParams } from "next/navigation"
 
 export function ExcelExportImport() {
   const [importing, setImporting] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const router = useRouter()
+  const searchParams = useSearchParams()
 
   const handleExport = () => {
-    window.open("/api/admin/products/export", "_blank")
+    const qs = searchParams.toString()
+    const url = qs ? `/api/admin/products/export?${qs}` : "/api/admin/products/export"
+    window.open(url, "_blank")
   }
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -19,26 +22,29 @@ export function ExcelExportImport() {
 
     setImporting(true)
     try {
-      const data = await file.arrayBuffer()
-      const workbook = xlsx.read(data, { type: "array" })
-      const firstSheetName = workbook.SheetNames[0]
-      const worksheet = workbook.Sheets[firstSheetName]
-      const rows = xlsx.utils.sheet_to_json(worksheet)
-
-      if (rows.length === 0) {
-        alert("Excel файл хоосон байна.")
-        setImporting(false)
-        return
-      }
-
-      const res = await importProducts(rows)
-      if (res.success) {
-        alert(`Амжилттай: ${res.imported} шинээр нэмэгдэж, ${res.updated} шинэчлэгдлээ.`)
+      const formData = new FormData()
+      formData.append("file", file)
+      
+      const res = await fetch("/api/admin/products/bulk-upload", {
+        method: "POST",
+        body: formData
+      })
+      
+      const data = await res.json()
+      
+      if (res.ok && data.success) {
+        alert(`Амжилттай: ${data.inserted} шинээр нэмэгдэж, ${data.updated} шинэчлэгдэн, ${data.variantsProcessed} хувилбар орлоо.`)
+        router.refresh()
       } else {
-        alert("Алдаа: " + res.error)
+        console.error("Bulk Upload Error:", data)
+        if (data.errors && data.errors.length > 0) {
+          alert(`Алдаа: ${data.message}\n` + data.errors.map((err: any) => `Мөр ${err.row}: ${err.msg}`).join('\n'))
+        } else {
+          alert("Алдаа: " + (data.error || data.message || "Мэдэгдэхгүй алдаа"))
+        }
       }
     } catch (error: any) {
-      alert("Excel уншихад алдаа гарлаа: " + error.message)
+      alert("Сервертэй холбогдоход алдаа гарлаа: " + error.message)
     } finally {
       setImporting(false)
       if (fileInputRef.current) fileInputRef.current.value = ""

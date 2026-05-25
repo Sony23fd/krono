@@ -6,6 +6,8 @@ import { ListSearchFilter } from "@/components/admin/ListSearchFilter"
 import Link from "next/link"
 import { ChevronLeft, ChevronRight, Package, Plus, Upload } from "lucide-react"
 import { ExcelExportImport } from "@/components/admin/ExcelExportImport"
+import { BulkImageUploadModal } from "@/components/admin/BulkImageUploadModal"
+import { ProductFilters } from "@/components/admin/ProductFilters"
 
 export const dynamic = "force-dynamic"
 
@@ -55,6 +57,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <ListSearchFilter placeholder="Барааны нэрээр хайх..." />
+          <BulkImageUploadModal />
           <ExcelExportImport />
           <CreateProductSheet categories={categories || []} />
         </div>
@@ -65,6 +68,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
         {[
           { key: "ALL", label: "Бүгд" },
           { key: "ACTIVE", label: "Идэвхтэй" },
+          { key: "NO_IMAGE", label: "Зураггүй" },
           { key: "LOW_STOCK", label: "Дуусаж буй" },
           { key: "OUT_OF_STOCK", label: "Дууссан" },
           { key: "DRAFT", label: "Ноорог" },
@@ -82,6 +86,16 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
             {tab.label}
           </Link>
         ))}
+      </div>
+
+      {/* Filters (Category, Stock, Sort) */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-50/50 p-2 rounded-xl border border-slate-100">
+        <ProductFilters 
+          currentCategory={categoryFilter}
+          currentSort={sortFilter}
+          currentStock="all" // Stock is currently handled by status tabs, but this component supports it.
+          categories={categories || []}
+        />
       </div>
 
       {/* ═══ Product Table with Checkboxes ═══ */}

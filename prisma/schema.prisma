@@ -69,6 +69,7 @@ model Product {
   comparePrice  Decimal?
   costPrice     Decimal?
   weight        Decimal?       @default(0)
+  unit          String         @default("ширхэг")
   categoryId    String?
   stockQuantity Int            @default(0)
   reservedStock Int            @default(0)

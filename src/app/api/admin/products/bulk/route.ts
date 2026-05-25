@@ -1,24 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
-import { cookies } from "next/headers"
-import { jwtVerify } from "jose"
-
-async function verifyAdmin(req: NextRequest) {
-  const cookieStore = await cookies()
-  const token = cookieStore.get("admin_token")?.value
-  if (!token) return null
-  try {
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET || "bileg-secret")
-    const { payload } = await jwtVerify(token, secret)
-    return payload as any
-  } catch {
-    return null
-  }
-}
+import { getCurrentAdmin } from "@/lib/auth"
 
 // PUT /api/admin/products/bulk — Bulk actions for products
 export async function PUT(req: NextRequest) {
-  const admin = await verifyAdmin(req)
+  const admin = await getCurrentAdmin()
   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   try {
@@ -87,6 +73,55 @@ export async function PUT(req: NextRequest) {
           success: true,
           message: `${result.count} барааны статус шинэчлэгдлээ`,
           count: result.count,
+        })
+      }
+
+      // ═══ Bulk Delete Products ═══
+      case "delete_products": {
+        let deletedCount = 0;
+        let archivedCount = 0;
+        let errorCount = 0;
+
+        for (const id of productIds) {
+          const p = await db.product.findUnique({ where: { id } });
+          if (!p) continue;
+
+          if (p.status === "ARCHIVED") {
+            // Already archived -> permanently delete if no orders
+            const totalOrders = await db.orderItem.count({ where: { productId: id } })
+            if (totalOrders > 0) {
+              errorCount++;
+            } else {
+              await db.cartItem.deleteMany({ where: { productId: id } })
+              await db.product.delete({ where: { id } })
+              deletedCount++;
+            }
+          } else {
+            // Not archived -> archive if no active orders
+            const activeOrderCount = await db.orderItem.count({
+              where: {
+                productId: id,
+                order: { orderStatus: { in: ["PENDING", "PAID", "PROCESSING", "SHIPPED"] } }
+              }
+            })
+            if (activeOrderCount > 0) {
+              errorCount++;
+            } else {
+              await db.product.update({ where: { id }, data: { status: "ARCHIVED" } })
+              archivedCount++;
+            }
+          }
+        }
+
+        let msg = ""
+        if (archivedCount > 0) msg += `${archivedCount} бараа архивлагдсан. `
+        if (deletedCount > 0) msg += `${deletedCount} бараа бүрмөсөн устгагдсан. `
+        if (errorCount > 0) msg += `(${errorCount} барааг устгах боломжгүй: захиалгын түүхтэй байна)`
+        if (msg === "") msg = "Ямар нэгэн өөрчлөлт орсонгүй."
+
+        return NextResponse.json({
+          success: true,
+          message: msg.trim()
         })
       }
 

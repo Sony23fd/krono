@@ -11,7 +11,7 @@ interface Props {
 }
 
 export function RichTextEditor({ name, defaultValue, placeholder }: Props) {
-  const ReactQuill = useMemo(() => dynamic(() => import("react-quill"), { ssr: false }), [])
+  const ReactQuill = useMemo(() => dynamic(() => import("react-quill-new"), { ssr: false }), [])
   const [value, setValue] = useState(defaultValue || "")
 
   return (

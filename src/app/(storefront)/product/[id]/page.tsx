@@ -110,7 +110,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             
             <div className="flex items-end gap-3 mb-6">
               <p className="text-4xl font-black text-[#1B3561] tracking-tighter">
-                ₮{unitPrice.toLocaleString()}
+                ₮{unitPrice.toLocaleString()} <span className="text-xl md:text-2xl font-bold text-slate-400">/ {product.unit || "ширхэг"}</span>
               </p>
               {product.comparePrice && Number(product.comparePrice) > unitPrice && (
                 <p className="text-lg text-slate-400 line-through decoration-slate-300 font-medium mb-1">
@@ -204,7 +204,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                   </div>
                   <p className="text-sm sm:text-base font-semibold text-slate-800 line-clamp-2 mb-2 group-hover:text-[#F26522] transition-colors">{p.name}</p>
                   <div className="mt-auto">
-                    <p className="text-base sm:text-lg font-black text-[#1B3561] tracking-tight">₮{Number(p.price).toLocaleString()}</p>
+                    <p className="text-base sm:text-lg font-black text-[#1B3561] tracking-tight">₮{Number(p.price).toLocaleString()} <span className="text-xs sm:text-sm font-bold text-slate-400">/ {p.unit || "ширхэг"}</span></p>
                   </div>
                 </Link>
               ))}

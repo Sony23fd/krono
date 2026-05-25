@@ -49,6 +49,7 @@ export function GeneralSettingsClient({ initialSettings, userRole }: Props) {
   const [promoTitle, setPromoTitle] = useState(initialSettings["promo_title"] || "СУПЕР ХЯМДРАЛ")
   const [promoSubtitle, setPromoSubtitle] = useState(initialSettings["promo_subtitle"] || "Зөвхөн өнөөдөр")
   const [promoLink, setPromoLink] = useState(initialSettings["promo_link"] || "/shop?sale=true")
+  const [promoImage, setPromoImage] = useState(initialSettings["promo_image"] || "")
 
   const [loyaltyDiscountPercent, setLoyaltyDiscountPercent] = useState(initialSettings["loyalty_discount_percent"] || "3")
 
@@ -149,6 +150,7 @@ export function GeneralSettingsClient({ initialSettings, userRole }: Props) {
       await fetch("/api/admin/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "promo_title", value: promoTitle }) })
       await fetch("/api/admin/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "promo_subtitle", value: promoSubtitle }) })
       await fetch("/api/admin/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "promo_link", value: promoLink }) })
+      await fetch("/api/admin/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "promo_image", value: promoImage }) })
 
       // Save loyalty settings
       await fetch("/api/admin/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "loyalty_discount_percent", value: loyaltyDiscountPercent }) })
@@ -400,12 +402,62 @@ export function GeneralSettingsClient({ initialSettings, userRole }: Props) {
           </div>
 
           <div className="pt-6 border-t border-slate-100 space-y-4">
-            <div className="space-y-0.5">
+            <div className="space-y-0.5 mb-4">
               <label className="text-base font-semibold text-slate-800">"СУПЕР ХЯМДРАЛ" Баннер (Promo Slider)</label>
               <p className="text-sm text-slate-500">
                 Нүүр хуудасны хямдралтай барааны хажуудах онцгой саналын текстийг солих
               </p>
             </div>
+            
+            <div className="mb-4">
+              <label className="text-sm font-medium mb-2 block">Баннерын Арын Зураг (Заавал биш)</label>
+              <div className="flex items-center gap-4">
+                <div className="relative w-48 h-24 rounded-lg border-2 border-dashed border-slate-300 flex items-center justify-center bg-slate-50 overflow-hidden group">
+                  {promoImage ? (
+                    <>
+                      <Image src={promoImage} alt="Promo" fill className="object-cover" />
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-10">
+                        <button
+                          onClick={() => setPromoImage("")}
+                          className="w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center text-sm hover:bg-red-600 transition-colors shadow-sm"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center text-slate-400 p-2 cursor-pointer relative w-full h-full flex flex-col items-center justify-center hover:bg-slate-100 transition-colors">
+                      <Upload className="w-5 h-5 mx-auto mb-1" />
+                      <span className="text-[10px] font-semibold uppercase">Оруулах</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        disabled={isUploading}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0]
+                          if (!file) return
+                          setIsUploading(true)
+                          const formData = new FormData()
+                          formData.append("file", file)
+                          try {
+                            const res = await fetch("/api/admin/settings/upload", { method: "POST", body: formData })
+                            const data = await res.json()
+                            if (!res.ok) throw new Error(data.error)
+                            setPromoImage(data.url)
+                          } catch (error: any) {
+                            toast.error(error.message)
+                          } finally {
+                            setIsUploading(false)
+                          }
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Том Гарчиг</label>

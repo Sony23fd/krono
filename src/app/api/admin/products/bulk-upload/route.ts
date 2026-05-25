@@ -8,7 +8,7 @@ import * as XLSX from "xlsx"
  * CSV/Excel файл upload → SKU-аар UPSERT (байвал шинэчлэх, байхгүй бол нэмэх)
  * 
  * CSV Template:
- * SKU | Нэр | Үнэ | Өртөг | Тоо | Жин | Ангилал | Тайлбар | Хувилбар_SKU | Хувилбар_нэр | Хувилбар_Тоо
+ * SKU | Нэр | Үнэ | Өртөг | Тоо | Жин | Хэмжих нэгж | Ангилал | Тайлбар | Хувилбар_SKU | Хувилбар_нэр | Хувилбар_Тоо
  */
 
 interface ParsedProduct {
@@ -18,6 +18,7 @@ interface ParsedProduct {
   costPrice?: number
   stockQuantity: number
   weight?: number
+  unit?: string
   categoryName?: string
   description?: string
 }
@@ -76,7 +77,7 @@ export async function POST(req: NextRequest) {
       const vName = String(r["Хувилбар_нэр"] || r["variant_name"] || sku).trim()
       const vQty = Number(r["Хувилбар_Тоо"] || r["variant_qty"] || r["Тоо"] || 0)
       const vPrice = r["Үнэ"] || r["price"] ? Number(r["Үнэ"] || r["price"]) : undefined
-      if (isNaN(vQty) || vQty < 0) { errors.push({ row, msg: "Variant тоо буруу" }); continue }
+      if (isNaN(vQty)) { errors.push({ row, msg: "Variant тоо буруу" }); continue }
       variants.push({ sku, parentSku, name: vName, stockQuantity: vQty, price: vPrice })
       continue
     }
@@ -87,14 +88,15 @@ export async function POST(req: NextRequest) {
     const costPrice = r["Өртөг"] || r["cost"] ? Number(r["Өртөг"] || r["cost"]) : undefined
     const qty = Number(r["Тоо"] || r["stock"] || 0)
     const weight = Number(r["Жин"] || r["weight"] || 0)
+    const unit = String(r["Хэмжих нэгж"] || r["unit"] || "ширхэг").trim()
     const cat = String(r["Ангилал"] || r["category"] || "").trim()
     const desc = String(r["Тайлбар"] || r["description"] || "").trim()
 
     if (!name) { errors.push({ row, msg: "Нэр хоосон" }); continue }
     if (isNaN(price) || price <= 0) { errors.push({ row, msg: `Үнэ буруу: ${r["Үнэ"]}` }); continue }
-    if (isNaN(qty) || qty < 0) { errors.push({ row, msg: `Тоо буруу: ${r["Тоо"]}` }); continue }
+    if (isNaN(qty)) { errors.push({ row, msg: `Тоо буруу: ${r["Тоо"]}` }); continue }
 
-    products.push({ sku, name, price, costPrice, stockQuantity: qty, weight, categoryName: cat, description: desc })
+    products.push({ sku, name, price, costPrice, stockQuantity: qty, weight, unit, categoryName: cat, description: desc })
   }
 
   if (!products.length && !variants.length) {
@@ -124,16 +126,21 @@ export async function POST(req: NextRequest) {
           if (categoryCache.has(p.categoryName)) {
             categoryId = categoryCache.get(p.categoryName)
           } else {
-            let cat = await tx.category.findFirst({ where: { name: p.categoryName } })
-            if (!cat) {
               const slug = p.categoryName
                 .toLowerCase()
+                .trim()
                 .replace(/\s+/g, "-")
-                .replace(/[^a-z0-9\-а-яөүё]/gi, "")
-              cat = await tx.category.create({
-                data: { name: p.categoryName, slug: slug || `cat-${Date.now()}` }
+                .replace(/[^a-z0-9\-а-яөүё]/gi, "") || `cat-${Date.now()}-${Math.floor(Math.random() * 1000)}`
+
+              let cat = await tx.category.findFirst({ 
+                where: { OR: [{ name: p.categoryName }, { slug }] } 
               })
-            }
+
+              if (!cat) {
+                cat = await tx.category.create({
+                  data: { name: p.categoryName.trim(), slug }
+                })
+              }
             categoryId = cat.id
             categoryCache.set(p.categoryName, cat.id)
           }
@@ -157,6 +164,7 @@ export async function POST(req: NextRequest) {
               costPrice: p.costPrice,
               stockQuantity: p.stockQuantity,
               weight: p.weight || 0,
+              unit: p.unit || "ширхэг",
               description: p.description || undefined,
               status: p.stockQuantity > 0 ? "ACTIVE" : "OUT_OF_STOCK",
               ...(categoryId && { categoryId }),
@@ -174,6 +182,7 @@ export async function POST(req: NextRequest) {
               costPrice: p.costPrice,
               stockQuantity: p.stockQuantity,
               weight: p.weight || 0,
+              unit: p.unit || "ширхэг",
               description: p.description || undefined,
               status: p.stockQuantity > 0 ? "ACTIVE" : "OUT_OF_STOCK",
               ...(categoryId && { categoryId }),

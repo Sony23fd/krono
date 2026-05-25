@@ -33,6 +33,11 @@ export async function getProducts(filters?: {
       if (filters.status === "LOW_STOCK") {
         where.status = "ACTIVE"
         where.stockQuantity = { lt: 5, gt: 0 }
+      } else if (filters.status === "NO_IMAGE") {
+        where.AND = [
+          ...(where.AND || []),
+          { OR: [{ imageUrl: null }, { imageUrl: "" }] }
+        ]
       } else {
         where.status = filters.status
       }
@@ -86,6 +91,7 @@ export async function getActiveProducts(filters?: {
   sort?: "newest" | "oldest" | "price_asc" | "price_desc" | "stock_asc" | "stock_desc"
   page?: number
   limit?: number
+  sale?: boolean
 }) {
   try {
     const page = filters?.page || 1
@@ -120,6 +126,10 @@ export async function getActiveProducts(filters?: {
           ],
         },
       ]
+    }
+
+    if (filters?.sale) {
+      where.comparePrice = { gt: db.product.fields.price }
     }
 
     let orderBy: any = { createdAt: "desc" }
@@ -219,6 +229,7 @@ export async function createProduct(data: {
   costPrice?: number
   stockQuantity: number
   weight?: number
+  unit?: string
   categoryId?: string
   imageUrl?: string
   isPreOrder?: boolean
@@ -244,6 +255,7 @@ export async function createProduct(data: {
         costPrice: data.costPrice,
         stockQuantity: data.stockQuantity,
         weight: data.weight || 0,
+        unit: data.unit || "ширхэг",
         imageUrl: data.imageUrl,
         isPreOrder: data.isPreOrder || false,
         customBadge: data.customBadge?.trim() || null,
@@ -286,6 +298,7 @@ export async function updateProduct(productId: string, data: {
   costPrice?: number
   stockQuantity?: number
   weight?: number
+  unit?: string
   categoryId?: string
   imageUrl?: string
   status?: string
@@ -323,6 +336,7 @@ export async function updateProduct(productId: string, data: {
           status: data.stockQuantity > 0 ? "ACTIVE" : "OUT_OF_STOCK",
         }),
         ...(data.weight !== undefined && { weight: data.weight }),
+        ...(data.unit !== undefined && { unit: data.unit }),
         ...(data.categoryId !== undefined && { categoryId: data.categoryId }),
         ...(data.imageUrl !== undefined && { imageUrl: data.imageUrl }),
         ...(data.status !== undefined && { status: data.status as any }),
@@ -345,21 +359,31 @@ export async function updateProduct(productId: string, data: {
 
 export async function deleteProduct(productId: string) {
   try {
-    // Идэвхтэй захиалгатай эсэх шалгах
-    const orderCount = await db.orderItem.count({
-      where: {
-        productId,
-        order: { orderStatus: { in: ["PENDING", "PAID", "PROCESSING", "SHIPPED"] } }
-      }
-    })
-    if (orderCount > 0) {
-      return { success: false, error: `${orderCount} идэвхтэй захиалгатай тул устгах боломжгүй. Архивлах боломжтой.` }
-    }
+    const product = await db.product.findUnique({ where: { id: productId } })
+    if (!product) return { success: false, error: "Бараа олдсонгүй" }
 
-    await db.product.update({
-      where: { id: productId },
-      data: { status: "ARCHIVED" }
-    })
+    if (product.status === "ARCHIVED") {
+      const totalOrders = await db.orderItem.count({ where: { productId } })
+      if (totalOrders > 0) {
+        return { success: false, error: "Захиалгын түүхэнд бүртгэгдсэн тул бүр мөсөн устгах боломжгүй." }
+      }
+      await db.cartItem.deleteMany({ where: { productId } })
+      await db.product.delete({ where: { id: productId } })
+    } else {
+      const activeOrderCount = await db.orderItem.count({
+        where: {
+          productId,
+          order: { orderStatus: { in: ["PENDING", "PAID", "PROCESSING", "SHIPPED"] } }
+        }
+      })
+      if (activeOrderCount > 0) {
+        return { success: false, error: `${activeOrderCount} идэвхтэй захиалгатай тул устгах боломжгүй.` }
+      }
+      await db.product.update({
+        where: { id: productId },
+        data: { status: "ARCHIVED" }
+      })
+    }
 
     revalidatePath("/admin/products")
     revalidatePath("/")
@@ -431,6 +455,7 @@ export async function importProducts(rows: any[], defaultCategoryId?: string) {
       const price = Number(row["Үнэ"]) || 0
       const stockQuantity = Number(row["Үлдэгдэл"]) || 0
       const weight = Number(row["Жин"]) || 0
+      const unit = row["Хэмжих нэгж"] || "ширхэг"
       const status = row["Статус"] || (stockQuantity > 0 ? "ACTIVE" : "OUT_OF_STOCK")
       const customBadge = row["Тусгай тэмдэг"] || null
       
@@ -446,6 +471,7 @@ export async function importProducts(rows: any[], defaultCategoryId?: string) {
             price,
             stockQuantity,
             weight,
+            unit,
             status,
             customBadge,
             ...(defaultCategoryId && { categoryId: defaultCategoryId }),
@@ -462,6 +488,7 @@ export async function importProducts(rows: any[], defaultCategoryId?: string) {
             price,
             stockQuantity,
             weight,
+            unit,
             status,
             customBadge,
             ...(defaultCategoryId && { categoryId: defaultCategoryId }),

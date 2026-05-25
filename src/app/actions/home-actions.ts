@@ -20,7 +20,13 @@ export async function getFeaturedProducts() {
     const products = await db.product.findMany({
       where: { 
         isFeatured: true,
-        status: "ACTIVE" 
+        status: "ACTIVE",
+        NOT: {
+          OR: [
+            { imageUrl: null },
+            { imageUrl: "" }
+          ]
+        }
       },
       include: {
         category: { select: { id: true, name: true, slug: true } },
@@ -50,6 +56,12 @@ export async function getSaleProducts() {
         status: "ACTIVE",
         comparePrice: {
           gt: db.product.fields.price
+        },
+        NOT: {
+          OR: [
+            { imageUrl: null },
+            { imageUrl: "" }
+          ]
         }
       },
       include: {
@@ -74,7 +86,7 @@ export async function getSaleProducts() {
 export async function getPromoSettings() {
   try {
     const settings = await db.shopSettings.findMany({
-      where: { key: { in: ["promo_title", "promo_subtitle", "promo_link"] } }
+      where: { key: { in: ["promo_title", "promo_subtitle", "promo_link", "promo_image"] } }
     })
     
     const config = settings.reduce((acc, current) => {
