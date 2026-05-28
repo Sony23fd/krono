@@ -110,7 +110,7 @@ async function run() {
       
       try {
         // processImage дотор sharp ашиглан 3 хэмжээтэй үүсгэж, public/uploads/products дотор хадгална
-        const processed = await processImage(buffer, product.id)
+        const processed = await processImage(buffer, product.id, product.sku)
         
         uploadedUrls.push(processed.medium)
         console.log(`  -> Амжилттай боловсруулсан: ${file}`)

@@ -51,8 +51,8 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
           <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900">Бараанууд</h1>
           <p className="text-sm text-slate-500 mt-1">
             Нийт <strong className="text-slate-700">{total}</strong> бараа
-            {categoryFilter && categories?.find(c => c.id === categoryFilter) && (
-              <> · <span className="text-[#F26522] font-medium">{categories.find(c => c.id === categoryFilter)?.name}</span> ангилалд</>
+            {categoryFilter && categories?.find((c: any) => c.id === categoryFilter) && (
+              <> · <span className="text-[#F26522] font-medium">{categories.find((c: any) => c.id === categoryFilter)?.name}</span> ангилалд</>
             )}
             {search && <> · "<span className="text-[#F26522] font-medium">{search}</span>" хайлт</>}
           </p>

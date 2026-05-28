@@ -6,7 +6,7 @@ import { join } from "path"
 // Image Processing Configuration
 // ═══════════════════════════════════════
 
-const BASE_UPLOAD_DIR = join(process.cwd(), "public", "uploads", "products")
+const BASE_UPLOAD_DIR = `${process.cwd()}/public/uploads/products`
 
 const SIZES = {
   thumb: { width: 300, height: 300, fit: "cover" as const, suffix: "thumb" },
@@ -89,7 +89,7 @@ export async function processImage(
   sku: string,
   timestamp?: number
 ): Promise<ProcessedImages> {
-  const uploadDir = join(BASE_UPLOAD_DIR, sku)
+  const uploadDir = `${BASE_UPLOAD_DIR}/${sku}`
   await mkdir(uploadDir, { recursive: true })
 
   const ts = timestamp || Date.now()
@@ -208,7 +208,7 @@ export async function deleteImage(imageUrl: string): Promise<boolean> {
 export async function deleteProductFolder(sku: string): Promise<boolean> {
   if (!sku) return false
   try {
-    const uploadDir = join(BASE_UPLOAD_DIR, sku)
+    const uploadDir = `${BASE_UPLOAD_DIR}/${sku}`
     await rm(uploadDir, { recursive: true, force: true })
     return true
   } catch (error) {
