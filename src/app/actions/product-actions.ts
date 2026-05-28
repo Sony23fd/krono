@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
+import { deleteProductFolder } from "@/lib/image-processor"
 
 // ═══════════════════════════════════════════════════
 // БАРАА CRUD
@@ -47,13 +48,13 @@ export async function getProducts(filters?: {
       where.categoryId = filters.categoryId
     }
 
-    let orderBy: any = { createdAt: "desc" }
+    let orderBy: any = [{ imageUrl: { sort: "desc", nulls: "last" } }, { createdAt: "desc" }]
     switch (filters?.sort) {
-      case "oldest": orderBy = { createdAt: "asc" }; break
-      case "price_asc": orderBy = { price: "asc" }; break
-      case "price_desc": orderBy = { price: "desc" }; break
-      case "stock_asc": orderBy = { stockQuantity: "asc" }; break
-      case "stock_desc": orderBy = { stockQuantity: "desc" }; break
+      case "oldest": orderBy = [{ imageUrl: { sort: "desc", nulls: "last" } }, { createdAt: "asc" }]; break
+      case "price_asc": orderBy = [{ imageUrl: { sort: "desc", nulls: "last" } }, { price: "asc" }]; break
+      case "price_desc": orderBy = [{ imageUrl: { sort: "desc", nulls: "last" } }, { price: "desc" }]; break
+      case "stock_asc": orderBy = [{ imageUrl: { sort: "desc", nulls: "last" } }, { stockQuantity: "asc" }]; break
+      case "stock_desc": orderBy = [{ imageUrl: { sort: "desc", nulls: "last" } }, { stockQuantity: "desc" }]; break
     }
 
     const [products, total] = await Promise.all([
@@ -99,7 +100,17 @@ export async function getActiveProducts(filters?: {
     const where: any = { status: "ACTIVE" }
 
     if (filters?.categorySlug && filters.categorySlug !== "all") {
-      where.category = { slug: filters.categorySlug }
+      const targetCategory = await db.category.findUnique({
+        where: { slug: filters.categorySlug },
+        include: { subcategories: { select: { id: true } } }
+      })
+      
+      if (targetCategory) {
+        const categoryIds = [targetCategory.id, ...targetCategory.subcategories.map((sub: any) => sub.id)]
+        where.categoryId = { in: categoryIds }
+      } else {
+        where.category = { slug: filters.categorySlug }
+      }
     }
 
     if (filters?.type === "ready") {
@@ -132,13 +143,13 @@ export async function getActiveProducts(filters?: {
       where.comparePrice = { gt: db.product.fields.price }
     }
 
-    let orderBy: any = { createdAt: "desc" }
+    let orderBy: any = [{ imageUrl: { sort: "desc", nulls: "last" } }, { createdAt: "desc" }]
     switch (filters?.sort) {
-      case "oldest": orderBy = { createdAt: "asc" }; break
-      case "price_asc": orderBy = { price: "asc" }; break
-      case "price_desc": orderBy = { price: "desc" }; break
-      case "stock_asc": orderBy = { stockQuantity: "asc" }; break
-      case "stock_desc": orderBy = { stockQuantity: "desc" }; break
+      case "oldest": orderBy = [{ imageUrl: { sort: "desc", nulls: "last" } }, { createdAt: "asc" }]; break
+      case "price_asc": orderBy = [{ imageUrl: { sort: "desc", nulls: "last" } }, { price: "asc" }]; break
+      case "price_desc": orderBy = [{ imageUrl: { sort: "desc", nulls: "last" } }, { price: "desc" }]; break
+      case "stock_asc": orderBy = [{ imageUrl: { sort: "desc", nulls: "last" } }, { stockQuantity: "asc" }]; break
+      case "stock_desc": orderBy = [{ imageUrl: { sort: "desc", nulls: "last" } }, { stockQuantity: "desc" }]; break
     }
 
     const [products, total] = await Promise.all([
@@ -369,6 +380,11 @@ export async function deleteProduct(productId: string) {
       }
       await db.cartItem.deleteMany({ where: { productId } })
       await db.product.delete({ where: { id: productId } })
+      
+      // Delete the physical images folder for this product
+      if (product.sku) {
+        await deleteProductFolder(product.sku)
+      }
     } else {
       const activeOrderCount = await db.orderItem.count({
         where: {

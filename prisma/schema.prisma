@@ -8,84 +8,73 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-// ═══════════════════════════════════════
-// ХЭРЭГЛЭГЧ
-// ═══════════════════════════════════════
 model User {
   id        String   @id @default(cuid())
   phone     String?  @unique
   email     String?  @unique
   password  String?
   name      String?
-  address   String?
   role      Role     @default(CUSTOMER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  address   String?
   cart      Cart?
   orders    Order[]
 
   @@index([role])
 }
 
-enum Role {
-  CUSTOMER
-  ADMIN
-  STAFF
-  CARGO_ADMIN
-  DATAADMIN
-}
-
-// ═══════════════════════════════════════
-// АНГИЛАЛ
-// ═══════════════════════════════════════
 model Category {
-  id        String    @id @default(cuid())
-  name      String    @unique
-  slug      String    @unique
+  id              String    @id @default(cuid())
+  name            String    @unique
+  slug            String    @unique
   imageUrl        String?
-  metaTitle       String?
-  metaDescription String?
   isActive        Boolean   @default(true)
   sortOrder       Int       @default(0)
   createdAt       DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  products  Product[]
+  updatedAt       DateTime  @updatedAt
+  metaDescription String?
+  metaTitle       String?
+  parentId        String?
+  displayName     String?
+  products        Product[]
+  
+  parent          Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  subcategories   Category[] @relation("CategoryHierarchy")
 
   @@index([isActive, sortOrder])
+  @@index([parentId])
 }
 
-// ═══════════════════════════════════════
-// БАРАА
-// ═══════════════════════════════════════
 model Product {
-  id            String         @id @default(cuid())
-  sku           String         @unique
-  name          String
-  slug          String         @unique
-  description   String?
-  imageUrl      String?
-  images        Json?
-  price         Decimal
-  comparePrice  Decimal?
-  costPrice     Decimal?
-  weight        Decimal?       @default(0)
-  unit          String         @default("ширхэг")
-  categoryId    String?
-  stockQuantity Int            @default(0)
-  reservedStock Int            @default(0)
-  lowStockAlert Int            @default(5)
-  status        ProductStatus  @default(ACTIVE)
-  options       Json?
-  isPreOrder    Boolean        @default(false)
-  isFeatured    Boolean        @default(false)
-  requiresAgeVerification Boolean @default(false)
-  customBadge   String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  category      Category?      @relation(fields: [categoryId], references: [id])
-  variants      ProductVariant[]
-  cartItems     CartItem[]
-  orderItems    OrderItem[]
+  id                      String           @id @default(cuid())
+  sku                     String           @unique
+  name                    String
+  slug                    String           @unique
+  description             String?
+  imageUrl                String?
+  images                  Json?
+  price                   Decimal
+  comparePrice            Decimal?
+  costPrice               Decimal?
+  weight                  Decimal?         @default(0)
+  categoryId              String?
+  stockQuantity           Int              @default(0)
+  reservedStock           Int              @default(0)
+  lowStockAlert           Int              @default(5)
+  status                  ProductStatus    @default(ACTIVE)
+  options                 Json?
+  isPreOrder              Boolean          @default(false)
+  createdAt               DateTime         @default(now())
+  updatedAt               DateTime         @updatedAt
+  isFeatured              Boolean          @default(false)
+  requiresAgeVerification Boolean          @default(false)
+  customBadge             String?
+  unit                    String           @default("ширхэг")
+  cartItems               CartItem[]
+  orderItems              OrderItem[]
+  category                Category?        @relation(fields: [categoryId], references: [id])
+  variants                ProductVariant[]
 
   @@index([status])
   @@index([categoryId])
@@ -94,14 +83,6 @@ model Product {
   @@index([name])
 }
 
-enum ProductStatus {
-  ACTIVE
-  DRAFT
-  ARCHIVED
-  OUT_OF_STOCK
-}
-
-// Хувилбарууд (Өнгө, Хэмжээ комбинацууд)
 model ProductVariant {
   id            String   @id @default(cuid())
   productId     String
@@ -118,9 +99,6 @@ model ProductVariant {
   @@index([productId])
 }
 
-// ═══════════════════════════════════════
-// САГС (Server-side)
-// ═══════════════════════════════════════
 model Cart {
   id        String     @id @default(cuid())
   userId    String?    @unique
@@ -128,8 +106,8 @@ model Cart {
   expiresAt DateTime
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
-  items     CartItem[]
   user      User?      @relation(fields: [userId], references: [id])
+  items     CartItem[]
 
   @@index([expiresAt])
 }
@@ -149,44 +127,39 @@ model CartItem {
   @@index([cartId])
 }
 
-// ═══════════════════════════════════════
-// ЗАХИАЛГА
-// ═══════════════════════════════════════
 model Order {
-  id                 String         @id @default(cuid())
-  orderNumber        Int            @unique @default(autoincrement())
-  idempotencyKey     String         @unique
-  userId             String?
-  customerName       String
-  customerPhone      String
-  accountNumber      String?
-  subtotal           Decimal        @default(0)
-  deliveryFee        Decimal        @default(0)
-  discount           Decimal        @default(0)
-  totalAmount        Decimal        @default(0)
-  orderStatus        OrderStatus    @default(PENDING)
-  deliveryAddress    String?
-  deliveryDate       DateTime?
-  wantsDelivery      Boolean        @default(false)
-  stockReservedAt    DateTime?
-  stockReleasedAt    DateTime?
-  note               String?
-  receiptType        String?        @default("individual")
+  id                    String         @id @default(cuid())
+  orderNumber           Int            @unique @default(autoincrement())
+  idempotencyKey        String         @unique
+  userId                String?
+  customerName          String
+  customerPhone         String
+  accountNumber         String?
+  subtotal              Decimal        @default(0)
+  deliveryFee           Decimal        @default(0)
+  discount              Decimal        @default(0)
+  totalAmount           Decimal        @default(0)
+  orderStatus           OrderStatus    @default(PENDING)
+  deliveryAddress       String?
+  deliveryDate          DateTime?
+  wantsDelivery         Boolean        @default(false)
+  stockReservedAt       DateTime?
+  stockReleasedAt       DateTime?
+  note                  String?
+  cancellationReason    String?
+  creationSource        CreationSource @default(WEB)
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  allowSubstitution     Boolean        @default(true)
   companyRegistryNumber String?
-  allowSubstitution  Boolean        @default(true)
-  cancellationReason String?
-  creationSource     CreationSource @default(WEB)
-  createdAt          DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
-  items              OrderItem[]
-  payments           Payment[]
-  user               User?          @relation(fields: [userId], references: [id])
-  
-  // Loyalty Info
-  loyaltyCardNumber  String?
-  loyaltyAction      String?        // "SPEND" or "EARN"
-  loyaltyPointsUsed  Int            @default(0)
-  loyaltyPointsEarned Int           @default(0)
+  receiptType           String?        @default("individual")
+  loyaltyAction         String?
+  loyaltyCardNumber     String?
+  loyaltyPointsEarned   Int            @default(0)
+  loyaltyPointsUsed     Int            @default(0)
+  user                  User?          @relation(fields: [userId], references: [id])
+  items                 OrderItem[]
+  payments              Payment[]
 
   @@index([orderStatus])
   @@index([customerPhone])
@@ -194,23 +167,6 @@ model Order {
   @@index([stockReservedAt])
   @@index([createdAt])
   @@index([updatedAt])
-}
-
-enum OrderStatus {
-  PENDING
-  PAID
-  PROCESSING
-  SHIPPED
-  DELIVERED
-  CANCELLED
-  REFUNDED
-}
-
-enum CreationSource {
-  WEB
-  ADMIN
-  POS
-  API
 }
 
 model OrderItem {
@@ -233,27 +189,21 @@ model OrderItem {
   @@index([productId])
 }
 
-// ═══════════════════════════════════════
-// ТӨЛБӨР
-// ═══════════════════════════════════════
 model Payment {
-  id          String        @id @default(cuid())
-  orderId     String
-  method      PaymentMethod
-  amount      Decimal
-  status      PaymentStatus @default(PENDING)
-  externalRef String?
-  paidAt      DateTime?
-  metadata    Json?
-
-  // QPay verification tracking
-  qpayVerifiedAt DateTime?  // When QPay confirmed payment
-  qpayVerifiedBy String?    // "AUTO" (QPay callback), "MANUAL" (admin), "CLIENT" (client poll)
-  lastQpayCheckAt DateTime? // Last time we checked QPay API
-
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  order       Order         @relation(fields: [orderId], references: [id])
+  id              String        @id @default(cuid())
+  orderId         String
+  method          PaymentMethod
+  amount          Decimal
+  status          PaymentStatus @default(PENDING)
+  externalRef     String?
+  paidAt          DateTime?
+  metadata        Json?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  lastQpayCheckAt DateTime?
+  qpayVerifiedAt  DateTime?
+  qpayVerifiedBy  String?
+  order           Order         @relation(fields: [orderId], references: [id])
 
   @@index([orderId])
   @@index([externalRef])
@@ -261,23 +211,6 @@ model Payment {
   @@index([qpayVerifiedAt])
 }
 
-enum PaymentMethod {
-  QPAY
-  BANK_TRANSFER
-  CASH
-  CARD
-}
-
-enum PaymentStatus {
-  PENDING
-  PAID
-  FAILED
-  REFUNDED
-}
-
-// ═══════════════════════════════════════
-// СИСТЕМ
-// ═══════════════════════════════════════
 model ShopSettings {
   id        String   @id @default(cuid())
   key       String   @unique
@@ -318,9 +251,6 @@ model VisitorLog {
   @@index([path])
 }
 
-// ═══════════════════════════════════════
-// БАННЕР (Slider)
-// ═══════════════════════════════════════
 model Banner {
   id        String   @id @default(cuid())
   title     String?
@@ -334,17 +264,60 @@ model Banner {
   @@index([isActive, sortOrder])
 }
 
-// ═══════════════════════════════════════
-// LOYALTY CARD
-// ═══════════════════════════════════════
 model LoyaltyCard {
   id            String   @id @default(cuid())
   cardNumber    String   @unique
-  phone         String?  @unique
   pointsBalance Int      @default(0)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-  
+  phone         String?  @unique
+
   @@index([cardNumber])
   @@index([phone])
+}
+
+enum Role {
+  CUSTOMER
+  ADMIN
+  STAFF
+  CARGO_ADMIN
+  DATAADMIN
+}
+
+enum ProductStatus {
+  ACTIVE
+  DRAFT
+  ARCHIVED
+  OUT_OF_STOCK
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum CreationSource {
+  WEB
+  ADMIN
+  POS
+  API
+}
+
+enum PaymentMethod {
+  QPAY
+  BANK_TRANSFER
+  CASH
+  CARD
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
 }

@@ -21,7 +21,7 @@ export function CategoryBar({ categories }: { categories: any[] }) {
           >
             Бүх бараа
           </Link>
-          {categories.map((cat) => (
+          {categories.filter(c => !c.parentId).map((cat) => (
             <Link
               key={cat.id}
               href={`/shop?category=${cat.slug}`}
@@ -31,7 +31,7 @@ export function CategoryBar({ categories }: { categories: any[] }) {
                   : "text-slate-600 hover:text-[#F26522]"
               }`}
             >
-              {cat.name}
+              {cat.displayName || cat.name}
             </Link>
           ))}
         </div>

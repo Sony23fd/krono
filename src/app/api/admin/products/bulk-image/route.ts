@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer())
-    const processed = await processImage(buffer, product.id)
+    const processed = await processImage(buffer, product.id, product.sku)
     const newImageUrl = processed.medium
 
     // Update DB

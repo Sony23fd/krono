@@ -8,14 +8,14 @@ interface PaginationProps {
   currentPage: number
   totalPages: number
   baseUrl: string
-  searchParams: URLSearchParams
+  searchParams: string
 }
 
 export function Pagination({ currentPage, totalPages, baseUrl, searchParams }: PaginationProps) {
   if (totalPages <= 1) return null
 
   const buildUrl = (page: number) => {
-    const params = new URLSearchParams(searchParams.toString())
+    const params = new URLSearchParams(searchParams)
     params.set("page", page.toString())
     return `${baseUrl}?${params.toString()}`
   }

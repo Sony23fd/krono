@@ -79,7 +79,7 @@ export function StoryCategoryMenu({ categories }: { categories: any[] }) {
             spaceBetween={16}
             className="w-full !pb-4"
           >
-            {categories.map((cat, idx) => {
+            {categories.filter(c => !c.parentId).map((cat, idx) => {
               const Icon = iconMap[cat.slug] || iconMap.default
               return (
                 <SwiperSlide key={cat.id || idx} className="!w-auto">
@@ -97,7 +97,7 @@ export function StoryCategoryMenu({ categories }: { categories: any[] }) {
                       </div>
                     </div>
                     <span className="text-[10px] md:text-xs font-semibold text-center text-slate-700 leading-tight group-hover:text-[#F26522] transition-colors line-clamp-2">
-                      {cat.name}
+                      {cat.displayName || cat.name}
                     </span>
                   </Link>
                 </SwiperSlide>

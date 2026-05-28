@@ -32,7 +32,7 @@ export async function getAllCategories() {
   }
 }
 
-export async function createCategory(data: { name: string; imageUrl?: string; metaTitle?: string; metaDescription?: string }) {
+export async function createCategory(data: { name: string; imageUrl?: string; metaTitle?: string; metaDescription?: string; parentId?: string; displayName?: string }) {
   try {
     const slug = data.name
       .toLowerCase()
@@ -46,6 +46,8 @@ export async function createCategory(data: { name: string; imageUrl?: string; me
         imageUrl: data.imageUrl,
         metaTitle: data.metaTitle,
         metaDescription: data.metaDescription,
+        parentId: data.parentId || null,
+        displayName: data.displayName?.trim() || null,
       }
     })
     revalidatePath("/admin/products")
@@ -57,7 +59,7 @@ export async function createCategory(data: { name: string; imageUrl?: string; me
   }
 }
 
-export async function updateCategory(id: string, data: { name?: string; imageUrl?: string; isActive?: boolean; sortOrder?: number; metaTitle?: string; metaDescription?: string }) {
+export async function updateCategory(id: string, data: { name?: string; imageUrl?: string; isActive?: boolean; sortOrder?: number; metaTitle?: string; metaDescription?: string; parentId?: string | null; displayName?: string | null }) {
   try {
     const existing = await db.category.findUnique({ where: { id } })
     if (!existing) return { success: false, error: "Ангилал олдсонгүй" }
@@ -77,6 +79,8 @@ export async function updateCategory(id: string, data: { name?: string; imageUrl
         ...(data.imageUrl !== undefined && { imageUrl: data.imageUrl }),
         ...(data.metaTitle !== undefined && { metaTitle: data.metaTitle }),
         ...(data.metaDescription !== undefined && { metaDescription: data.metaDescription }),
+        ...(data.parentId !== undefined && { parentId: data.parentId }),
+        ...(data.displayName !== undefined && { displayName: data.displayName?.trim() || null }),
         ...(data.isActive !== undefined && { isActive: data.isActive }),
         ...(data.sortOrder !== undefined && { sortOrder: data.sortOrder }),
       }
@@ -94,6 +98,11 @@ export async function updateCategory(id: string, data: { name?: string; imageUrl
 
 export async function deleteCategory(id: string) {
   try {
+    const subCount = await db.category.count({ where: { parentId: id } })
+    if (subCount > 0) {
+      return { success: false, error: `Энэ ангилалд ${subCount} дэд ангилал байгаа тул устгах боломжгүй.` }
+    }
+
     const productCount = await db.product.count({ where: { categoryId: id } })
     if (productCount > 0) {
       return { success: false, error: `${productCount} бараатай ангилалыг устгах боломжгүй. Эхлээд барааг шилжүүлнэ үү.` }

@@ -11,6 +11,7 @@ export const dynamic = "force-dynamic"
 
 export default async function CategoryDetailPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ type?: string, q?: string, sort?: string, page?: string }> }) {
   const { slug } = await params
+  const decodedSlug = decodeURIComponent(slug)
   const search = await searchParams
   const filterType = search.type || "all"
   const query = search.q?.trim() || ""
@@ -20,7 +21,7 @@ export default async function CategoryDetailPage({ params, searchParams }: { par
   const [{ categories }, { products, total, totalPages, currentPage }] = await Promise.all([
     getCategories(),
     getActiveProducts({
-      categorySlug: slug,
+      categorySlug: decodedSlug,
       type: filterType as "all" | "ready" | "preorder",
       search: query,
       sort: sort as "newest" | "oldest" | "price_asc" | "price_desc" | "stock_asc" | "stock_desc",
@@ -29,21 +30,24 @@ export default async function CategoryDetailPage({ params, searchParams }: { par
     }),
   ])
 
-  const category = categories?.find((cat: any) => cat.slug === slug)
+  const category = categories?.find((cat: any) => cat.slug === decodedSlug)
   if (!category) return notFound()
 
-  let title = `${category.name}`
-  let subtitle = `${category._count?.products ?? 0} бүтээгдэхүүнтэй ангилал`
+  const displayName = category.displayName || category.name
+  const subCats = categories?.filter((c: any) => c.parentId === category.id) || []
+
+  let title = `${displayName}`
+  let subtitle = `${total} бүтээгдэхүүнтэй ангилал`
   let theme: "ready" | "preorder" | string = "ready"
-  let badge = category.name
+  let badge = displayName
 
   if (filterType === "ready") {
-    title = `${category.name} - Бэлэн бараа`
-    subtitle = `"${category.name}" ангиллын бэлэн бараа`
+    title = `${displayName} - Бэлэн бараа`
+    subtitle = `"${displayName}" ангиллын бэлэн бараа`
     theme = "ready"
   } else if (filterType === "preorder") {
-    title = `${category.name} - Урьдчилсан захиалга`
-    subtitle = `"${category.name}" ангиллын урьдчилсан захиалга`
+    title = `${displayName} - Урьдчилсан захиалга`
+    subtitle = `"${displayName}" ангиллын урьдчилсан захиалга`
     theme = "preorder"
   }
 
@@ -57,8 +61,23 @@ export default async function CategoryDetailPage({ params, searchParams }: { par
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <Link href="/categories" className="text-sm text-slate-500 hover:text-indigo-600 transition-colors">← Ангилалууд руу буцах</Link>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mt-4">{category.name}</h1>
-            <p className="text-slate-500 mt-2">{category._count?.products ?? 0} бүтээгдэхүүнтэй ангилал</p>
+            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mt-4">{displayName}</h1>
+            <p className="text-slate-500 mt-2">{total} бүтээгдэхүүнтэй ангилал</p>
+            
+            {subCats.length > 0 && (
+              <div className="mt-4 flex flex-wrap gap-2">
+                <span className="text-sm text-slate-400 py-1.5 mr-2">Дэд ангиллууд:</span>
+                {subCats.map((sub: any) => (
+                  <Link 
+                    key={sub.id} 
+                    href={`/categories/${sub.slug}`}
+                    className="inline-flex items-center justify-center rounded-full bg-slate-100 px-4 py-1.5 text-sm font-medium text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors border border-slate-200 hover:border-indigo-100"
+                  >
+                    {sub.displayName || sub.name}
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
           <Link href="/shop" className="rounded-full bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-200 transition-colors">Дэлгүүрт бүх бараа харах</Link>
         </div>
@@ -78,12 +97,12 @@ export default async function CategoryDetailPage({ params, searchParams }: { par
           <Pagination 
             currentPage={currentPage}
             totalPages={totalPages}
-            baseUrl={`/categories/${slug}`}
+            baseUrl={`/categories/${decodedSlug}`}
             searchParams={new URLSearchParams({
               type: filterType,
               q: query,
               sort,
-            })}
+            }).toString()}
           />
         </>
       ) : (

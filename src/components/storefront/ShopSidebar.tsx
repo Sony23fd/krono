@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
 import clsx from "clsx"
 
-type Category = { id: string; name: string; slug: string }
+type Category = { id: string; name: string; slug: string; parentId?: string | null; displayName?: string | null }
 
 export function ShopSidebar({ categories, selectedCategorySlug }: { categories?: Category[]; selectedCategorySlug?: string }) {
   const pathname = usePathname()
@@ -31,21 +31,43 @@ export function ShopSidebar({ categories, selectedCategorySlug }: { categories?:
               Бүх ангилал
             </Link>
           </li>
-          {categories?.map((category) => (
-            <li key={category.id}>
-              <Link
-                href={`/shop?category=${category.slug}`}
-                className={clsx(
-                  "block px-4 py-2.5 rounded-xl font-semibold transition-all duration-200",
-                  currentCategory === category.slug
-                    ? "bg-[#F26522] text-white shadow-md shadow-red-500/20 translate-x-2"
-                    : "text-slate-600 hover:bg-slate-100 hover:text-[#1B3561] hover:translate-x-1"
+          {categories?.filter(c => !c.parentId).map((category) => {
+            const subCats = categories.filter(sub => sub.parentId === category.id)
+            return (
+              <li key={category.id} className="space-y-1">
+                <Link
+                  href={`/shop?category=${category.slug}`}
+                  className={clsx(
+                    "block px-4 py-2.5 rounded-xl font-semibold transition-all duration-200",
+                    currentCategory === category.slug
+                      ? "bg-[#F26522] text-white shadow-md shadow-red-500/20 translate-x-2"
+                      : "text-slate-700 hover:bg-slate-100 hover:text-[#1B3561] hover:translate-x-1"
+                  )}
+                >
+                  {category.displayName || category.name}
+                </Link>
+                {subCats.length > 0 && (
+                  <ul className="pl-4 space-y-1 border-l-2 border-slate-100 ml-4 mt-1">
+                    {subCats.map(sub => (
+                      <li key={sub.id}>
+                        <Link
+                          href={`/shop?category=${sub.slug}`}
+                          className={clsx(
+                            "block px-4 py-2 text-sm rounded-xl font-medium transition-all duration-200",
+                            currentCategory === sub.slug
+                              ? "bg-indigo-50 text-[#F26522] font-bold"
+                              : "text-slate-500 hover:text-[#F26522] hover:bg-slate-50"
+                          )}
+                        >
+                          {sub.displayName || sub.name}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
                 )}
-              >
-                {category.name}
-              </Link>
-            </li>
-          ))}
+              </li>
+            )
+          })}
         </ul>
         
         {/* Decorative elements or extra filters can go here */}

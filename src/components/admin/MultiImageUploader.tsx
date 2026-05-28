@@ -82,6 +82,17 @@ export function MultiImageUploader({ product }: Props) {
     const newImages = images.filter(img => img !== url)
     setImages(newImages)
     
+    // Call server to delete the physical files (and its responsive versions)
+    try {
+      await fetch("/api/upload", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url })
+      })
+    } catch (err) {
+      console.error("Failed to delete physical file", err)
+    }
+
     const newMain = newImages[0] || null
     const newAdditional = newImages.slice(1)
 

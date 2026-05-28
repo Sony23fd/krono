@@ -10,8 +10,9 @@ export const dynamic = "force-dynamic"
 
 export default async function ShopPage({ searchParams }: { searchParams: Promise<{ q?: string, category?: string, sort?: string, page?: string, sale?: string }> }) {
   const params = await searchParams
-  const query = params.q?.trim() || ""
-  const categorySlug = params.category?.trim() || "all"
+  const query = params.q ? decodeURIComponent(params.q.trim()) : ""
+  const rawCategorySlug = params.category?.trim() || "all"
+  const categorySlug = rawCategorySlug !== "all" ? decodeURIComponent(rawCategorySlug) : "all"
   const sort = params.sort || "newest"
   const page = parseInt(params.page || "1")
   const isSale = params.sale === "true"
@@ -79,7 +80,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
                     ...(categorySlug !== "all" && { category: categorySlug }),
                     ...(sort !== "newest" && { sort }),
                     ...(isSale && { sale: "true" }),
-                  })}
+                  }).toString()}
                 />
               </>
             ) : (

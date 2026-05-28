@@ -1,10 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Edit2, Trash2, GripVertical, ImagePlus } from "lucide-react"
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd"
 import { updateCategoryOrder } from "@/app/actions/category-actions"
 import { CategoryExcelImport } from "@/components/admin/CategoryExcelImport"
+import { CategoryProductsSheet } from "./CategoryProductsSheet"
 import {
   Dialog,
   DialogContent,
@@ -21,24 +22,48 @@ import { Button } from "@/components/ui/button"
 export function CategoryTableClient({ initialCategories }: { initialCategories: any[] }) {
   const [categories, setCategories] = useState(initialCategories)
 
+  // Sync state if props change (e.g. after create/delete)
+  if (initialCategories !== categories && !categories.every((cat, i) => cat.id === initialCategories[i]?.id)) {
+      setCategories(initialCategories)
+  }
+
+  // Hierarchically sort categories for display
+  const sortedCategories = useMemo(() => {
+    const parents = categories.filter(c => !c.parentId).sort((a, b) => a.sortOrder - b.sortOrder);
+    const result: any[] = [];
+    for (const parent of parents) {
+      result.push(parent);
+      const children = categories.filter(c => c.parentId === parent.id).sort((a, b) => a.sortOrder - b.sortOrder);
+      for (const child of children) {
+        result.push({ ...child, _isChild: true });
+      }
+    }
+    // Also append any categories whose parent wasn't found (orphans)
+    const processedIds = new Set(result.map(c => c.id));
+    const orphans = categories.filter(c => !processedIds.has(c.id));
+    return [...result, ...orphans];
+  }, [categories]);
+
   const onDragEnd = async (result: any) => {
     if (!result.destination) return
-    const items = Array.from(categories)
+    
+    // We update the original categories array to match the new sorted order
+    const items = Array.from(sortedCategories)
     const [reorderedItem] = items.splice(result.source.index, 1)
     items.splice(result.destination.index, 0, reorderedItem)
 
     // Update state immediately
     const updatedItems = items.map((item, index) => ({ ...item, sortOrder: index }))
-    setCategories(updatedItems)
+    // We need to map back to the 'categories' state shape
+    const cleanItems = updatedItems.map(item => {
+      const { _isChild, ...rest } = item
+      return rest
+    })
+    setCategories(cleanItems)
 
     // Sync to DB
-    const orderData = updatedItems.map(i => ({ id: i.id, sortOrder: i.sortOrder }))
+    const orderData = cleanItems.map(i => ({ id: i.id, sortOrder: i.sortOrder }))
     await updateCategoryOrder(orderData)
-  }
-
-  // Sync state if props change (e.g. after create/delete)
-  if (initialCategories !== categories && !categories.every((cat, i) => cat.id === initialCategories[i]?.id)) {
-      setCategories(initialCategories)
   }
 
   return (
@@ -48,7 +73,7 @@ export function CategoryTableClient({ initialCategories }: { initialCategories: 
           <tr>
             <th className="w-10 px-4 py-4"></th>
             <th className="px-6 py-4 font-normal">Зураг</th>
-            <th className="px-6 py-4 font-normal">Нэр</th>
+            <th className="px-6 py-4 font-normal">Нэр / Дэд ангилал</th>
             <th className="px-6 py-4 font-normal text-center">Барааны тоо</th>
             <th className="px-6 py-4 font-normal">Үүсгэсэн</th>
             <th className="px-6 py-4 font-normal text-right">Үйлдэл</th>
@@ -62,14 +87,14 @@ export function CategoryTableClient({ initialCategories }: { initialCategories: 
                 {...provided.droppableProps} 
                 ref={provided.innerRef}
               >
-                {categories && categories.length > 0 ? (
-                  categories.map((cat, index) => (
+                {sortedCategories && sortedCategories.length > 0 ? (
+                  sortedCategories.map((cat, index) => (
                     <Draggable key={cat.id} draggableId={cat.id} index={index}>
                       {(provided, snapshot) => (
                         <tr 
                           ref={provided.innerRef}
                           {...provided.draggableProps}
-                          className={`hover:bg-slate-50/50 transition-colors ${snapshot.isDragging ? 'bg-indigo-50/80 shadow-md' : ''}`}
+                          className={`hover:bg-slate-50/50 transition-colors ${snapshot.isDragging ? 'bg-indigo-50/80 shadow-md' : ''} ${cat._isChild ? 'bg-slate-50/30' : ''}`}
                         >
                           <td className="px-4 py-4 w-10">
                             <div 
@@ -80,19 +105,41 @@ export function CategoryTableClient({ initialCategories }: { initialCategories: 
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            {cat.imageUrl ? (
-                              <img src={cat.imageUrl} alt={cat.name} className="w-10 h-10 object-cover rounded-md border" />
+                            <div className={`flex items-center gap-3 ${cat._isChild ? 'ml-6' : ''}`}>
+                              {cat._isChild && (
+                                <div className="w-4 h-4 border-l-2 border-b-2 border-slate-300 rounded-bl-md"></div>
+                              )}
+                              {cat.imageUrl ? (
+                                <img src={cat.imageUrl} alt={cat.name} className="w-10 h-10 object-cover rounded-md border shrink-0" />
+                              ) : (
+                                <div className="w-10 h-10 bg-slate-100 border border-dashed border-slate-300 rounded-md flex items-center justify-center text-slate-400 shrink-0">
+                                  <ImagePlus className="w-4 h-4" />
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 font-medium text-slate-900">
+                            {cat.displayName ? (
+                              <div className="flex flex-col">
+                                <span>{cat.displayName}</span>
+                                <span className="text-xs text-slate-400 font-normal mt-0.5">({cat.name})</span>
+                              </div>
                             ) : (
-                              <div className="w-10 h-10 bg-slate-100 border border-dashed border-slate-300 rounded-md flex items-center justify-center text-slate-400">
-                                <ImagePlus className="w-4 h-4" />
+                              <span>{cat.name}</span>
+                            )}
+                            {cat.parentId && (
+                              <div className="text-xs text-indigo-500 font-normal mt-1 flex items-center gap-1">
+                                <span>↳ Дэд ангилал:</span>
+                                <span className="font-medium">{categories.find(c => c.id === cat.parentId)?.name || "Тодорхойгүй"}</span>
                               </div>
                             )}
                           </td>
-                          <td className="px-6 py-4 font-medium text-slate-900">{cat.name}</td>
                           <td className="px-6 py-4 text-center">
-                            <span className="inline-flex items-center justify-center bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded-full text-[11px]">
-                              {cat._count?.products || 0}
-                            </span>
+                            <CategoryProductsSheet 
+                              categoryId={cat.id} 
+                              categoryName={cat.name} 
+                              productCount={cat._count?.products || 0} 
+                            />
                           </td>
                           <td className="px-6 py-4 text-slate-600">
                             {new Date(cat.createdAt).toLocaleDateString()}
@@ -115,13 +162,41 @@ export function CategoryTableClient({ initialCategories }: { initialCategories: 
                                   const imageUrl = formData.get("imageUrl") as string
                                   const metaTitle = formData.get("metaTitle") as string
                                   const metaDescription = formData.get("metaDescription") as string
-                                  if (id && name) return await updateCategory(id, { name, imageUrl, metaTitle, metaDescription })
+                                  const parentId = formData.get("parentId") as string
+                                  const displayName = formData.get("displayName") as string
+                                  if (id && name) return await updateCategory(id, { 
+                                    name, 
+                                    imageUrl, 
+                                    metaTitle, 
+                                    metaDescription, 
+                                    parentId: parentId || null, 
+                                    displayName: displayName || null 
+                                  })
                                   return { success: false, error: "Мэдээлэл дутуу байна" }
                                 }} className="space-y-4" successMessage="Амжилттай заслаа">
                                   <input type="hidden" name="id" value={cat.id} />
                                   <div className="space-y-2">
-                                    <label htmlFor={`edit-name-${cat.id}`} className="text-sm font-medium">Ангиллын нэр</label>
+                                    <label htmlFor={`edit-name-${cat.id}`} className="text-sm font-medium">Ангиллын нэр (ERP код)</label>
                                     <Input key={`name-${cat.id}-${cat.name}`} id={`edit-name-${cat.id}`} name="name" defaultValue={cat.name || ""} required />
+                                    <p className="text-[10px] text-slate-500">Үүнийг өөрчилвөл Excel-тэй зөрнө!</p>
+                                  </div>
+                                  <div className="space-y-2">
+                                    <label htmlFor={`edit-displayName-${cat.id}`} className="text-sm font-medium">Вэбсайт дээр харагдах нэр</label>
+                                    <Input key={`displayName-${cat.id}-${cat.displayName}`} id={`edit-displayName-${cat.id}`} name="displayName" defaultValue={cat.displayName || ""} placeholder="Сонголттой (Хоосон бол ERP нэрээрээ харагдана)" />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <label htmlFor={`edit-parent-${cat.id}`} className="text-sm font-medium">Эцэг ангилал (Дэд ангилал болгох)</label>
+                                    <select
+                                      id={`edit-parent-${cat.id}`}
+                                      name="parentId"
+                                      defaultValue={cat.parentId || ""}
+                                      className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                                    >
+                                      <option value="">-- Үндсэн ангилал --</option>
+                                      {categories.filter(c => c.id !== cat.id).map(c => (
+                                        <option key={c.id} value={c.id}>{c.name}</option>
+                                      ))}
+                                    </select>
                                   </div>
                                   <div className="space-y-2">
                                     <label htmlFor={`edit-img-${cat.id}`} className="text-sm font-medium">Зургийн URL (Image URL)</label>

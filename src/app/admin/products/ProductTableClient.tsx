@@ -18,9 +18,10 @@ interface ProductTableProps {
   products: any[]
   categories: any[]
   search: string
+  currentPage?: number
 }
 
-export function ProductTableClient({ products, categories, search }: ProductTableProps) {
+export function ProductTableClient({ products, categories, search, currentPage = 1 }: ProductTableProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([])
 
   const allIds = products.map((p: any) => p.id)
@@ -55,6 +56,7 @@ export function ProductTableClient({ products, categories, search }: ProductTabl
                   className="w-4 h-4 rounded border-slate-300 text-[#F26522] focus:ring-[#F26522] cursor-pointer"
                 />
               </th>
+              <th className="px-3 py-3.5 w-10 text-center">Д/д</th>
               <th className="px-4 py-3.5">SKU</th>
               <th className="px-4 py-3.5">Бараа</th>
               <th className="px-4 py-3.5 text-center">Медиа</th>
@@ -66,9 +68,10 @@ export function ProductTableClient({ products, categories, search }: ProductTabl
           </thead>
           <tbody className="divide-y divide-slate-100">
             {products.length > 0 ? (
-              products.map((product: any) => {
+              products.map((product: any, index: number) => {
                 const availableStock = product.stockQuantity - product.reservedStock
                 const isChecked = selectedIds.includes(product.id)
+                const serialNumber = (currentPage - 1) * 20 + index + 1
                 return (
                   <tr key={product.id} className={`transition-colors ${isChecked ? "bg-blue-50/50" : availableStock > 0 && availableStock < 5 ? "bg-red-50/30 hover:bg-red-50/50" : "hover:bg-slate-50/50"}`}>
                     <td className="px-3 py-4">
@@ -79,6 +82,7 @@ export function ProductTableClient({ products, categories, search }: ProductTabl
                         className="w-4 h-4 rounded border-slate-300 text-[#F26522] focus:ring-[#F26522] cursor-pointer"
                       />
                     </td>
+                    <td className="px-3 py-4 text-center text-[11px] text-slate-400 font-medium">{serialNumber}</td>
                     <td className="px-4 py-4 font-mono text-[11px] text-slate-400">{product.sku}</td>
                     <td className="px-4 py-4">
                       <div className="flex flex-col gap-1">
@@ -160,7 +164,7 @@ export function ProductTableClient({ products, categories, search }: ProductTabl
               })
             ) : (
               <tr>
-                <td colSpan={8} className="px-5 py-16 text-center text-slate-500">
+                <td colSpan={9} className="px-5 py-16 text-center text-slate-500">
                   <Package className="w-10 h-10 mx-auto text-slate-200 mb-3" />
                   <p className="font-semibold text-slate-600">{search ? `"${search}" хайлтад тохирох бараа олдсонгүй` : "Бараа бүртгэгдээгүй байна"}</p>
                 </td>
@@ -173,9 +177,10 @@ export function ProductTableClient({ products, categories, search }: ProductTabl
       {/* ═══ Mobile Card View ═══ */}
       <div className="md:hidden space-y-3">
         {products.length > 0 ? (
-          products.map((product: any) => {
+          products.map((product: any, index: number) => {
             const availableStock = product.stockQuantity - product.reservedStock
             const isChecked = selectedIds.includes(product.id)
+            const serialNumber = (currentPage - 1) * 20 + index + 1
             return (
               <div key={product.id} className={`rounded-2xl border shadow-sm p-4 ${availableStock > 0 && availableStock < 5 ? "bg-red-50/10 border-red-200/80" : "bg-white border-slate-200/80"} ${isChecked ? "ring-2 ring-[#F26522]/30" : ""}`}>
                 <div className="flex items-start gap-3 mb-3">
@@ -186,7 +191,10 @@ export function ProductTableClient({ products, categories, search }: ProductTabl
                     className="w-4 h-4 mt-1 rounded border-slate-300 text-[#F26522] focus:ring-[#F26522] cursor-pointer shrink-0"
                   />
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-slate-900 text-sm leading-snug truncate">{product.name}</h3>
+                    <h3 className="font-bold text-slate-900 text-sm leading-snug truncate">
+                      <span className="text-slate-400 font-normal mr-1.5">{serialNumber}.</span>
+                      {product.name}
+                    </h3>
                     <p className="text-[11px] text-slate-400 font-mono mt-0.5">SKU: {product.sku}</p>
                     <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                       {product.category && (

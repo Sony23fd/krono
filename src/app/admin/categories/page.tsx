@@ -34,12 +34,39 @@ export default async function OrderCategoriesPage() {
               const imageUrl = formData.get("imageUrl") as string;
               const metaTitle = formData.get("metaTitle") as string;
               const metaDescription = formData.get("metaDescription") as string;
-              if (name) return await createCategory({ name, imageUrl, metaTitle, metaDescription });
+              const parentId = formData.get("parentId") as string;
+              const displayName = formData.get("displayName") as string;
+              if (name) return await createCategory({ 
+                name, 
+                imageUrl, 
+                metaTitle, 
+                metaDescription, 
+                parentId: parentId || undefined, 
+                displayName: displayName || undefined 
+              });
               return { success: false, error: "Нэр оруулна уу" }
             }} className="space-y-4 mt-6" successMessage="Ангилал үүсгэлээ">
               <div className="space-y-2">
-                <label htmlFor="name" className="text-sm font-medium">Ангиллын нэр</label>
+                <label htmlFor="name" className="text-sm font-medium">Ангиллын нэр (ERP код)</label>
                 <Input id="name" name="name" required placeholder="Ж: Электрон бараа" />
+                <p className="text-[10px] text-slate-500">Excel импортод энэ нэрийг ашиглана.</p>
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="displayName" className="text-sm font-medium">Вэбсайт дээр харагдах нэр</label>
+                <Input id="displayName" name="displayName" placeholder="Сонголттой (Хоосон бол ERP нэрээрээ харагдана)" />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="parentId" className="text-sm font-medium">Эцэг ангилал (Дэд ангилал болгох)</label>
+                <select
+                  id="parentId"
+                  name="parentId"
+                  className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                >
+                  <option value="">-- Үндсэн ангилал --</option>
+                  {categories.map((c: any) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
               </div>
               <div className="space-y-2">
                 <label htmlFor="imageUrl" className="text-sm font-medium">Зургийн URL</label>
