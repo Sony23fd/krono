@@ -35,7 +35,7 @@ export function HeaderSearchBar({ categories }: { categories: Category[] }) {
   }, [])
 
   return (
-    <form action="/shop" className="flex items-center w-full h-12 md:h-14 rounded-full border-2 border-[#F26522] bg-white overflow-visible group focus-within:ring-4 focus-within:ring-[#F26522]/20 transition-all relative shadow-sm">
+    <form action="/shop" className="flex items-center w-full h-10 md:h-12 rounded-xl border-2 border-[#F26522] bg-white overflow-visible group focus-within:ring-4 focus-within:ring-[#F26522]/20 transition-all relative shadow-sm">
       {/* Hidden input to submit category */}
       <input type="hidden" name="category" value={selected} />
 
@@ -44,7 +44,7 @@ export function HeaderSearchBar({ categories }: { categories: Category[] }) {
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-2 h-full pl-5 pr-4 py-2.5 bg-gray-50 hover:bg-gray-100 transition-colors text-sm font-semibold text-gray-700 rounded-l-full border-r border-gray-200 whitespace-nowrap"
+          className="flex items-center gap-2 h-full pl-5 pr-4 py-2.5 bg-gray-50 hover:bg-gray-100 transition-colors text-sm font-semibold text-gray-700 rounded-l-xl border-r border-gray-200 whitespace-nowrap"
         >
           <span className="max-w-[100px] truncate">{selectedLabel}</span>
           <ChevronDown className={`w-3.5 h-3.5 text-gray-500 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
@@ -99,7 +99,7 @@ export function HeaderSearchBar({ categories }: { categories: Category[] }) {
 
       <button
         type="submit"
-        className="h-full px-5 md:px-8 flex items-center justify-center bg-[#F26522] text-white hover:bg-[#E85B1C] transition-colors rounded-r-full"
+        className="h-full px-5 md:px-8 flex items-center justify-center bg-[#F26522] text-white hover:bg-[#E85B1C] transition-colors rounded-r-xl"
       >
         <Search className="w-5 h-5 md:w-6 md:h-6" />
       </button>

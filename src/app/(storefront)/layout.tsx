@@ -116,6 +116,9 @@ export default async function StorefrontLayout({ children }: { children: ReactNo
             <Link href="/categories" className="text-sm font-semibold text-gray-700 hover:text-[#F26522] transition-colors whitespace-nowrap">
               Ангилал
             </Link>
+            <Link href="/shop?sale=true" className="text-sm font-semibold text-red-500 hover:text-red-600 transition-colors whitespace-nowrap">
+              Хямдрал
+            </Link>
           </nav>
 
           {/* Right: Desktop Icon Buttons */}

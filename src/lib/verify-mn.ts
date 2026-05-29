@@ -52,7 +52,7 @@ function getCallbackUrl(): string {
 /** Generate a random 4-digit nonce for SMS text */
 function generateSmsText(): string {
   const nonce = Math.floor(1000 + Math.random() * 9000)
-  return `${nonce}`
+  return `ZUC:${nonce}`
 }
 
 // ─── API Functions ───

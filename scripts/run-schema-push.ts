@@ -16,7 +16,7 @@ conn.on('ready', () => {
   console.log('Client :: ready');
   
   console.log('Pushing schema on remote server...');
-  conn.exec('cd /var/www/bileg && git pull && npx prisma db push && npx prisma generate', (err, stream) => {
+  conn.exec('cd /var/www/bileg && rm -f catalog.json scripts/import-catalog.ts uploads.zip && git pull && npx prisma db push && npx prisma generate', (err, stream) => {
     if (err) throw err;
     stream.on('close', (code: any, signal: any) => {
       console.log('Remote execution finished. Stream :: close :: code: ' + code + ', signal: ' + signal);

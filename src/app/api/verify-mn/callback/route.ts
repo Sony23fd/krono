@@ -48,3 +48,42 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: true }, { status: 200 })
   }
 }
+
+/**
+ * POST /api/verify-mn/callback
+ * Handle Verify.mn POST callbacks
+ */
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json().catch(() => ({}))
+    const sessionId = body.sessionId
+
+    if (sessionId) {
+      const result = await getSessionStatus(sessionId)
+      if (result.success && result.status === "VERIFIED") {
+        const stored = getStoredSession(sessionId)
+        if (stored) {
+          markPhoneVerified(stored.phone)
+          try {
+            const { db } = await import("@/lib/db")
+            await db.verifiedPhone.upsert({
+              where: { phone: stored.phone },
+              update: { verifiedAt: new Date() },
+              create: { phone: stored.phone }
+            })
+          } catch (e) {
+            console.error("Failed to save verified phone to DB:", e)
+          }
+        }
+      }
+    } else {
+      // Fallback: check all pending if no sessionId provided
+      return GET(req)
+    }
+
+    return NextResponse.json({ ok: true }, { status: 200 })
+  } catch (error) {
+    console.error("verify.mn POST callback error:", error)
+    return NextResponse.json({ ok: true }, { status: 200 })
+  }
+}
