@@ -57,5 +57,8 @@
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
+  },
+  "devDependencies": {
+    "@types/ssh2": "^1.15.5"
   }
 }
