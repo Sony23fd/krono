@@ -6,12 +6,24 @@ export async function getBanners() {
   try {
     const banners = await db.banner.findMany({
       where: { isActive: true },
-      orderBy: { sortOrder: "asc" }
+      orderBy: { sortOrder: 'asc' },
+      select: {
+        id: true,
+        title: true,
+        imageUrl: true,
+        linkUrl: true,
+        type: true,
+      }
     })
-    return { success: true, banners }
+    
+    return { 
+      success: true, 
+      banners: banners.filter(b => b.type === 'HERO'),
+      thinBanners: banners.filter(b => b.type === 'THIN')
+    }
   } catch (error: any) {
     console.error("Failed to fetch banners:", error)
-    return { success: false, banners: [], error: error.message }
+    return { success: false, banners: [], thinBanners: [], error: error.message }
   }
 }
 

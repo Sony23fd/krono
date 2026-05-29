@@ -10,7 +10,7 @@ import { getCategories } from "@/app/actions/category-actions"
 export const dynamic = "force-dynamic"
 
 export default async function StorefrontHomePage() {
-  const [{ banners }, { products: featuredProducts }, { products: saleProducts }, { config }, categoriesResult] = await Promise.all([
+  const [{ banners, thinBanners }, { products: featuredProducts }, { products: saleProducts }, { config }, categoriesResult] = await Promise.all([
     getBanners(),
     getFeaturedProducts(),
     getSaleProducts(),
@@ -37,7 +37,7 @@ export default async function StorefrontHomePage() {
       </div>
 
       <div className="mt-12 md:mt-20">
-        <ThinBannerSlider banners={banners || []} />
+        <ThinBannerSlider banners={thinBanners || []} />
       </div>
 
       <div className="mt-12 md:mt-20">

@@ -3,10 +3,14 @@
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 
-export async function getBanners() {
+export async function getBanners(type?: string) {
   try {
     const banners = await db.banner.findMany({
-      orderBy: { sortOrder: "asc" }
+      where: type ? { type } : undefined,
+      orderBy: [
+        { sortOrder: "asc" },
+        { createdAt: "desc" }
+      ]
     })
     return { success: true, banners: JSON.parse(JSON.stringify(banners)) }
   } catch (error: any) {
@@ -14,7 +18,7 @@ export async function getBanners() {
   }
 }
 
-export async function createBanner(data: { title?: string; imageUrl: string; linkUrl?: string }) {
+export async function createBanner(data: { title?: string; imageUrl: string; linkUrl?: string; type?: string }) {
   try {
     const count = await db.banner.count()
     const banner = await db.banner.create({
@@ -22,6 +26,7 @@ export async function createBanner(data: { title?: string; imageUrl: string; lin
         title: data.title,
         imageUrl: data.imageUrl,
         linkUrl: data.linkUrl,
+        type: data.type || "HERO",
         sortOrder: count,
       }
     })
@@ -33,7 +38,7 @@ export async function createBanner(data: { title?: string; imageUrl: string; lin
   }
 }
 
-export async function updateBanner(id: string, data: { title?: string; imageUrl?: string; linkUrl?: string; isActive?: boolean }) {
+export async function updateBanner(id: string, data: { title?: string; imageUrl?: string; linkUrl?: string; isActive?: boolean; type?: string }) {
   try {
     const banner = await db.banner.update({
       where: { id },

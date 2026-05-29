@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 
-export function BannerTableClient({ initialBanners }: { initialBanners: any[] }) {
+export function BannerTableClient({ initialBanners, currentType }: { initialBanners: any[], currentType: string }) {
   const [banners, setBanners] = useState(initialBanners)
 
   const onDragEnd = async (result: any) => {
@@ -120,10 +120,12 @@ export function BannerTableClient({ initialBanners }: { initialBanners: any[] })
                                   const title = formData.get("title") as string
                                   const imageUrl = formData.get("imageUrl") as string
                                   const linkUrl = formData.get("linkUrl") as string
-                                  if (id && imageUrl) return await updateBanner(id, { title, imageUrl, linkUrl })
+                                  const type = formData.get("type") as string
+                                  if (id && imageUrl) return await updateBanner(id, { title, imageUrl, linkUrl, type })
                                   return { success: false, error: "Зургийн URL заавал оруулна уу" }
                                 }} className="space-y-4" successMessage="Амжилттай заслаа">
                                   <input type="hidden" name="id" value={banner.id} />
+                                  <input type="hidden" name="type" value={banner.type || currentType} />
                                   <div className="space-y-2">
                                     <label htmlFor={`edit-img-${banner.id}`} className="text-sm font-medium">Зургийн URL *</label>
                                     <Input key={`img-${banner.id}-${banner.imageUrl}`} id={`edit-img-${banner.id}`} name="imageUrl" defaultValue={banner.imageUrl} required placeholder="https://..." />
