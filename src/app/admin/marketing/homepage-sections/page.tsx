@@ -57,9 +57,7 @@ export default async function HomePageSectionsPage() {
                 bannerImageUrl, 
                 bannerLink 
               });
-            }} className="space-y-4 mt-6" successMessage="Хэсэг амжилттай үүсгэлээ" onSuccess={() => {
-              window.location.reload()
-            }}>
+            }} className="space-y-4 mt-6" successMessage="Хэсэг амжилттай үүсгэлээ">
               
               <div className="space-y-2">
                 <label htmlFor="title" className="text-sm font-medium">Гарчиг *</label>
