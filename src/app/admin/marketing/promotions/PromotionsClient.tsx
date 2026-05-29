@@ -3,6 +3,8 @@
 import { useState } from "react"
 import { Package, Tag, Undo2, Check, Search } from "lucide-react"
 import { applyDiscountBulk, removeDiscountBulk } from "@/app/actions/promotion-actions"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 import {
   Dialog,
   DialogContent,
@@ -14,6 +16,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 
 export function PromotionsClient({ discountedProducts, allProducts }: { discountedProducts: any[], allProducts: any[] }) {
+  const router = useRouter()
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   
   // Create Promotion Form State
@@ -25,19 +28,29 @@ export function PromotionsClient({ discountedProducts, allProducts }: { discount
   const [isRemoving, setIsRemoving] = useState(false)
 
   const handleApply = async () => {
-    if (selectedPromoIds.length === 0) return alert("Бараа сонгоно уу")
-    if (!promoValue || Number(promoValue) <= 0) return alert("Утга оруулна уу")
+    if (selectedPromoIds.length === 0) return toast.error("Бараа сонгоно уу")
+    if (!promoValue || Number(promoValue) <= 0) return toast.error("Утга оруулна уу")
     
     setIsApplying(true)
-    const res = await applyDiscountBulk(selectedPromoIds, promoType, Number(promoValue))
-    if (res.success) {
-      alert("Амжилттай хямдрал зарлалаа")
-      setSelectedPromoIds([])
-      setPromoValue("")
-    } else {
-      alert("Алдаа: " + res.error)
-    }
-    setIsApplying(false)
+    const promise = applyDiscountBulk(selectedPromoIds, promoType, Number(promoValue))
+    
+    toast.promise(promise, {
+      loading: "Хямдрал зарлаж байна...",
+      success: (res) => {
+        setIsApplying(false)
+        if (res.success) {
+          setSelectedPromoIds([])
+          setPromoValue("")
+          router.refresh()
+          return "Амжилттай хямдрал зарлалаа"
+        }
+        throw new Error(res.error || "Алдаа гарлаа")
+      },
+      error: (err) => {
+        setIsApplying(false)
+        return "Алдаа: " + err.message
+      }
+    })
   }
 
   const handleRemove = async () => {
@@ -45,13 +58,24 @@ export function PromotionsClient({ discountedProducts, allProducts }: { discount
     if (!confirm("Сонгосон бараануудын хямдралыг зогсоох уу?")) return
 
     setIsRemoving(true)
-    const res = await removeDiscountBulk(selectedIds)
-    if (res.success) {
-      setSelectedIds([])
-    } else {
-      alert("Алдаа: " + res.error)
-    }
-    setIsRemoving(false)
+    const promise = removeDiscountBulk(selectedIds)
+    
+    toast.promise(promise, {
+      loading: "Хямдрал зогсоож байна...",
+      success: (res) => {
+        setIsRemoving(false)
+        if (res.success) {
+          setSelectedIds([])
+          router.refresh()
+          return "Хямдрал амжилттай зогслоо"
+        }
+        throw new Error(res.error || "Алдаа гарлаа")
+      },
+      error: (err) => {
+        setIsRemoving(false)
+        return "Алдаа: " + err.message
+      }
+    })
   }
 
   const filteredProducts = allProducts.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || p.sku.toLowerCase().includes(search.toLowerCase()))

@@ -1,9 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Edit2, Trash2, GripVertical, ImagePlus, EyeOff, Eye, Image as ImageIcon } from "lucide-react"
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd"
 import { updateBannerOrder } from "@/app/actions/banner-actions"
+import { useRouter } from "next/navigation"
 import {
   Dialog,
   DialogContent,
@@ -20,6 +21,14 @@ import { Switch } from "@/components/ui/switch"
 
 export function BannerTableClient({ initialBanners, currentType }: { initialBanners: any[], currentType: string }) {
   const [banners, setBanners] = useState(initialBanners)
+  const [editingBannerId, setEditingBannerId] = useState<string | null>(null)
+  const [deletingBannerId, setDeletingBannerId] = useState<string | null>(null)
+  const [isMounted, setIsMounted] = useState(false)
+  const router = useRouter()
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   const onDragEnd = async (result: any) => {
     if (!result.destination) return
@@ -53,6 +62,38 @@ export function BannerTableClient({ initialBanners, currentType }: { initialBann
             <th className="px-6 py-3.5 text-right">Үйлдэл</th>
           </tr>
         </thead>
+        {!isMounted ? (
+          <tbody className="divide-y divide-slate-100 relative">
+            {banners && banners.length > 0 ? (
+              banners.map((banner, index) => (
+                <tr key={banner.id} className={`hover:bg-slate-50/50 transition-colors ${!banner.isActive ? 'opacity-60' : ''}`}>
+                  <td className="px-4 py-4 w-10">
+                    <div className="p-1.5 text-slate-400 rounded"><GripVertical className="w-4 h-4" /></div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="w-32 h-16 rounded-lg overflow-hidden border border-slate-200 bg-slate-100 flex items-center justify-center">
+                      {banner.imageUrl ? <img src={banner.imageUrl} alt={banner.title || "Banner"} className="w-full h-full object-cover" /> : <ImagePlus className="w-5 h-5 text-slate-400" />}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 font-bold text-slate-900">{banner.title || <span className="text-slate-400 font-normal italic">Гарчиггүй</span>}</td>
+                  <td className="px-6 py-4 text-slate-500 text-xs">
+                    {banner.linkUrl ? <a href={banner.linkUrl} target="_blank" rel="noreferrer" className="hover:text-blue-600 hover:underline">{banner.linkUrl}</a> : "-"}
+                  </td>
+                  <td className="px-6 py-4 text-center">
+                    <button type="button" className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold transition-colors ${banner.isActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
+                      {banner.isActive ? <><Eye className="w-3 h-3"/> Идэвхтэй</> : <><EyeOff className="w-3 h-3"/> Идэвхгүй</>}
+                    </button>
+                  </td>
+                  <td className="px-6 py-4 text-right space-x-1 whitespace-nowrap">
+                    {/* Render static action buttons on server to avoid mismatch */}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr><td colSpan={6} className="px-6 py-16 text-center text-slate-500"><ImageIcon className="w-10 h-10 mx-auto text-slate-200 mb-3" /><p className="font-medium text-slate-600">Одоогоор баннер нэмэгдээгүй байна.</p></td></tr>
+            )}
+          </tbody>
+        ) : (
         <DragDropContext onDragEnd={onDragEnd}>
           <Droppable droppableId="banners-list">
             {(provided) => (
@@ -106,8 +147,8 @@ export function BannerTableClient({ initialBanners, currentType }: { initialBann
                             </ActionForm>
                           </td>
                           <td className="px-6 py-4 text-right space-x-1 whitespace-nowrap">
-                            <Dialog>
-                              <DialogTrigger className="inline-flex items-center justify-center rounded-md hover:bg-slate-100 h-8 w-8 text-amber-500 transition-colors">
+                            <Dialog open={editingBannerId === banner.id} onOpenChange={(open) => setEditingBannerId(open ? banner.id : null)}>
+                              <DialogTrigger onClick={() => setEditingBannerId(banner.id)} className="inline-flex items-center justify-center rounded-md hover:bg-slate-100 h-8 w-8 text-amber-500 transition-colors">
                                 <Edit2 className="w-4 h-4" />
                               </DialogTrigger>
                               <DialogContent>
@@ -123,7 +164,7 @@ export function BannerTableClient({ initialBanners, currentType }: { initialBann
                                   const type = formData.get("type") as string
                                   if (id && imageUrl) return await updateBanner(id, { title, imageUrl, linkUrl, type })
                                   return { success: false, error: "Зургийн URL заавал оруулна уу" }
-                                }} className="space-y-4" successMessage="Амжилттай заслаа">
+                                }} className="space-y-4" successMessage="Амжилттай заслаа" onSuccess={() => { setEditingBannerId(null); router.refresh(); }}>
                                   <input type="hidden" name="id" value={banner.id} />
                                   <input type="hidden" name="type" value={banner.type || currentType} />
                                   <div className="space-y-2">
@@ -145,8 +186,8 @@ export function BannerTableClient({ initialBanners, currentType }: { initialBann
                               </DialogContent>
                             </Dialog>
 
-                            <Dialog>
-                              <DialogTrigger className="inline-flex items-center justify-center rounded-md hover:bg-slate-100 h-8 w-8 text-red-500 transition-colors">
+                            <Dialog open={deletingBannerId === banner.id} onOpenChange={(open) => setDeletingBannerId(open ? banner.id : null)}>
+                              <DialogTrigger onClick={() => setDeletingBannerId(banner.id)} className="inline-flex items-center justify-center rounded-md hover:bg-slate-100 h-8 w-8 text-red-500 transition-colors">
                                 <Trash2 className="w-4 h-4" />
                               </DialogTrigger>
                               <DialogContent>
@@ -161,7 +202,7 @@ export function BannerTableClient({ initialBanners, currentType }: { initialBann
                                   const id = formData.get("id") as string
                                   if (id) return await deleteBanner(id)
                                   return { success: false, error: "Алдаа гарлаа" }
-                                }} successMessage="Амжилттай устгагдлаа">
+                                }} successMessage="Амжилттай устгагдлаа" onSuccess={() => { setDeletingBannerId(null); router.refresh(); }}>
                                   <input type="hidden" name="id" value={banner.id} />
                                   <DialogFooter className="mt-4">
                                     <Button type="submit" variant="destructive">Тийм, устгах</Button>
@@ -187,6 +228,7 @@ export function BannerTableClient({ initialBanners, currentType }: { initialBann
             )}
           </Droppable>
         </DragDropContext>
+        )}
       </table>
     </div>
   )

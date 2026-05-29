@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
+import { cyrillicToLatinSlug } from "@/lib/utils"
 
 export async function getCategories() {
   try {
@@ -34,10 +35,7 @@ export async function getAllCategories() {
 
 export async function createCategory(data: { name: string; imageUrl?: string; metaTitle?: string; metaDescription?: string; parentId?: string; displayName?: string }) {
   try {
-    const slug = data.name
-      .toLowerCase()
-      .replace(/\s+/g, "-")
-      .replace(/[^a-z0-9\-а-яөүё]/gi, "")
+    const slug = cyrillicToLatinSlug(data.name)
     
     const category = await db.category.create({
       data: {
@@ -66,10 +64,7 @@ export async function updateCategory(id: string, data: { name?: string; imageUrl
 
     let slug = existing.slug
     if (data.name && data.name.trim() !== existing.name) {
-      slug = data.name
-        .toLowerCase()
-        .replace(/\s+/g, "-")
-        .replace(/[^a-z0-9\-а-яөүё]/gi, "")
+      slug = cyrillicToLatinSlug(data.name)
     }
 
     const category = await db.category.update({

@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { FolderInput, Star, StarOff, ShieldAlert, ShieldOff, Trash2, ChevronDown, X, Loader2, CheckSquare } from "lucide-react"
+import { toast } from "sonner"
 
 interface BulkActionsBarProps {
   selectedIds: string[]
@@ -21,24 +22,36 @@ export function BulkActionsBar({ selectedIds, categories, onClear }: BulkActions
 
   async function executeBulkAction(action: string, extra: Record<string, any> = {}) {
     setLoading(true)
-    try {
-      const res = await fetch("/api/admin/products/bulk", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, productIds: selectedIds, ...extra }),
-      })
+    
+    const promise = fetch("/api/admin/products/bulk", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, productIds: selectedIds, ...extra }),
+    }).then(async res => {
       const data = await res.json()
       if (data.success) {
         onClear()
         router.refresh()
-      } else {
-        alert(data.error || "Алдаа гарлаа")
+        return "Амжилттай"
       }
-    } catch (err: any) {
-      alert(err.message)
-    } finally {
-      setLoading(false)
-    }
+      throw new Error(data.error || "Алдаа гарлаа")
+    })
+
+    toast.promise(promise, {
+      loading: "Түр хүлээнэ үү...",
+      success: (msg) => {
+        setLoading(false)
+        if (action === "move_category") {
+          setShowCategoryModal(false)
+          setSelectedCategoryId("")
+        }
+        return msg
+      },
+      error: (err) => {
+        setLoading(false)
+        return err.message || "Алдаа гарлаа"
+      }
+    })
   }
 
   return (
@@ -170,11 +183,9 @@ export function BulkActionsBar({ selectedIds, categories, onClear }: BulkActions
                 Болих
               </button>
               <button
-                onClick={async () => {
-                  if (!selectedCategoryId) return alert("Ангилал сонгоно уу")
-                  await executeBulkAction("move_category", { categoryId: selectedCategoryId })
-                  setShowCategoryModal(false)
-                  setSelectedCategoryId("")
+                onClick={() => {
+                  if (!selectedCategoryId) return toast.error("Ангилал сонгоно уу")
+                  executeBulkAction("move_category", { categoryId: selectedCategoryId })
                 }}
                 disabled={loading || !selectedCategoryId}
                 className="flex-1 h-10 rounded-xl bg-[#F26522] text-white text-sm font-bold hover:bg-[#E85B1C] disabled:opacity-50 transition-colors"

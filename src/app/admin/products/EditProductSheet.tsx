@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Pencil, Loader2, Plus, Package } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { RichTextEditor } from "@/components/admin/RichTextEditor"
+import { toast } from "sonner"
 
 export interface EditProductSheetProps {
   product: any;
@@ -101,7 +102,7 @@ export function EditProductSheet({ product, categories }: EditProductSheetProps)
       ? totalVariantStock 
       : Number(formData.get("remainingQuantity") || 0)
 
-    const res = await updateProduct(product.id, {
+    const promise = updateProduct(product.id, {
       name: formData.get("name") as string,
       description: formData.get("description") as string,
       stockQuantity: remainingQuantity,
@@ -116,13 +117,22 @@ export function EditProductSheet({ product, categories }: EditProductSheetProps)
       customBadge: (formData.get("customBadge") as string) || undefined,
     })
 
-    setLoading(false)
-    if (res.success) {
-      setOpen(false)
-      router.refresh()
-    } else {
-      alert(res.error || "Алдаа гарлаа")
-    }
+    toast.promise(promise, {
+      loading: "Шинэчилж байна...",
+      success: (res) => {
+        setLoading(false)
+        if (res.success) {
+          setOpen(false)
+          router.refresh()
+          return "Амжилттай хадгалагдлаа"
+        }
+        throw new Error(res.error || "Алдаа гарлаа")
+      },
+      error: (err) => {
+        setLoading(false)
+        return err.message || "Алдаа гарлаа"
+      }
+    })
   }
 
   return (

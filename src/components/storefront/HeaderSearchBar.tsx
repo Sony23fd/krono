@@ -94,7 +94,7 @@ export function HeaderSearchBar({ categories }: { categories: Category[] }) {
         name="q"
         defaultValue={query}
         placeholder="Ямар бараа хайж байна вэ?"
-        className="flex-1 h-full px-4 md:px-6 outline-none text-sm md:text-base font-medium text-slate-800 placeholder:text-slate-400 bg-transparent"
+        className="flex-1 min-w-0 h-full px-4 md:px-6 outline-none text-sm md:text-base font-medium text-slate-800 placeholder:text-slate-400 bg-transparent"
       />
 
       <button

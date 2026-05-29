@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react"
 import { useRouter } from "next/navigation"
+import { getCurrentCustomer, logoutCustomer } from "@/app/actions/auth-actions"
 
 interface Customer {
   id: string
@@ -10,23 +11,14 @@ interface Customer {
   address?: string
 }
 
-interface AuthVerificationState {
-  verificationRequired?: boolean
-  sessionId?: string
-  smsUri?: string
-  displayInstruction?: string
-  expiresAt?: string
-  status?: "PENDING" | "VERIFIED" | "EXPIRED"
-}
-
 interface CustomerAuthContextType {
   customer: Customer | null
-  login: (name: string, phone: string) => Promise<{ success: boolean; error?: string } & AuthVerificationState>
-  logout: () => void
+  setCustomer: (c: Customer | null) => void
+  logout: () => Promise<void>
   updateAddress: (address: string) => Promise<void>
   updateProfile: (name: string, address: string) => Promise<void>
+  refreshCustomer: () => Promise<void>
   isReady: boolean
-  isLoggingIn: boolean
 }
 
 const CustomerAuthContext = createContext<CustomerAuthContextType | undefined>(undefined)
@@ -34,106 +26,76 @@ const CustomerAuthContext = createContext<CustomerAuthContextType | undefined>(u
 const STORAGE_KEY = "bileg_customer"
 
 export function CustomerAuthProvider({ children }: { children: ReactNode }) {
-  const [customer, setCustomer] = useState<Customer | null>(null)
+  const [customer, setCustomerState] = useState<Customer | null>(null)
   const [isReady, setIsReady] = useState(false)
-  const [isLoggingIn, setIsLoggingIn] = useState(false)
   const router = useRouter()
 
-  // Load from localStorage on mount
+  const refreshCustomer = useCallback(async () => {
+    try {
+      const serverCustomer = await getCurrentCustomer()
+      if (serverCustomer) {
+        setCustomerState(serverCustomer)
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(serverCustomer))
+      } else {
+        setCustomerState(null)
+        localStorage.removeItem(STORAGE_KEY)
+      }
+    } catch {
+      // fallback
+    }
+  }, [])
+
+  // Load from server on mount
   useEffect(() => {
+    // Optimistic load from local storage
     try {
       const stored = localStorage.getItem(STORAGE_KEY)
       if (stored) {
-        const parsed = JSON.parse(stored)
-        // Хуучин формат (id нь Date.now() байсан) → баазаас шинэчлэх
-        if (parsed.id && parsed.phone) {
-          setCustomer(parsed)
-        }
+        setCustomerState(JSON.parse(stored))
       }
     } catch {}
-    setIsReady(true)
+
+    // Verify with server
+    refreshCustomer().finally(() => {
+      setIsReady(true)
+    })
+  }, [refreshCustomer])
+
+  const setCustomer = useCallback((c: Customer | null) => {
+    setCustomerState(c)
+    if (c) localStorage.setItem(STORAGE_KEY, JSON.stringify(c))
+    else localStorage.removeItem(STORAGE_KEY)
   }, [])
 
-  // Save to localStorage when customer changes
-  useEffect(() => {
-    if (customer) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(customer))
-    }
-  }, [customer])
-
-  /**
-   * Нэвтрэх / Бүртгүүлэх
-   * Баазад User бүртгэж, localStorage-д хадгална
-   */
-  const login = useCallback(async (name: string, phone: string): Promise<{ success: boolean; error?: string } & AuthVerificationState> => {
-    setIsLoggingIn(true)
-    try {
-      const { beginCustomerAuth } = await import("@/app/actions/customer-auth-actions")
-      const result = await beginCustomerAuth(phone, name)
-
-      if (result.success) {
-        setCustomer(result.customer)
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(result.customer))
-        return { success: true }
-      }
-
-      // Check if verification is required
-      if ("verificationRequired" in result && result.verificationRequired) {
-        return {
-          success: false,
-          verificationRequired: true,
-          sessionId: result.sessionId,
-          smsUri: result.smsUri,
-          displayInstruction: result.displayInstruction,
-          expiresAt: result.expiresAt,
-          status: result.status,
-        }
-      }
-
-      // Error case
-      const errorResult = result as { success: false; error?: string }
-      return {
-        success: false,
-        error: errorResult.error || "Нэвтрэхэд алдаа гарлаа",
-      }
-    } catch {
-      return { success: false, error: "Нэвтрэхэд алдаа гарлаа" }
-    } finally {
-      setIsLoggingIn(false)
-    }
-  }, [])
-
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
     setCustomer(null)
-    localStorage.removeItem(STORAGE_KEY)
+    await logoutCustomer()
     router.push("/")
-  }, [router])
+  }, [router, setCustomer])
 
   const updateAddress = useCallback(async (address: string) => {
     if (!customer) return
     const updatedCustomer = { ...customer, address }
     setCustomer(updatedCustomer)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedCustomer))
     
     // Fire and forget updating the backend
     import("@/app/actions/customer-auth-actions").then(m => {
       m.updateCustomerAddress(customer.phone, address)
     })
-  }, [customer])
+  }, [customer, setCustomer])
 
   const updateProfile = useCallback(async (name: string, address: string) => {
     if (!customer) return
     const updatedCustomer = { ...customer, name, address }
     setCustomer(updatedCustomer)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedCustomer))
 
     import("@/app/actions/customer-auth-actions").then(m => {
       m.updateCustomerProfile(customer.phone, { name, address })
     })
-  }, [customer])
+  }, [customer, setCustomer])
 
   return (
-    <CustomerAuthContext.Provider value={{ customer, login, logout, updateAddress, updateProfile, isReady, isLoggingIn }}>
+    <CustomerAuthContext.Provider value={{ customer, setCustomer, logout, updateAddress, updateProfile, refreshCustomer, isReady }}>
       {children}
     </CustomerAuthContext.Provider>
   )

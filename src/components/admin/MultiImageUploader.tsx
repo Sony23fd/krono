@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useRef, useState, useEffect } from "react"
 import { ImagePlus, Loader2, Trash2, GripVertical } from "lucide-react"
 import { updateProduct } from "@/app/actions/product-actions"
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd"
@@ -25,6 +25,11 @@ export function MultiImageUploader({ product }: Props) {
   
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   async function handleFiles(files: FileList) {
     setError(null)
@@ -121,6 +126,7 @@ export function MultiImageUploader({ product }: Props) {
 
   return (
     <div className="flex flex-col gap-2">
+      {isMounted ? (
       <DragDropContext onDragEnd={onDragEnd}>
         <Droppable droppableId="product-images" direction="horizontal">
           {(provided) => (
@@ -194,6 +200,18 @@ export function MultiImageUploader({ product }: Props) {
           )}
         </Droppable>
       </DragDropContext>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          {images.map((url, index) => (
+            <div key={url} className={`relative w-[72px] h-[72px] rounded-lg overflow-hidden border-2 flex-shrink-0 ${index === 0 ? 'border-amber-400' : 'border-slate-200'}`}>
+              <img src={url} alt="Product" className="w-full h-full object-cover" />
+            </div>
+          ))}
+          <div className="w-[72px] h-[72px] rounded-lg border-2 border-dashed flex items-center justify-center border-indigo-200 bg-indigo-50/50">
+             <ImagePlus className="w-5 h-5 text-indigo-400" />
+          </div>
+        </div>
+      )}
 
       <input ref={inputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleChange} />
       

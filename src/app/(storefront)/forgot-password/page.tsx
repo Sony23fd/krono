@@ -2,53 +2,25 @@
 
 import { useState, useRef, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Loader2, CheckCircle2, AlertCircle, MessageSquare, ArrowLeft, ArrowRight, Lock } from "lucide-react"
+import { Loader2, CheckCircle2, AlertCircle, MessageSquare, ArrowLeft, ArrowRight, Lock, Phone } from "lucide-react"
 import Link from "next/link"
 import { startPhoneVerification } from "@/app/actions/verify-actions"
-import { registerWithPassword } from "@/app/actions/auth-actions"
+import { resetPassword } from "@/app/actions/auth-actions"
 import { isValidPhone } from "@/lib/customer-utils"
 import { toast } from "sonner"
 import { useCustomerAuth } from "@/context/CustomerAuthContext"
 
-const VERIFY_STORAGE_KEY = "bileg_pending_verified_phone"
-const VERIFY_TTL_MS = 10 * 60 * 1000 // 10 minutes
-
-function getStoredPendingPhone(): { phone: string; name: string; savedAt: number } | null {
-  try {
-    const raw = sessionStorage.getItem(VERIFY_STORAGE_KEY)
-    if (!raw) return null
-    const data = JSON.parse(raw)
-    if (Date.now() - data.savedAt > VERIFY_TTL_MS) {
-      sessionStorage.removeItem(VERIFY_STORAGE_KEY)
-      return null
-    }
-    return data
-  } catch { return null }
-}
-
-function savePendingPhone(phone: string, name: string) {
-  sessionStorage.setItem(VERIFY_STORAGE_KEY, JSON.stringify({ phone, name, savedAt: Date.now() }))
-}
-
-function clearPendingPhone() {
-  sessionStorage.removeItem(VERIFY_STORAGE_KEY)
-}
-
-export default function RegisterPage() {
+export default function ForgotPasswordPage() {
   const router = useRouter()
   const { refreshCustomer } = useCustomerAuth()
   const pollRef = useRef<NodeJS.Timeout | null>(null)
 
-  const [phoneVerificationEnabled, setPhoneVerificationEnabled] = useState(true)
-  const [settingsLoaded, setSettingsLoaded] = useState(false)
-
-  // Step 1: Info
-  const [step, setStep] = useState<"info" | "verify" | "registering">("info")
-  const [name, setName] = useState("")
+  const [step, setStep] = useState<"info" | "verify" | "resetting">("info")
   const [phone, setPhone] = useState("")
   const [password, setPassword] = useState("")
   const [phoneError, setPhoneError] = useState<string | null>(null)
   const [infoLoading, setInfoLoading] = useState(false)
+  const [generalError, setGeneralError] = useState<string | null>(null)
 
   // Step 2: SMS verification
   const [verifySessionId, setVerifySessionId] = useState<string | null>(null)
@@ -57,23 +29,6 @@ export default function RegisterPage() {
   const [verifyExpiresAt, setVerifyExpiresAt] = useState<string | null>(null)
   const [verifyError, setVerifyError] = useState<string | null>(null)
   const [verifyingManually, setVerifyingManually] = useState(false)
-
-  useEffect(() => {
-    fetch("/api/settings/phone-verification")
-      .then(res => res.json())
-      .then(data => setPhoneVerificationEnabled(data.enabled !== false))
-      .catch(() => setPhoneVerificationEnabled(true))
-      .finally(() => setSettingsLoaded(true))
-
-    const pending = getStoredPendingPhone()
-    if (pending) {
-      setName(pending.name)
-      setPhone(pending.phone)
-      // We don't restore password from sessionStorage for security, so they might need to go back to info step
-      // To simplify, let's just keep them on info step so they can fill password again.
-      clearPendingPhone()
-    }
-  }, [])
 
   useEffect(() => {
     return () => {
@@ -103,9 +58,8 @@ export default function RegisterPage() {
           setVerifySessionId(null)
           setVerifySmsUri(null)
           setVerifyInstruction(null)
-          clearPendingPhone()
           toast.success("Утас амжилттай баталгаажлаа!")
-          handleRegister()
+          handleReset()
         } else if (data.status === "EXPIRED") {
           if (pollRef.current) clearInterval(pollRef.current)
           setVerifyError("Хугацаа дууссан. Дахин оролдоно уу.")
@@ -117,9 +71,12 @@ export default function RegisterPage() {
         // Silent
       }
     }, 3000)
-  }, [name, phone, password, phoneVerificationEnabled]) // Dependencies needed since handleRegister uses state
+  }, [phone, password])
 
-  async function handleStartVerification() {
+  async function handleStartVerification(e: React.FormEvent) {
+    e.preventDefault()
+    setGeneralError(null)
+
     const digits = phone.replace(/\D/g, "")
     if (digits.length !== 8) {
       setPhoneError("Утасны дугаар 8 оронтой байх ёстой")
@@ -129,41 +86,27 @@ export default function RegisterPage() {
       setPhoneError("Зөв утасны дугаар оруулна уу")
       return
     }
-    if (!name.trim()) {
-      toast.error("Нэр оруулна уу")
-      return
-    }
     if (password.length < 6) {
-      toast.error("Нууц үг дор хаяж 6 тэмдэгт байх ёстой")
+      toast.error("Шинэ нууц үг дор хаяж 6 тэмдэгт байх ёстой")
       return
     }
 
     setInfoLoading(true)
     setPhoneError(null)
 
-    savePendingPhone(digits, name.trim())
-
-    if (!phoneVerificationEnabled) {
-      clearPendingPhone()
-      toast.success("Утас баталгаажлаа!")
-      setInfoLoading(false)
-      handleRegister()
-      return
-    }
-
+    // For forgot password, we ALWAYS require SMS verification to prove ownership
     const result = await startPhoneVerification(digits)
 
     if (!result.success) {
-      setPhoneError(result.error || "Алдаа гарлаа")
+      setGeneralError(result.error || "Алдаа гарлаа")
       setInfoLoading(false)
       return
     }
 
     if (result.sessionId === "already-verified" || result.sessionId === "skipped" || result.status === "VERIFIED") {
-      clearPendingPhone()
       toast.success("Утас баталгаажлаа!")
       setInfoLoading(false)
-      handleRegister()
+      handleReset()
       return
     }
 
@@ -189,9 +132,8 @@ export default function RegisterPage() {
 
       if (data.status === "VERIFIED") {
         setVerifySessionId(null)
-        clearPendingPhone()
         toast.success("Утас амжилттай баталгаажлаа!")
-        handleRegister()
+        handleReset()
       } else if (data.status === "EXPIRED") {
         setVerifyError("Хугацаа дууссан. Дахин оролдоно уу.")
         setVerifySessionId(null)
@@ -204,22 +146,21 @@ export default function RegisterPage() {
     setVerifyingManually(false)
   }
 
-  async function handleRegister() {
-    setStep("registering")
+  async function handleReset() {
+    setStep("resetting")
     const digits = phone.replace(/\D/g, "")
     
-    // Call the new password-based register action
-    const result = await registerWithPassword(digits, name.trim(), password, phoneVerificationEnabled)
+    const result = await resetPassword(digits, password)
 
     if (!result.success) {
-      toast.error(result.error || "Бүртгэл амжилтгүй боллоо")
+      toast.error(result.error || "Нууц үг сэргээхэд алдаа гарлаа")
       setStep("info")
       return
     }
 
     // Refresh context
     await refreshCustomer()
-    toast.success("Та амжилттай бүртгэгдлээ!")
+    toast.success("Нууц үг амжилттай солигдлоо!")
     router.push("/")
   }
 
@@ -239,14 +180,6 @@ export default function RegisterPage() {
     }
   }
 
-  if (!settingsLoaded) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center px-4 py-8">
-        <Loader2 className="w-8 h-8 animate-spin text-[#F26522]" />
-      </div>
-    )
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-md">
@@ -257,62 +190,40 @@ export default function RegisterPage() {
               <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-slate-800">Бүртгүүлэх</h1>
-          <p className="text-slate-500 text-sm mt-1">Шинэ хэрэглэгч болох</p>
-        </div>
-
-        <div className="flex items-center justify-center gap-2 mb-6">
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
-            step === "info" ? "bg-[#1B3561] text-white" : "bg-emerald-500 text-white"
-          }`}>
-            {step === "info" ? "1" : <CheckCircle2 className="w-4 h-4" />}
-          </div>
-          <div className="w-12 h-0.5 bg-slate-200">
-            <div className={`h-full bg-emerald-500 transition-all ${step !== "info" ? "w-full" : "w-0"}`} />
-          </div>
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
-            step === "info" ? "bg-slate-200 text-slate-500" : "bg-[#1B3561] text-white"
-          }`}>
-            2
-          </div>
+          <h1 className="text-2xl font-bold text-slate-800">Нууц үг үүсгэх / сэргээх</h1>
+          <p className="text-slate-500 text-sm mt-1">Та утасны дугаараа баталгаажуулан шинэ нууц үг үүсгэнэ үү.</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 p-8">
           {step === "info" && (
-            <div className="space-y-5">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Таны нэр</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  placeholder="Жишээ: Отгоо"
-                  className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B3561]/30 transition"
-                />
-              </div>
-
+            <form onSubmit={handleStartVerification} className="space-y-5">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Утасны дугаар</label>
-                <input
-                  type="tel"
-                  inputMode="numeric"
-                  value={phone}
-                  onChange={e => handlePhoneChange(e.target.value)}
-                  maxLength={8}
-                  placeholder="99112233"
-                  className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 transition ${
-                    phoneError ? "border-red-400 focus:ring-red-300" : "border-slate-200 focus:ring-[#1B3561]/30"
-                  }`}
-                />
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Phone className="h-5 w-5 text-slate-400" />
+                  </div>
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    value={phone}
+                    onChange={e => handlePhoneChange(e.target.value)}
+                    maxLength={8}
+                    placeholder="99112233"
+                    className={`w-full border rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 transition ${
+                      phoneError ? "border-red-400 focus:ring-red-300" : "border-slate-200 focus:ring-[#1B3561]/30"
+                    }`}
+                  />
+                </div>
                 {phoneError && (
-                  <p className="text-xs text-red-500 flex items-center gap-1">
+                  <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
                     <AlertCircle className="w-3 h-3" /> {phoneError}
                   </p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Нууц үг зохиох</label>
+                <label className="text-sm font-medium text-slate-700">Шинэ нууц үг</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Lock className="h-5 w-5 text-slate-400" />
@@ -327,17 +238,22 @@ export default function RegisterPage() {
                 </div>
               </div>
 
+              {generalError && (
+                <div className="bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl px-4 py-3">
+                  {generalError}
+                </div>
+              )}
+
               <button
-                type="button"
-                onClick={handleStartVerification}
-                disabled={infoLoading || !!phoneError || !name.trim() || phone.length !== 8 || password.length < 6}
-                className="w-full py-3 bg-[#F26522] text-white font-bold rounded-xl hover:bg-[#E85B1C] disabled:opacity-60 transition-colors shadow-md flex items-center justify-center gap-2 mt-2"
+                type="submit"
+                disabled={infoLoading || !!phoneError || phone.length !== 8 || password.length < 6}
+                className="w-full py-3 bg-[#1B3561] text-white font-bold rounded-xl hover:bg-blue-900 disabled:opacity-60 transition-colors shadow-md flex items-center justify-center gap-2 mt-4"
               >
                 {infoLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
-                {infoLoading ? "Уншиж байна..." : phoneVerificationEnabled ? "Баталгаажуулалт эхлүүлэх" : "Бүртгүүлэх"}
+                {infoLoading ? "Уншиж байна..." : "Утсаа баталгаажуулах"}
                 {!infoLoading && <ArrowRight className="w-4 h-4" />}
               </button>
-            </div>
+            </form>
           )}
 
           {step === "verify" && (
@@ -398,21 +314,20 @@ export default function RegisterPage() {
             </div>
           )}
 
-          {step === "registering" && (
+          {step === "resetting" && (
             <div className="text-center py-8 space-y-4">
               <Loader2 className="w-10 h-10 animate-spin mx-auto text-[#F26522]" />
-              <p className="text-slate-600 font-medium">Бүртгэл үүсгэж байна...</p>
+              <p className="text-slate-600 font-medium">Нууц үгийг хадгалж байна...</p>
             </div>
           )}
         </div>
 
         <div className="mt-6 pt-6 border-t border-slate-200">
-          <p className="text-center text-sm text-slate-500 mb-4">Бүртгэлтэй хэрэглэгч үү?</p>
           <Link
             href="/login"
-            className="w-full py-3 border-2 border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-colors flex items-center justify-center"
+            className="w-full py-3 text-slate-500 font-medium hover:text-[#1B3561] hover:bg-white rounded-xl transition-colors flex items-center justify-center"
           >
-            Нэвтрэх
+            Буцаад нэвтрэх рүү очих
           </Link>
         </div>
       </div>

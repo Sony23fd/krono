@@ -7,13 +7,17 @@ export const dynamic = "force-dynamic"
 
 export default async function UsersPage() {
   const session = await getSession()
-  if (!session.isLoggedIn || session.role !== "ADMIN") {
+  if (!session.isLoggedIn || (session.role !== "ADMIN" && session.role !== "DATAADMIN")) {
     redirect("/admin/login")
   }
 
+  const allowedRoles = session.role === "DATAADMIN" 
+    ? ["ADMIN", "CARGO_ADMIN", "DATAADMIN"] 
+    : ["ADMIN", "CARGO_ADMIN"];
+
   const users = await db.user.findMany({
     where: {
-      role: { in: ["ADMIN", "CARGO_ADMIN"] }
+      role: { in: allowedRoles as any }
     },
     select: {
       id: true,

@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Plus, Loader2, Package } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { RichTextEditor } from "@/components/admin/RichTextEditor"
+import { toast } from "sonner"
 
 function generateVariantKeys(options: { name: string; values: string[] }[]): { key: string; labels: Record<string, string> }[] {
   if (options.length === 0) return []
@@ -74,7 +75,7 @@ export function CreateProductSheet({ categories }: { categories: any[] }) {
       ? totalVariantStock 
       : Number(formData.get("remainingQuantity") || 0)
 
-    const res = await createProduct({
+    const promise = createProduct({
       sku: (formData.get("sku") as string) || `SKU-${Date.now()}`,
       name: formData.get("name") as string,
       description: formData.get("description") as string,
@@ -86,16 +87,26 @@ export function CreateProductSheet({ categories }: { categories: any[] }) {
       customBadge: (formData.get("customBadge") as string) || undefined,
       options: formattedOptions.length > 0 ? formattedOptions : undefined,
     })
-    setLoading(false)
-    if (res.success) {
-      setOpen(false)
-      setOptions([])
-      setVariantStock({})
-      setSelectedCategoryId("")
-      router.refresh()
-    } else {
-      alert(res.error || "Алдаа гарлаа")
-    }
+
+    toast.promise(promise, {
+      loading: "Барааг үүсгэж байна...",
+      success: (res) => {
+        setLoading(false)
+        if (res.success) {
+          setOpen(false)
+          setOptions([])
+          setVariantStock({})
+          setSelectedCategoryId("")
+          router.refresh()
+          return "Амжилттай хадгалагдлаа"
+        }
+        throw new Error(res.error || "Алдаа гарлаа")
+      },
+      error: (err) => {
+        setLoading(false)
+        return err.message || "Алдаа гарлаа"
+      }
+    })
   }
 
   return (

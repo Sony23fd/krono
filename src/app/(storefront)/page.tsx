@@ -1,4 +1,5 @@
-import { getBanners, getFeaturedProducts, getSaleProducts, getPromoSettings } from "@/app/actions/home-actions"
+import { getBanners } from "@/app/actions/home-actions"
+import { getStorefrontHomePageSections } from "@/app/actions/homepage-section-actions"
 import { HeroSlider } from "@/components/storefront/home/HeroSlider"
 import { ProductSliderSection } from "@/components/storefront/home/ProductSliderSection"
 import { PromoSliderSection } from "@/components/storefront/home/PromoSliderSection"
@@ -10,11 +11,9 @@ import { getCategories } from "@/app/actions/category-actions"
 export const dynamic = "force-dynamic"
 
 export default async function StorefrontHomePage() {
-  const [{ banners, thinBanners }, { products: featuredProducts }, { products: saleProducts }, { config }, categoriesResult] = await Promise.all([
+  const [{ banners, thinBanners }, { sections }, categoriesResult] = await Promise.all([
     getBanners(),
-    getFeaturedProducts(),
-    getSaleProducts(),
-    getPromoSettings(),
+    getStorefrontHomePageSections(),
     getCategories()
   ])
 
@@ -28,28 +27,32 @@ export default async function StorefrontHomePage() {
         <StoryCategoryMenu categories={categories} />
       </div>
 
-      <div className="mt-12 md:mt-20">
-        <ProductSliderSection
-          title="Онцлох бараа"
-          products={featuredProducts || []}
-          viewAllLink="/shop"
-        />
-      </div>
+      {sections?.map((section) => (
+        <div key={section.id} className="mt-12 md:mt-20">
+          {section.type === "PRODUCT_SLIDER" ? (
+            <ProductSliderSection
+              title={section.title}
+              products={section.products || []}
+              viewAllLink={section.categoryId ? `/categories/${section.category?.slug}` : "/shop"}
+            />
+          ) : (
+            <PromoSliderSection
+              title={section.title}
+              promoTitle={section.title}
+              promoSubtitle={section.category ? section.category.name : "Онцгой санал"}
+              promoLink={section.bannerLink || (section.categoryId ? `/categories/${section.category?.slug}` : "/shop")}
+              promoImage={section.bannerImageUrl || undefined}
+              products={section.products || []}
+            />
+          )}
+        </div>
+      ))}
 
-      <div className="mt-12 md:mt-20">
-        <ThinBannerSlider banners={thinBanners || []} />
-      </div>
-
-      <div className="mt-12 md:mt-20">
-        <PromoSliderSection
-          title="Онцгой санал"
-          promoTitle={config?.promo_title || "СУПЕР ХЯМДРАЛ"}
-          promoSubtitle={config?.promo_subtitle || "Зөвхөн өнөөдөр"}
-          promoLink={config?.promo_link || "/shop?sale=true"}
-          promoImage={config?.promo_image}
-          products={saleProducts || []}
-        />
-      </div>
+      {thinBanners && thinBanners.length > 0 && (
+        <div className="mt-12 md:mt-20">
+          <ThinBannerSlider banners={thinBanners} />
+        </div>
+      )}
 
       <div>
         <HowItWorks />

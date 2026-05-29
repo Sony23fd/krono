@@ -2,17 +2,38 @@ import { Button } from "@/components/ui/button"
 import { Plus, CreditCardIcon } from "lucide-react"
 import { getLoyaltyCards, createLoyaltyCard } from "@/app/actions/loyalty-actions"
 import { Input } from "@/components/ui/input"
-import { 
-  Sheet, 
-  SheetContent, 
-  SheetHeader, 
-  SheetTitle, 
-  SheetTrigger 
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger
 } from "@/components/ui/sheet"
 import { ActionForm } from "@/components/admin/ActionForm"
 import { LoyaltyCardTableClient } from "./LoyaltyCardTableClient"
+import { getShopSettings } from "@/app/actions/settings-actions"
+import { getCurrentAdmin } from "@/lib/auth"
+import { Lock } from "lucide-react"
 
 export default async function LoyaltyCardsPage() {
+  const admin = await getCurrentAdmin()
+  const settings = await getShopSettings()
+  const loyaltyEnabled = settings.loyalty_enabled !== "false"
+
+  if (!loyaltyEnabled && admin?.role !== "DATAADMIN") {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4 text-center">
+        <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-2">
+          <Lock className="w-8 h-8 text-slate-400" />
+        </div>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-800">Тун удахгүй нээгдэнэ...</h1>
+        <p className="text-slate-500 max-w-md">
+          Хөнгөлөлтийн картын системийг түр хаасан байна.
+        </p>
+      </div>
+    )
+  }
+
   const { cards, success } = await getLoyaltyCards()
 
   return (

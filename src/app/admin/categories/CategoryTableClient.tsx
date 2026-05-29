@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Edit2, Trash2, GripVertical, ImagePlus } from "lucide-react"
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd"
 import { updateCategoryOrder } from "@/app/actions/category-actions"
+import { useRouter } from "next/navigation"
 import { CategoryExcelImport } from "@/components/admin/CategoryExcelImport"
 import { CategoryProductsSheet } from "./CategoryProductsSheet"
 import {
@@ -21,6 +22,14 @@ import { Button } from "@/components/ui/button"
 
 export function CategoryTableClient({ initialCategories }: { initialCategories: any[] }) {
   const [categories, setCategories] = useState(initialCategories)
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null)
+  const [deletingCategoryId, setDeletingCategoryId] = useState<string | null>(null)
+  const [isMounted, setIsMounted] = useState(false)
+  const router = useRouter()
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   // Sync state if props change (e.g. after create/delete)
   if (initialCategories !== categories && !categories.every((cat, i) => cat.id === initialCategories[i]?.id)) {
@@ -79,6 +88,46 @@ export function CategoryTableClient({ initialCategories }: { initialCategories: 
             <th className="px-6 py-4 font-normal text-right">Үйлдэл</th>
           </tr>
         </thead>
+        {!isMounted ? (
+          <tbody className="divide-y relative">
+            {sortedCategories && sortedCategories.length > 0 ? (
+              sortedCategories.map((cat, index) => (
+                <tr key={cat.id} className={`hover:bg-slate-50/50 transition-colors ${cat._isChild ? 'bg-slate-50/30' : ''}`}>
+                  <td className="px-4 py-4 w-10">
+                    <div className="p-1.5 text-slate-400 rounded"><GripVertical className="w-4 h-4" /></div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className={`flex items-center gap-3 ${cat._isChild ? 'ml-6' : ''}`}>
+                      {cat._isChild && <div className="w-4 h-4 border-l-2 border-b-2 border-slate-300 rounded-bl-md"></div>}
+                      {cat.imageUrl ? <img src={cat.imageUrl} alt={cat.name} className="w-10 h-10 object-cover rounded-md border shrink-0" /> : <div className="w-10 h-10 bg-slate-100 border border-dashed border-slate-300 rounded-md flex items-center justify-center text-slate-400 shrink-0"><ImagePlus className="w-4 h-4" /></div>}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 font-medium text-slate-900">
+                    {cat.displayName ? (
+                      <div className="flex flex-col">
+                        <span>{cat.displayName}</span>
+                        <span className="text-xs text-slate-400 font-normal mt-0.5">({cat.name})</span>
+                      </div>
+                    ) : (
+                      <span>{cat.name}</span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 text-center">
+                    <CategoryProductsSheet categoryId={cat.id} categoryName={cat.name} productCount={cat._count?.products || 0} />
+                  </td>
+                  <td className="px-6 py-4 text-slate-600">
+                    {new Date(cat.createdAt).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4 text-right space-x-1 whitespace-nowrap">
+                    {/* Render static action buttons on server to avoid mismatch, interaction will happen after hydration */}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr><td colSpan={6} className="px-6 py-12 text-center text-slate-500">Одоогоор ангилал нэмэгдээгүй байна.</td></tr>
+            )}
+          </tbody>
+        ) : (
         <DragDropContext onDragEnd={onDragEnd}>
           <Droppable droppableId="categories-list">
             {(provided) => (
@@ -147,8 +196,8 @@ export function CategoryTableClient({ initialCategories }: { initialCategories: 
                           <td className="px-6 py-4 text-right space-x-1 whitespace-nowrap">
                             <CategoryExcelImport categoryId={cat.id} categoryName={cat.name} />
                             
-                            <Dialog>
-                              <DialogTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-8 w-8 text-amber-500">
+                            <Dialog open={editingCategoryId === cat.id} onOpenChange={(open) => setEditingCategoryId(open ? cat.id : null)}>
+                              <DialogTrigger onClick={() => setEditingCategoryId(cat.id)} className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-8 w-8 text-amber-500">
                                 <Edit2 className="w-4 h-4" />
                               </DialogTrigger>
                               <DialogContent>
@@ -173,7 +222,7 @@ export function CategoryTableClient({ initialCategories }: { initialCategories: 
                                     displayName: displayName || null 
                                   })
                                   return { success: false, error: "Мэдээлэл дутуу байна" }
-                                }} className="space-y-4" successMessage="Амжилттай заслаа">
+                                }} className="space-y-4" successMessage="Амжилттай заслаа" onSuccess={() => { setEditingCategoryId(null); router.refresh(); }}>
                                   <input type="hidden" name="id" value={cat.id} />
                                   <div className="space-y-2">
                                     <label htmlFor={`edit-name-${cat.id}`} className="text-sm font-medium">Ангиллын нэр (ERP код)</label>
@@ -217,8 +266,8 @@ export function CategoryTableClient({ initialCategories }: { initialCategories: 
                               </DialogContent>
                             </Dialog>
 
-                            <Dialog>
-                              <DialogTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-8 w-8 text-red-500">
+                            <Dialog open={deletingCategoryId === cat.id} onOpenChange={(open) => setDeletingCategoryId(open ? cat.id : null)}>
+                              <DialogTrigger onClick={() => setDeletingCategoryId(cat.id)} className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-8 w-8 text-red-500">
                                 <Trash2 className="w-4 h-4" />
                               </DialogTrigger>
                               <DialogContent>
@@ -233,7 +282,7 @@ export function CategoryTableClient({ initialCategories }: { initialCategories: 
                                   const id = formData.get("id") as string
                                   if (id) return await deleteCategory(id)
                                   return { success: false, error: "Алдаа гарлаа" }
-                                }} successMessage="Амжилттай устгагдлаа">
+                                }} successMessage="Амжилттай устгагдлаа" onSuccess={() => { setDeletingCategoryId(null); router.refresh(); }}>
                                   <input type="hidden" name="id" value={cat.id} />
                                   <DialogFooter className="mt-4">
                                     <Button type="submit" variant="destructive">Тийм, устгах</Button>
@@ -258,6 +307,7 @@ export function CategoryTableClient({ initialCategories }: { initialCategories: 
             )}
           </Droppable>
         </DragDropContext>
+        )}
       </table>
     </div>
   )

@@ -15,6 +15,7 @@ const DEFAULT_SETTINGS: Record<string, string> = {
   delivery_fee: "6000",
   delivery_schedule_days: "3,6",
   phone_verification_enabled: "false",
+  loyalty_enabled: "true",
 }
 
 export async function getShopSettings(): Promise<Record<string, string>> {

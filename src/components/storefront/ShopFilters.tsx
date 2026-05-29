@@ -30,31 +30,21 @@ export function ShopFilters({ categories, selectedCategorySlug }: { categories?:
   }
 
   const getCategoryRoute = (slug: string) => {
-    if (pathname?.startsWith("/categories")) {
-      return slug === "all" ? "/shop" : `/categories/${slug}`
-    }
-    return slug === "all" ? "/shop" : `/shop?category=${slug}`
+    return slug === "all" ? "/shop" : `/categories/${slug}`
   }
 
   const setCategory = (categorySlug: string) => {
     const params = new URLSearchParams(searchParams.toString())
+    params.delete("category") // ensure we don't have this in url
+
     if (categorySlug === "all") {
-      params.delete("category")
       const target = `/shop${buildQueryString(params)}`
       router.push(target, { scroll: false })
       return
     }
 
-    if (pathname?.startsWith("/categories")) {
-      const filteredParams = new URLSearchParams(searchParams.toString())
-      filteredParams.delete("category")
-      const path = `/categories/${categorySlug}${buildQueryString(filteredParams)}`
-      router.push(path, { scroll: false })
-      return
-    }
-
-    params.set("category", categorySlug)
-    router.replace(`/shop${buildQueryString(params)}`, { scroll: false })
+    const path = `/categories/${categorySlug}${buildQueryString(params)}`
+    router.push(path, { scroll: false })
   }
 
   // Debounced search
@@ -85,28 +75,20 @@ export function ShopFilters({ categories, selectedCategorySlug }: { categories?:
     <div className="max-w-6xl mx-auto px-4 w-full mb-8 space-y-4">
       <div className="flex flex-col gap-4 bg-slate-50/50 p-3 rounded-2xl border border-slate-100 lg:bg-transparent lg:border-none lg:p-0">
         {categories && categories.length > 0 && (
-          <div className="flex flex-wrap gap-2 overflow-x-auto hide-scrollbar pb-1 lg:hidden">
-            <button
-              onClick={() => setCategory("all")}
-              className={clsx(
-                "px-4 py-2 text-sm font-semibold rounded-full transition-all whitespace-nowrap",
-                currentCategory === "all" ? "bg-[#F26522] text-white shadow-md shadow-red-500/20" : "bg-white border border-slate-200 text-slate-600 hover:border-[#1B3561] hover:text-[#1B3561]"
-              )}
+          <div className="relative lg:hidden">
+            <select
+              value={currentCategory}
+              onChange={(e) => setCategory(e.target.value)}
+              className="appearance-none w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-[#F26522]/20 focus:border-[#F26522] pr-10 shadow-sm transition-all"
             >
-              Бүх ангилал
-            </button>
-            {categories.map((category) => (
-              <button
-                key={category.id}
-                onClick={() => setCategory(category.slug)}
-                className={clsx(
-                  "px-4 py-2 text-sm font-semibold rounded-full transition-all whitespace-nowrap",
-                  currentCategory === category.slug ? "bg-[#F26522] text-white shadow-md shadow-red-500/20" : "bg-white border border-slate-200 text-slate-600 hover:border-[#1B3561] hover:text-[#1B3561]"
-                )}
-              >
-                {category.name}
-              </button>
-            ))}
+              <option value="all">Бүх ангилал</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.slug}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="w-5 h-5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
         )}
 

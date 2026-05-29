@@ -6,13 +6,13 @@ import bcrypt from "bcryptjs"
 export async function GET() {
   try {
     const session = await getSession()
-    if (!session.isLoggedIn || session.role !== "ADMIN") {
+    if (!session.isLoggedIn || (session.role !== "ADMIN" && session.role !== "DATAADMIN")) {
       return NextResponse.json({ error: "Эрх хүрэхгүй байна" }, { status: 401 })
     }
 
     const users = await db.user.findMany({
       where: {
-        role: { in: ["ADMIN", "CARGO_ADMIN"] }
+        role: { in: session.role === "DATAADMIN" ? ["ADMIN", "CARGO_ADMIN", "DATAADMIN"] : ["ADMIN", "CARGO_ADMIN"] }
       },
       select: {
         id: true,
@@ -34,7 +34,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const session = await getSession()
-    if (!session.isLoggedIn || session.role !== "ADMIN") {
+    if (!session.isLoggedIn || (session.role !== "ADMIN" && session.role !== "DATAADMIN")) {
         return NextResponse.json({ error: "Эрх хүрэхгүй байна" }, { status: 401 })
     }
 
@@ -43,6 +43,10 @@ export async function POST(req: Request) {
 
     if (!email || !password || !role) {
       return NextResponse.json({ error: "Имэйл, нууц үг, эрхийг заавал оруулна уу" }, { status: 400 })
+    }
+
+    if (session.role === "ADMIN" && role === "DATAADMIN") {
+      return NextResponse.json({ error: "Та Дата Админ үүсгэх эрхгүй байна" }, { status: 403 })
     }
 
     // Check if user exists

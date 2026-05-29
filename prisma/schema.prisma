@@ -41,6 +41,7 @@ model Category {
   
   parent          Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
   subcategories   Category[] @relation("CategoryHierarchy")
+  homePageSections HomePageSection[]
 
   @@index([isActive, sortOrder])
   @@index([parentId])
@@ -277,6 +278,23 @@ model LoyaltyCard {
   @@index([phone])
 }
 
+model HomePageSection {
+  id              String   @id @default(cuid())
+  title           String
+  type            SectionType @default(PRODUCT_SLIDER)
+  categoryId      String?
+  bannerImageUrl  String?
+  bannerLink      String?
+  isActive        Boolean  @default(true)
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  category        Category? @relation(fields: [categoryId], references: [id])
+
+  @@index([isActive, sortOrder])
+}
+
 enum Role {
   CUSTOMER
   ADMIN
@@ -321,4 +339,9 @@ enum PaymentStatus {
   PAID
   FAILED
   REFUNDED
+}
+
+enum SectionType {
+  PRODUCT_SLIDER
+  PROMO_SLIDER
 }

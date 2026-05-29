@@ -36,7 +36,7 @@ export function ShopSidebar({ categories, selectedCategorySlug }: { categories?:
             return (
               <li key={category.id} className="space-y-1">
                 <Link
-                  href={`/shop?category=${category.slug}`}
+                  href={`/categories/${category.slug}`}
                   className={clsx(
                     "block px-4 py-2.5 rounded-xl font-semibold transition-all duration-200",
                     currentCategory === category.slug
@@ -51,7 +51,7 @@ export function ShopSidebar({ categories, selectedCategorySlug }: { categories?:
                     {subCats.map(sub => (
                       <li key={sub.id}>
                         <Link
-                          href={`/shop?category=${sub.slug}`}
+                          href={`/categories/${sub.slug}`}
                           className={clsx(
                             "block px-4 py-2 text-sm rounded-xl font-medium transition-all duration-200",
                             currentCategory === sub.slug

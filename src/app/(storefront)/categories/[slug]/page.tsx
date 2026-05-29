@@ -4,6 +4,7 @@ import { getCategories } from "@/app/actions/category-actions"
 import { getActiveProducts } from "@/app/actions/product-actions"
 import { ActiveBatchesList } from "@/components/storefront/home/ActiveBatchesList"
 import { ShopFilters } from "@/components/storefront/ShopFilters"
+import { ShopSidebar } from "@/components/storefront/ShopSidebar"
 import { Pagination } from "@/components/storefront/Pagination"
 import { Package } from "lucide-react"
 
@@ -57,41 +58,46 @@ export default async function CategoryDetailPage({ params, searchParams }: { par
 
   return (
     <div className="bg-white min-h-screen pt-8 pb-12">
-      <div className="max-w-6xl mx-auto px-4 mb-2">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div>
-            <Link href="/categories" className="text-sm text-slate-500 hover:text-indigo-600 transition-colors">← Ангилалууд руу буцах</Link>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mt-4">{displayName}</h1>
-            <p className="text-slate-500 mt-2">{total} бүтээгдэхүүнтэй ангилал</p>
-            
-            {subCats.length > 0 && (
-              <div className="mt-4 flex flex-wrap gap-2">
-                <span className="text-sm text-slate-400 py-1.5 mr-2">Дэд ангиллууд:</span>
-                {subCats.map((sub: any) => (
-                  <Link 
-                    key={sub.id} 
-                    href={`/categories/${sub.slug}`}
-                    className="inline-flex items-center justify-center rounded-full bg-slate-100 px-4 py-1.5 text-sm font-medium text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors border border-slate-200 hover:border-indigo-100"
-                  >
-                    {sub.displayName || sub.name}
-                  </Link>
-                ))}
+      <div className="max-w-7xl mx-auto px-4">
+        <div className="lg:flex lg:gap-8">
+          <ShopSidebar categories={categories || []} selectedCategorySlug={category.slug} />
+          
+          <div className="flex-1">
+            <div className="mb-6">
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div>
+                  <Link href="/categories" className="text-sm text-slate-500 hover:text-indigo-600 transition-colors lg:hidden">← Ангилалууд руу буцах</Link>
+                  <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mt-4">{displayName}</h1>
+                  <p className="text-slate-500 mt-2">{total} бүтээгдэхүүнтэй ангилал</p>
+                  
+                  {subCats.length > 0 && (
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <span className="text-sm text-slate-400 py-1.5 mr-2">Дэд ангиллууд:</span>
+                      {subCats.map((sub: any) => (
+                        <Link 
+                          key={sub.id} 
+                          href={`/categories/${sub.slug}`}
+                          className="inline-flex items-center justify-center rounded-full bg-slate-100 px-4 py-1.5 text-sm font-medium text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors border border-slate-200 hover:border-indigo-100"
+                        >
+                          {sub.displayName || sub.name}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <Link href="/shop" className="rounded-full bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-200 transition-colors lg:hidden">Дэлгүүрт бүх бараа харах</Link>
               </div>
-            )}
-          </div>
-          <Link href="/shop" className="rounded-full bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-200 transition-colors">Дэлгүүрт бүх бараа харах</Link>
-        </div>
-      </div>
+            </div>
 
-      <ShopFilters categories={categories || []} selectedCategorySlug={category.slug} />
+            <ShopFilters categories={categories || []} selectedCategorySlug={category.slug} />
 
       {products && products.length > 0 ? (
         <>
           <ActiveBatchesList
             batches={products}
-            title={title}
-            subtitle={subtitle}
-            badge={badge}
+            title={null}
+            subtitle={null}
+            badge={null}
             theme={theme}
           />
           <Pagination 
@@ -112,10 +118,13 @@ export default async function CategoryDetailPage({ params, searchParams }: { par
           <p className="text-slate-500 text-center max-w-md">Шүүлтүүр болон хайлтын нөхцлийг өөрчилж үзнэ үү.</p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Link href="/shop" className="inline-flex items-center justify-center rounded-full bg-[#1B3561] px-6 py-3 text-sm font-bold text-white hover:bg-[#152849] transition-colors">Дэлгүүр рүү буцах</Link>
-            <Link href="/categories" className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">Ангилалуудыг үзэх</Link>
+              <Link href="/categories" className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">Ангилалуудыг үзэх</Link>
+            </div>
+          </div>
+        )}
           </div>
         </div>
-      )}
+      </div>
     </div>
   )
 }

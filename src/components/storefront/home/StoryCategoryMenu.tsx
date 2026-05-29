@@ -84,7 +84,7 @@ export function StoryCategoryMenu({ categories }: { categories: any[] }) {
               return (
                 <SwiperSlide key={cat.id || idx} className="!w-auto">
                   <Link 
-                    href={`/shop?category=${cat.slug}`}
+                    href={`/categories/${cat.slug}`}
                     className="flex flex-col items-center gap-2 group w-[72px] md:w-[88px]"
                   >
                     <div className="w-[64px] h-[64px] md:w-[76px] md:h-[76px] rounded-full p-[3px] bg-gradient-to-tr from-[#F26522] to-yellow-400 group-hover:scale-105 transition-transform duration-300 shadow-sm">

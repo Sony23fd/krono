@@ -83,7 +83,7 @@ async function main() {
 
   // 4. ShopSettings
   const settings = [
-    { key: "shop_name", value: "Энгийн Шоп" },
+    { key: "shop_name", value: "Билэг хүргэлт" },
     { key: "delivery_fee", value: "6000" },
     { key: "qpay_enabled", value: "false" },
   ]

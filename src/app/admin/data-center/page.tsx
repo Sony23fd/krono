@@ -3,12 +3,15 @@ import { Database, Download, AlertTriangle, Terminal } from "lucide-react"
 import { getCurrentAdmin } from "@/lib/auth"
 import { notFound } from "next/navigation"
 import ClearDataButton from "./ClearDataButton"
+import LoyaltyToggle from "./LoyaltyToggle"
+import RestoreButton from "./RestoreButton"
+import { getShopSettings } from "@/app/actions/settings-actions"
 
 export const dynamic = "force-dynamic"
 
 export default async function DataCenterPage() {
   const admin = await getCurrentAdmin();
-  if (!admin || (admin.role !== "ADMIN" && admin.role !== "DATAADMIN")) {
+  if (!admin || admin.role !== "DATAADMIN") {
     notFound()
   }
 
@@ -18,6 +21,9 @@ export default async function DataCenterPage() {
     db.product.count(),
     db.category.count()
   ])
+
+  const settings = await getShopSettings()
+  const loyaltyEnabled = settings.loyalty_enabled !== "false"
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto mt-4">
@@ -50,6 +56,11 @@ export default async function DataCenterPage() {
          </div>
       </div>
 
+      {/* Toggles */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <LoyaltyToggle initialValue={loyaltyEnabled} />
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white rounded-xl border shadow-sm p-6 space-y-4 border-t-4 border-t-purple-500 flex flex-col">
            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
@@ -68,11 +79,14 @@ export default async function DataCenterPage() {
              <Database className="w-5 h-5 text-blue-500" /> Импортлох
            </h2>
            <p className="text-sm text-slate-600 flex-1">
-             Хуучин системээс бөөнөөр оруулж байгаа өгөгдлийг шинэ систем рүү хөрвүүлэн импортлох хэрэгсэл.
+             Хуучин системээс бөөнөөр оруулж байгаа өгөгдлийг шинэ систем рүү хөрвүүлэн импортлох эсвэл нөөцөлсөн (JSON) датагаа шууд сэргээх хэрэгсэл.
            </p>
-           <a href="/admin/data-center/import" className="inline-flex items-center justify-center gap-2 bg-blue-600 text-white hover:bg-blue-700 px-4 py-2.5 rounded-lg font-medium transition-colors text-sm w-full">
-              <Database className="w-4 h-4" /> Импортлох
-           </a>
+           <div className="flex flex-col gap-2 mt-auto">
+             <RestoreButton />
+             <a href="/admin/data-center/import" className="inline-flex items-center justify-center gap-2 bg-blue-600 text-white hover:bg-blue-700 px-4 py-2.5 rounded-lg font-medium transition-colors text-sm w-full">
+                <Database className="w-4 h-4" /> Excel Импортлох (Бараа)
+             </a>
+           </div>
         </div>
 
         <div className="bg-slate-900 rounded-xl border border-slate-800 shadow-sm p-6 space-y-4 border-t-4 border-t-indigo-500 flex flex-col">

@@ -19,7 +19,8 @@ export function CartClient({
   globalDeliveryFee = 0, 
   deliveryScheduleDays = "3,6",
   phoneVerificationEnabled = true,
-  loyaltyPercent
+  loyaltyPercent,
+  loyaltyEnabled = true
 }: { 
   termsOfService?: string; 
   deliveryTerms?: string; 
@@ -28,12 +29,13 @@ export function CartClient({
   deliveryScheduleDays?: string;
   phoneVerificationEnabled?: boolean;
   loyaltyPercent?: number;
+  loyaltyEnabled?: boolean;
 }) {
   const { items, removeItem, updateQty, clearCart, totalPrice } = useCart()
   const { customer, updateAddress } = useCustomerAuth()
   const router = useRouter()
   const wantsDelivery = true
-  const paymentMethod = "QPAY"
+  const [paymentMethod, setPaymentMethod] = useState<"QPAY" | "BANK_TRANSFER">("QPAY")
   const [submitting, setSubmitting] = useState(false)
   const [isRedirecting, setIsRedirecting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -312,7 +314,7 @@ export function CartClient({
     return (
       <div className="max-w-2xl mx-auto px-4 py-24 text-center flex flex-col items-center">
         <div className="w-48 h-48 mb-6 relative hover:scale-105 transition-transform duration-300">
-          <img src="/rabbit-mascot.png" alt="Happy Rabbit" className="object-contain w-full h-full drop-shadow-lg" />
+          <img src="/empty.png" alt="Empty Cart" className="object-contain w-full h-full drop-shadow-lg" />
         </div>
         <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800 mb-3 tracking-tight">Таны сагс хоосон байна өө! 🥕</h1>
         <p className="text-slate-500 mb-8 text-base">Манай амттай, шинэхэн бараануудаас сонголтоо хийгээрэй.</p>
@@ -388,8 +390,11 @@ export function CartClient({
       setIsRedirecting(true)
       clearCart()
 
-      // QPay бол order-pending хуудас руу, банк бол order-manual руу
-      router.push(`/order-pending/ref/${result.order.orderNumber}`)
+      if (result.paymentMethod === "BANK_TRANSFER") {
+        router.push(`/order-manual/ref/${result.order.orderNumber}`)
+      } else {
+        router.push(`/order-pending/ref/${result.order.orderNumber}`)
+      }
     } catch (e: any) {
       setError(e.message || "Алдаа гарлаа")
       setSubmitting(false)
@@ -616,26 +621,18 @@ export function CartClient({
               <div className="space-y-3">
                 {wantsDelivery && (
                   <div className="space-y-3 mt-4 border-t pt-4">
-                    <label className="text-sm font-medium text-slate-700 block mb-2">Хүргүүлэх өдөр сонгох</label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {getUpcomingDeliveryDates(deliveryScheduleDays, 2).map((opt, i) => (
-                        <label key={i} className={`flex items-start gap-3 p-3 rounded-lg border-2 cursor-pointer transition-colors ${selectedDeliveryDate === opt.date.toISOString() ? 'border-[#1B3561] bg-blue-50' : 'border-slate-200 hover:bg-slate-50'}`}>
-                          <input 
-                            type="radio" 
-                            name="deliveryDateChoice" 
-                            className="mt-1"
-                            required
-                            checked={selectedDeliveryDate === opt.date.toISOString()}
-                            onChange={() => setSelectedDeliveryDate(opt.date.toISOString())}
-                            value={opt.date.toISOString()} 
-                          />
-                          <div>
-                            <p className={`text-sm font-bold ${selectedDeliveryDate === opt.date.toISOString() ? 'text-[#1B3561]' : 'text-slate-700'}`}>{opt.formatted}</p>
-                            <p className="text-[11px] text-slate-500 mt-0.5">Товлосон өдрөөс хойш 24-72ц дотор</p>
-                          </div>
-                        </label>
-                      ))}
-                    </div>
+                    <label className="text-sm font-medium text-slate-700 block mb-2">Хүргүүлэх өдөр (Заавал биш)</label>
+                    <input
+                      type="date"
+                      name="deliveryDateChoice"
+                      min={new Date().toISOString().split('T')[0]} // Өнгөрсөн өдөр сонгохыг хаах
+                      className="w-full sm:w-1/2 px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1B3561]/30 bg-slate-50 focus:bg-white transition-colors shadow-sm"
+                      value={selectedDeliveryDate || ""}
+                      onChange={(e) => setSelectedDeliveryDate(e.target.value)}
+                    />
+                    <p className="text-xs text-slate-500 mt-1">
+                      Хэрэв та тодорхой өдөр хүргүүлэх хүсэлтэй бол сонгоно уу. Сонгоогүй үед хамгийн ойр гарах хүргэлтээр очно.
+                    </p>
                   </div>
                 )}
               </div>
@@ -718,74 +715,76 @@ export function CartClient({
             )}
 
             {/* Loyalty Card Section */}
-            <div className="pt-2">
-              <label className="text-sm font-medium text-slate-700 block mb-2">Хөнгөлөлтийн карт</label>
-              <div className="flex gap-2 mb-2">
-                <input
-                  type="text"
-                  value={loyaltyCardNumber}
-                  onChange={e => {
-                    setLoyaltyCardNumber(e.target.value)
-                    if (loyaltyStatus !== "idle") setLoyaltyStatus("idle")
-                  }}
-                  placeholder="Картын дугаар"
-                  className="flex-1 border border-slate-200 bg-slate-50 rounded-xl px-4 py-2.5 text-sm focus:bg-white transition-colors focus:outline-none focus:ring-2 focus:ring-[#1B3561]/30 shadow-sm"
-                />
-                <button
-                  type="button"
-                  onClick={verifyLoyaltyCard}
-                  disabled={loyaltyStatus === "verifying" || !loyaltyCardNumber.trim()}
-                  className="bg-[#1B3561] text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-[#1B3561]/90 transition-colors disabled:opacity-50"
-                >
-                  {loyaltyStatus === "verifying" ? <Loader2 className="w-4 h-4 animate-spin" /> : "Шалгах"}
-                </button>
-              </div>
-              
-              {loyaltyError && (
-                <p className="text-red-500 text-xs mt-1 font-medium flex items-center gap-1">
-                  <AlertCircle className="w-3 h-3" /> {loyaltyError}
-                </p>
-              )}
-
-              {loyaltyStatus === "valid" && (
-                <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-xl mt-3 animate-in fade-in slide-in-from-top-2">
-                  <p className="text-sm font-bold text-emerald-800 mb-3">Таны үлдэгдэл: {loyaltyBalance.toLocaleString()} оноо</p>
-                  
-                  <div className="space-y-3">
-                    <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${loyaltyAction === "SPEND" ? "border-emerald-500 bg-white" : "border-emerald-200/50 bg-emerald-50/50 opacity-60"}`}>
-                      <input 
-                        type="radio" 
-                        name="loyaltyAction" 
-                        value="SPEND" 
-                        checked={loyaltyAction === "SPEND"}
-                        onChange={() => setLoyaltyAction("SPEND")}
-                        disabled={loyaltyBalance <= 0}
-                        className="mt-0.5 accent-emerald-600 w-4 h-4"
-                      />
-                      <div>
-                        <p className="text-sm font-bold text-slate-800">Оноог ашиглах</p>
-                        <p className="text-xs text-slate-500 mt-0.5">Таны төлөх дүнгээс {Math.min(loyaltyBalance, baseGrandTotal).toLocaleString()} ₮ хасагдана</p>
-                      </div>
-                    </label>
-
-                    <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${loyaltyAction === "EARN" ? "border-emerald-500 bg-white" : "border-emerald-200/50 bg-emerald-50/50 opacity-60"}`}>
-                      <input 
-                        type="radio" 
-                        name="loyaltyAction" 
-                        value="EARN" 
-                        checked={loyaltyAction === "EARN"}
-                        onChange={() => setLoyaltyAction("EARN")}
-                        className="mt-0.5 accent-emerald-600 w-4 h-4"
-                      />
-                      <div>
-                        <p className="text-sm font-bold text-slate-800">Оноо цуглуулах</p>
-                        <p className="text-xs text-slate-500 mt-0.5">Энэ худалдан авалтаас {expectedPointsEarned.toLocaleString()} оноо шинээр цугларна</p>
-                      </div>
-                    </label>
-                  </div>
+            {loyaltyEnabled && (
+              <div className="pt-2">
+                <label className="text-sm font-medium text-slate-700 block mb-2">Хөнгөлөлтийн карт</label>
+                <div className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={loyaltyCardNumber}
+                    onChange={e => {
+                      setLoyaltyCardNumber(e.target.value)
+                      if (loyaltyStatus !== "idle") setLoyaltyStatus("idle")
+                    }}
+                    placeholder="Картын дугаар"
+                    className="flex-1 border border-slate-200 bg-slate-50 rounded-xl px-4 py-2.5 text-sm focus:bg-white transition-colors focus:outline-none focus:ring-2 focus:ring-[#1B3561]/30 shadow-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={verifyLoyaltyCard}
+                    disabled={loyaltyStatus === "verifying" || !loyaltyCardNumber.trim()}
+                    className="bg-[#1B3561] text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-[#1B3561]/90 transition-colors disabled:opacity-50"
+                  >
+                    {loyaltyStatus === "verifying" ? <Loader2 className="w-4 h-4 animate-spin" /> : "Шалгах"}
+                  </button>
                 </div>
-              )}
-            </div>
+                
+                {loyaltyError && (
+                  <p className="text-red-500 text-xs mt-1 font-medium flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" /> {loyaltyError}
+                  </p>
+                )}
+
+                {loyaltyStatus === "valid" && (
+                  <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-xl mt-3 animate-in fade-in slide-in-from-top-2">
+                    <p className="text-sm font-bold text-emerald-800 mb-3">Таны үлдэгдэл: {loyaltyBalance.toLocaleString()} оноо</p>
+                    
+                    <div className="space-y-3">
+                      <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${loyaltyAction === "SPEND" ? "border-emerald-500 bg-white" : "border-emerald-200/50 bg-emerald-50/50 opacity-60"}`}>
+                        <input 
+                          type="radio" 
+                          name="loyaltyAction" 
+                          value="SPEND" 
+                          checked={loyaltyAction === "SPEND"}
+                          onChange={() => setLoyaltyAction("SPEND")}
+                          disabled={loyaltyBalance <= 0}
+                          className="mt-0.5 accent-emerald-600 w-4 h-4"
+                        />
+                        <div>
+                          <p className="text-sm font-bold text-slate-800">Оноог ашиглах</p>
+                          <p className="text-xs text-slate-500 mt-0.5">Таны төлөх дүнгээс {Math.min(loyaltyBalance, baseGrandTotal).toLocaleString()} ₮ хасагдана</p>
+                        </div>
+                      </label>
+
+                      <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${loyaltyAction === "EARN" ? "border-emerald-500 bg-white" : "border-emerald-200/50 bg-emerald-50/50 opacity-60"}`}>
+                        <input 
+                          type="radio" 
+                          name="loyaltyAction" 
+                          value="EARN" 
+                          checked={loyaltyAction === "EARN"}
+                          onChange={() => setLoyaltyAction("EARN")}
+                          className="mt-0.5 accent-emerald-600 w-4 h-4"
+                        />
+                        <div>
+                          <p className="text-sm font-bold text-slate-800">Оноо цуглуулах</p>
+                          <p className="text-xs text-slate-500 mt-0.5">Энэ худалдан авалтаас {expectedPointsEarned.toLocaleString()} оноо шинээр цугларна</p>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* E-barimt Section */}
             <div className="space-y-3 pt-2">
@@ -853,6 +852,42 @@ export function CartClient({
               </label>
             </div>
 
+            {/* Payment Method Selector */}
+            <div className="pt-2">
+              <label className="text-sm font-medium text-slate-700 block mb-2">Төлбөрийн хэлбэр</label>
+              <div className="grid grid-cols-2 gap-3">
+                <label className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === "QPAY" ? "border-[#1B3561] bg-blue-50/50 text-[#1B3561]" : "border-slate-100 bg-white hover:border-slate-200 text-slate-600"}`}>
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="QPAY"
+                    checked={paymentMethod === "QPAY"}
+                    onChange={() => setPaymentMethod("QPAY")}
+                    className="sr-only"
+                  />
+                  <div className="w-10 h-10 mb-2 rounded-full bg-white shadow-sm flex items-center justify-center">
+                    <span className="font-black text-[10px] tracking-widest text-[#00AEEF]">QPAY</span>
+                  </div>
+                  <span className="text-sm font-bold text-center leading-tight">QPay<br/><span className="text-[10px] font-medium opacity-80">(Автомат)</span></span>
+                </label>
+
+                <label className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === "BANK_TRANSFER" ? "border-[#1B3561] bg-blue-50/50 text-[#1B3561]" : "border-slate-100 bg-white hover:border-slate-200 text-slate-600"}`}>
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="BANK_TRANSFER"
+                    checked={paymentMethod === "BANK_TRANSFER"}
+                    onChange={() => setPaymentMethod("BANK_TRANSFER")}
+                    className="sr-only"
+                  />
+                  <div className="w-10 h-10 mb-2 rounded-full bg-white shadow-sm flex items-center justify-center text-slate-700">
+                    <Banknote className="w-5 h-5" />
+                  </div>
+                  <span className="text-sm font-bold text-center leading-tight">Банкны шилжүүлэг<br/><span className="text-[10px] font-medium opacity-80">(Гараар шалгах)</span></span>
+                </label>
+              </div>
+            </div>
+
             {/* Combined Terms — ABOVE total */}
             {(termsOfService || (wantsDelivery && deliveryTerms)) && (
               <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2">
@@ -911,9 +946,18 @@ export function CartClient({
             <button
               type="submit"
               disabled={submitting || !agreedToTerms || !!phoneError}
-              className="w-full bg-[#F26522] hover:bg-[#c9181e] text-white py-4 rounded-2xl font-bold text-[15px] shadow-lg shadow-red-500/20 active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full bg-[#F26522] hover:bg-[#E85B1C] text-white py-4 rounded-2xl font-bold text-[15px] shadow-lg shadow-orange-500/20 active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {submitting ? "Илгээж байна..." : "📱 QPay-ээр төлөх"}
+              {submitting ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Уншиж байна...
+                </>
+              ) : paymentMethod === "QPAY" ? (
+                "📱 QPay-ээр төлөх"
+              ) : (
+                "🏦 Захиалах (Дансаар шилжүүлэх)"
+              )}
             </button>
 
             {!customer && (

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AlertTriangle, Trash2 } from "lucide-react";
 import { clearAllData } from "@/app/actions/clear-actions";
+import { toast } from "sonner";
 
 interface Props {
   adminRole: string;
@@ -25,25 +26,30 @@ export default function ClearDataButton({ adminRole }: Props) {
 
     if (userInput !== "УСТГАХ") {
       if (userInput !== null) {
-        alert("Та буруу бичсэн тул үйлдэл цуцлагдлаа.");
+        toast.error("Та буруу бичсэн тул үйлдэл цуцлагдлаа.");
       }
       return;
     }
 
     setLoading(true);
-    try {
-      const res = await clearAllData();
-      if (res.success) {
-        alert("Бүх өгөгдлийг амжилттай устгаж цэвэрлэлээ.");
-        window.location.reload();
-      } else {
+    const promise = clearAllData();
+    
+    toast.promise(promise, {
+      loading: "Бүх өгөгдлийг устгаж байна...",
+      success: (res) => {
+        setLoading(false);
+        if (res.success) {
+          window.location.reload();
+          return "Бүх өгөгдлийг амжилттай устгаж цэвэрлэлээ.";
+        }
         throw new Error(res.error || "Устгахад алдаа гарлаа");
+      },
+      error: (err) => {
+        setLoading(false);
+        setError(err.message);
+        return err.message;
       }
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
   return (

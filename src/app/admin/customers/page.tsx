@@ -2,6 +2,8 @@ import { db } from "@/lib/db"
 import Link from "next/link"
 import { Users, Phone, ShoppingBag, Calendar, Search, User } from "lucide-react"
 
+import { CustomerActions } from "./CustomerActions"
+
 export const dynamic = "force-dynamic"
 
 export default async function CustomersPage({
@@ -31,6 +33,7 @@ export default async function CustomersPage({
         id: true,
         name: true,
         phone: true,
+        address: true,
         createdAt: true,
         _count: { select: { orders: true } },
       },
@@ -130,12 +133,23 @@ export default async function CustomersPage({
                   </div>
                 </td>
                 <td className="px-5 py-3 text-center">
-                  <Link
-                    href={`/admin/orders?userId=${c.id}&customerName=${encodeURIComponent(c.name || c.phone || "")}`}
-                    className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors"
-                  >
-                    Захиалга →
-                  </Link>
+                  <div className="flex items-center justify-center gap-2">
+                    <Link
+                      href={`/admin/orders?userId=${c.id}&customerName=${encodeURIComponent(c.name || c.phone || "")}`}
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1.5 rounded-md bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors"
+                    >
+                      Захиалга
+                    </Link>
+                    <CustomerActions 
+                      customer={{
+                        id: c.id,
+                        name: c.name,
+                        phone: c.phone,
+                        address: c.address,
+                        orderCount: c._count.orders
+                      }}
+                    />
+                  </div>
                 </td>
               </tr>
             )) : (

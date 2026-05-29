@@ -9,12 +9,21 @@ export async function PATCH(
 ) {
   try {
     const session = await getSession()
-    if (!session.isLoggedIn || session.role !== "ADMIN") {
+    if (!session.isLoggedIn || (session.role !== "ADMIN" && session.role !== "DATAADMIN")) {
       return NextResponse.json({ error: "Эрх хүрэхгүй байна" }, { status: 401 })
     }
 
     const { id } = await params;
     const { name, role, password } = await req.json()
+
+    // check target user
+    const targetUser = await db.user.findUnique({ where: { id } })
+    if (!targetUser) return NextResponse.json({ error: "Хэрэглэгч олдсонгүй" }, { status: 404 })
+
+    // ADMIN cannot modify DATAADMIN
+    if (session.role === "ADMIN" && targetUser.role === "DATAADMIN") {
+      return NextResponse.json({ error: "Дата Админыг засах эрхгүй байна" }, { status: 403 })
+    }
 
     const updateData: any = { name, role }
 
@@ -47,7 +56,7 @@ export async function DELETE(
 ) {
   try {
     const session = await getSession()
-    if (!session.isLoggedIn || session.role !== "ADMIN") {
+    if (!session.isLoggedIn || (session.role !== "ADMIN" && session.role !== "DATAADMIN")) {
       return NextResponse.json({ error: "Эрх хүрэхгүй байна" }, { status: 401 })
     }
 
@@ -56,6 +65,15 @@ export async function DELETE(
     // Prevent deleting the currently logged-in admin
     if (session.userId === id) {
       return NextResponse.json({ error: "Өөрийн хаягийг устгах боломжгүй" }, { status: 400 })
+    }
+
+    // check target user
+    const targetUser = await db.user.findUnique({ where: { id } })
+    if (!targetUser) return NextResponse.json({ error: "Хэрэглэгч олдсонгүй" }, { status: 404 })
+
+    // ADMIN cannot delete DATAADMIN
+    if (session.role === "ADMIN" && targetUser.role === "DATAADMIN") {
+      return NextResponse.json({ error: "Дата Админыг устгах эрхгүй байна" }, { status: 403 })
     }
 
     await db.user.delete({

@@ -14,6 +14,7 @@ export default async function CartPage() {
       deliveryScheduleDays={settings.delivery_schedule_days || "3,6"}
       phoneVerificationEnabled={settings.phone_verification_enabled !== "false"}
       loyaltyPercent={Number(settings.loyalty_discount_percent || 3)}
+      loyaltyEnabled={settings.loyalty_enabled !== "false"}
     />
   )
 }
