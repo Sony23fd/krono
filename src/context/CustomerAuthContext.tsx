@@ -14,11 +14,13 @@ interface Customer {
 interface CustomerAuthContextType {
   customer: Customer | null
   setCustomer: (c: Customer | null) => void
+  login: (name: string, phone: string) => Promise<any>
   logout: () => Promise<void>
   updateAddress: (address: string) => Promise<void>
   updateProfile: (name: string, address: string) => Promise<void>
   refreshCustomer: () => Promise<void>
   isReady: boolean
+  isLoggingIn: boolean
 }
 
 const CustomerAuthContext = createContext<CustomerAuthContextType | undefined>(undefined)
@@ -94,8 +96,24 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
     })
   }, [customer, setCustomer])
 
+  const [isLoggingIn, setIsLoggingIn] = useState(false)
+
+  const login = useCallback(async (name: string, phone: string) => {
+    setIsLoggingIn(true)
+    try {
+      const { beginCustomerAuth } = await import("@/app/actions/customer-auth-actions")
+      const result = await beginCustomerAuth(phone, name)
+      if (result.success && result.customer) {
+        setCustomer(result.customer)
+      }
+      return result
+    } finally {
+      setIsLoggingIn(false)
+    }
+  }, [setCustomer])
+
   return (
-    <CustomerAuthContext.Provider value={{ customer, setCustomer, logout, updateAddress, updateProfile, refreshCustomer, isReady }}>
+    <CustomerAuthContext.Provider value={{ customer, setCustomer, login, logout, updateAddress, updateProfile, refreshCustomer, isReady, isLoggingIn }}>
       {children}
     </CustomerAuthContext.Provider>
   )

@@ -78,7 +78,7 @@ export default async function HomePageSectionsPage() {
                 <label htmlFor="categoryId" className="text-sm font-medium">Ангилал сонгох (Заавал биш)</label>
                 <select id="categoryId" name="categoryId" className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4F46E5]/30">
                   <option value="">Бүх бараанаас (эсвэл тусгай)</option>
-                  {categories?.map((cat) => (
+                  {categories?.map((cat: any) => (
                     <option key={cat.id} value={cat.id}>{cat.name}</option>
                   ))}
                 </select>
@@ -105,7 +105,7 @@ export default async function HomePageSectionsPage() {
         </Sheet>
       </div>
 
-      <HomePageSectionTableClient initialSections={success ? sections : []} categories={categories || []} />
+      <HomePageSectionTableClient initialSections={sections || []} categories={categories || []} />
     </div>
   )
 }
