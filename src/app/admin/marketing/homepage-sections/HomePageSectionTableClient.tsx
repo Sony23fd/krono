@@ -31,6 +31,8 @@ type SectionWithCategory = {
   bannerLink: string | null
   isActive: boolean
   sortOrder: number
+  rowCount: number
+  autoScroll: boolean
   category: { id: string, name: string } | null
 }
 
