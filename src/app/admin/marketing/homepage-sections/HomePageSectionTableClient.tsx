@@ -219,6 +219,8 @@ export function HomePageSectionTableClient({
               const categoryId = formData.get("categoryId") as string;
               const bannerImageUrl = formData.get("bannerImageUrl") as string;
               const bannerLink = formData.get("bannerLink") as string;
+              const rowCount = parseInt(formData.get("rowCount") as string || "2", 10);
+              const autoScroll = formData.get("autoScroll") === "on";
               
               if (!title) return { success: false, error: "Гарчиг заавал оруулна уу" }
 
@@ -227,7 +229,9 @@ export function HomePageSectionTableClient({
                 type, 
                 categoryId, 
                 bannerImageUrl, 
-                bannerLink 
+                bannerLink,
+                rowCount,
+                autoScroll
               });
               
               return result;
@@ -260,6 +264,23 @@ export function HomePageSectionTableClient({
                     <option key={cat.id} value={cat.id}>{cat.name}</option>
                   ))}
                 </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label htmlFor="edit-rowCount" className="text-sm font-medium">Эгнээний тоо</label>
+                  <select id="edit-rowCount" name="rowCount" defaultValue={editingSection.rowCount?.toString() || "2"} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4F46E5]/30">
+                    <option value="1">1 эгнээ (Урт)</option>
+                    <option value="2">2 эгнээ (Давхарласан)</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2 flex flex-col justify-end">
+                  <label className="flex items-center gap-2 cursor-pointer h-10">
+                    <input type="checkbox" name="autoScroll" id="edit-autoScroll" defaultChecked={!!editingSection.autoScroll} className="rounded border-gray-300 text-[#4F46E5] focus:ring-[#4F46E5] w-4 h-4" />
+                    <span className="text-sm font-medium">Автоматаар гүйх</span>
+                  </label>
+                </div>
               </div>
 
               <div className="space-y-2 pt-4 border-t border-slate-100">

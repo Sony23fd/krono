@@ -34,6 +34,8 @@ export default async function StorefrontHomePage() {
               title={section.title}
               products={section.products || []}
               viewAllLink={section.categoryId ? `/categories/${section.category?.slug}` : "/shop"}
+              rowCount={section.rowCount}
+              autoScroll={section.autoScroll}
             />
           ) : (
             <PromoSliderSection
@@ -43,6 +45,8 @@ export default async function StorefrontHomePage() {
               promoLink={section.bannerLink || (section.categoryId ? `/categories/${section.category?.slug}` : "/shop")}
               promoImage={section.bannerImageUrl || undefined}
               products={section.products || []}
+              rowCount={section.rowCount}
+              autoScroll={section.autoScroll}
             />
           )}
         </div>

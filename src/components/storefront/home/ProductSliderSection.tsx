@@ -1,7 +1,7 @@
 "use client"
 
 import { Swiper, SwiperSlide } from 'swiper/react'
-import { Navigation, FreeMode } from 'swiper/modules'
+import { Navigation, FreeMode, Autoplay } from 'swiper/modules'
 import 'swiper/css'
 import 'swiper/css/navigation'
 import 'swiper/css/free-mode'
@@ -14,12 +14,16 @@ interface ProductSliderSectionProps {
   title: string
   products: any[]
   viewAllLink?: string
+  rowCount?: number
+  autoScroll?: boolean
 }
 
 export function ProductSliderSection({
   title,
   products,
   viewAllLink = "/shop",
+  rowCount = 2,
+  autoScroll = false,
 }: ProductSliderSectionProps) {
   const prevRef = useRef<HTMLButtonElement>(null)
   const nextRef = useRef<HTMLButtonElement>(null)
@@ -69,11 +73,12 @@ export function ProductSliderSection({
       {/* Slider */}
       <div className="-mx-4 px-4 md:mx-0 md:px-0 relative pb-10">
         <Swiper
-          modules={[Navigation, FreeMode]}
+          modules={[Navigation, FreeMode, Autoplay]}
           navigation={{
             prevEl: prevRef.current,
             nextEl: nextRef.current,
           }}
+          autoplay={autoScroll ? { delay: 3000, disableOnInteraction: false } : false}
           onInit={(swiper) => {
             // @ts-ignore
             swiper.params.navigation.prevEl = prevRef.current
@@ -93,18 +98,26 @@ export function ProductSliderSection({
             1024: { slidesPerView: 5, spaceBetween: 20, freeMode: false },
           }}
         >
-          {Array.from({ length: Math.ceil(products.length / 2) }).map((_, index) => {
-            const p1 = products[index * 2]
-            const p2 = products[index * 2 + 1]
-            return (
+          {rowCount === 1 ? (
+            products.map((product, index) => (
               <SwiperSlide key={`slide-${index}`} className="!h-auto pb-6">
-                <div className="flex flex-col gap-4">
-                  {p1 && <SliderProductCard product={p1} />}
-                  {p2 && <SliderProductCard product={p2} />}
-                </div>
+                <SliderProductCard product={product} />
               </SwiperSlide>
-            )
-          })}
+            ))
+          ) : (
+            Array.from({ length: Math.ceil(products.length / 2) }).map((_, index) => {
+              const p1 = products[index * 2]
+              const p2 = products[index * 2 + 1]
+              return (
+                <SwiperSlide key={`slide-${index}`} className="!h-auto pb-6">
+                  <div className="flex flex-col gap-4">
+                    {p1 && <SliderProductCard product={p1} />}
+                    {p2 && <SliderProductCard product={p2} />}
+                  </div>
+                </SwiperSlide>
+              )
+            })
+          )}
         </Swiper>
       </div>
     </div>

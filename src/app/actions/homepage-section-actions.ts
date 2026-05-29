@@ -108,6 +108,8 @@ export async function createHomePageSection(data: {
   bannerLink?: string | null
   isActive?: boolean
   sortOrder?: number
+  rowCount?: number
+  autoScroll?: boolean
 }) {
   try {
     const section = await db.homePageSection.create({
@@ -119,6 +121,8 @@ export async function createHomePageSection(data: {
         bannerLink: data.bannerLink || null,
         isActive: data.isActive ?? true,
         sortOrder: data.sortOrder ?? 0,
+        rowCount: data.rowCount ?? 2,
+        autoScroll: data.autoScroll ?? false,
       }
     })
     revalidatePath("/")
@@ -137,6 +141,8 @@ export async function updateHomePageSection(id: string, data: Partial<{
   bannerLink: string | null
   isActive: boolean
   sortOrder: number
+  rowCount: number
+  autoScroll: boolean
 }>) {
   try {
     const section = await db.homePageSection.update({
