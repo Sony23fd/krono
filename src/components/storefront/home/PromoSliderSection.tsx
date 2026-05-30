@@ -54,16 +54,16 @@ export function PromoSliderSection({
     <div className="max-w-7xl mx-auto px-4">
       
       {/* Section Header */}
-      <div className="flex items-center gap-4 mb-6 w-full">
-        <h2 className="text-xl md:text-2xl font-extrabold text-[#1B3561] tracking-tight uppercase shrink-0">
+      <div className="flex flex-wrap items-center justify-between gap-y-2 gap-x-4 mb-5 md:mb-6 w-full">
+        <h2 className="text-xl md:text-2xl font-extrabold text-[#1B3561] tracking-tight uppercase flex-1 min-w-[200px]">
           {title}
         </h2>
         
         {/* Connecting Line */}
-        <div className="h-[1px] bg-gray-200 flex-1 hidden sm:block"></div>
+        <div className="h-[1px] bg-gray-200 flex-[2] hidden sm:block"></div>
 
         {/* Right Actions */}
-        <div className="flex items-center gap-4 md:gap-6 shrink-0">
+        <div className="flex items-center gap-4 md:gap-6 shrink-0 ml-auto">
           {promoLink && (
             <Link href={promoLink} className="text-sm font-semibold text-slate-700 hover:text-[#F26522] transition-colors flex items-center gap-1 group">
               Бүгдийг үзэх
