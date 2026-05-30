@@ -52,7 +52,16 @@ export function BulkImageUploadModal() {
           method: "POST",
           body: formData
         })
-        const data = await res.json()
+        
+        let data;
+        const contentType = res.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          data = await res.json()
+        } else {
+          // Fallback if server returns HTML (like 413 Payload Too Large from Nginx)
+          const text = await res.text();
+          throw new Error(res.status === 413 ? "Зургийн хэмжээ хэт том байна (1MB+)" : `Серверийн алдаа (${res.status})`);
+        }
         
         if (res.ok && data.success) {
           success++
@@ -62,7 +71,7 @@ export function BulkImageUploadModal() {
           setErrors([...errs])
         }
       } catch (e: any) {
-        errs.push({ name: file.name, error: "Сүлжээний алдаа" })
+        errs.push({ name: file.name, error: e.message || "Сүлжээний алдаа (Интернетээ шалгана уу)" })
         setErrors([...errs])
       }
     }
