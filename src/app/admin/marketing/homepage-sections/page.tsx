@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/sheet"
 import { ActionForm } from "@/components/admin/ActionForm"
 import { Input } from "@/components/ui/input"
+import { GenericImageUploader } from "@/components/admin/GenericImageUploader"
 import { Button } from "@/components/ui/button"
 import { HomePageSectionTableClient } from "./HomePageSectionTableClient"
 
@@ -42,24 +43,44 @@ export default async function HomePageSectionsPage() {
             <ActionForm action={async (formData) => {
               "use server"
               const title = formData.get("title") as string;
-              const type = formData.get("type") as "PRODUCT_SLIDER" | "PROMO_SLIDER";
+              const type = formData.get("type") as any;
               const categoryId = formData.get("categoryId") as string;
               const bannerImageUrl = formData.get("bannerImageUrl") as string;
               const bannerLink = formData.get("bannerLink") as string;
               const rowCount = parseInt(formData.get("rowCount") as string || "2", 10);
               const autoScroll = formData.get("autoScroll") === "on";
+              const startDate = formData.get("startDate") ? new Date(formData.get("startDate") as string) : null;
+              const endDate = formData.get("endDate") ? new Date(formData.get("endDate") as string) : null;
+              const visibilityTarget = formData.get("visibilityTarget") as any;
+              const deviceTarget = formData.get("deviceTarget") as any;
+              const layoutVariant = formData.get("layoutVariant") as any;
+              const bannerText = formData.get("bannerText") as string || null;
+              const showBannerText = formData.get("showBannerText") === "on";
+              const bannerTextColor = formData.get("bannerTextColor") as string || "#FFFFFF";
+              const bannerTextPosition = formData.get("bannerTextPosition") as any;
+              const bannerTextSize = formData.get("bannerTextSize") as any;
               
               if (!title) return { success: false, error: "Гарчиг заавал оруулна уу" }
               if (!type) return { success: false, error: "Төрөл заавал сонгоно уу" }
 
               return await createHomePageSection({ 
                 title, 
-                type: type as any, 
+                type, 
                 categoryId, 
                 bannerImageUrl, 
                 bannerLink,
                 rowCount,
-                autoScroll
+                autoScroll,
+                startDate,
+                endDate,
+                visibilityTarget,
+                deviceTarget,
+                layoutVariant,
+                bannerText,
+                showBannerText,
+                bannerTextColor,
+                bannerTextPosition,
+                bannerTextSize
               });
             }} className="space-y-4 mt-6" successMessage="Хэсэг амжилттай үүсгэлээ">
               
@@ -73,6 +94,10 @@ export default async function HomePageSectionsPage() {
                 <select id="type" name="type" className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4F46E5]/30">
                   <option value="PRODUCT_SLIDER">Энгийн слайдер (Зөвхөн бараанууд)</option>
                   <option value="PROMO_SLIDER">Онцгой санал (Хажуудаа баннертай)</option>
+                  <option value="HERO_BANNER">Том баннер (Hero Slider)</option>
+                  <option value="THIN_BANNER">Нарийн баннер (Thin Banner)</option>
+                  <option value="CATEGORY_MENU">Ангиллын цэс (Story Style)</option>
+                  <option value="HOW_IT_WORKS">Хэрхэн захиалах вэ? (How it works)</option>
                 </select>
               </div>
 
@@ -89,7 +114,7 @@ export default async function HomePageSectionsPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label htmlFor="rowCount" className="text-sm font-medium">Эгнээний тоо</label>
+                  <label htmlFor="rowCount" className="text-sm font-medium">Эгнээний тоо (Слайдеруудад)</label>
                   <select id="rowCount" name="rowCount" defaultValue="2" className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4F46E5]/30">
                     <option value="1">1 эгнээ (Урт)</option>
                     <option value="2">2 эгнээ (Давхарласан)</option>
@@ -104,13 +129,52 @@ export default async function HomePageSectionsPage() {
                 </div>
               </div>
 
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100">
+                <div className="space-y-2">
+                  <label htmlFor="startDate" className="text-sm font-medium">Эхлэх огноо (Сонголттой)</label>
+                  <Input type="datetime-local" id="startDate" name="startDate" />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="endDate" className="text-sm font-medium">Дуусах огноо (Сонголттой)</label>
+                  <Input type="datetime-local" id="endDate" name="endDate" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label htmlFor="visibilityTarget" className="text-sm font-medium">Хэнд харагдах</label>
+                  <select id="visibilityTarget" name="visibilityTarget" defaultValue="ALL" className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4F46E5]/30">
+                    <option value="ALL">Бүх хүнд</option>
+                    <option value="LOGGED_IN_ONLY">Зөвхөн нэвтэрсэн хүнд</option>
+                    <option value="GUEST_ONLY">Зөвхөн нэвтрээгүй хүнд</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="deviceTarget" className="text-sm font-medium">Төхөөрөмж</label>
+                  <select id="deviceTarget" name="deviceTarget" defaultValue="ALL" className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4F46E5]/30">
+                    <option value="ALL">Бүгд (Утас + PC)</option>
+                    <option value="MOBILE_ONLY">Зөвхөн гар утас</option>
+                    <option value="DESKTOP_ONLY">Зөвхөн компьютер</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="layoutVariant" className="text-sm font-medium">Загвар (Layout)</label>
+                <select id="layoutVariant" name="layoutVariant" defaultValue="DEFAULT" className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4F46E5]/30">
+                  <option value="DEFAULT">Үндсэн загвар (Default)</option>
+                  <option value="GRID">Тор (Grid)</option>
+                  <option value="MASONRY">Зөрүүтэй (Masonry)</option>
+                </select>
+              </div>
+
               <div className="space-y-2 pt-4 border-t border-slate-100">
                 <h3 className="text-sm font-bold text-slate-700">Баннерийн мэдээлэл (Зөвхөн "Онцгой санал" төрөлд харагдана)</h3>
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="bannerImageUrl" className="text-sm font-medium">Баннер зургийн URL</label>
-                <Input id="bannerImageUrl" name="bannerImageUrl" placeholder="https://..." />
+                <label className="text-sm font-medium">Баннер зураг</label>
+                <GenericImageUploader name="bannerImageUrl" folder="homepage" />
               </div>
 
               <div className="space-y-2">

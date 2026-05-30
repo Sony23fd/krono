@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { Edit2, Trash2, GripVertical, ImagePlus, EyeOff, Eye, Image as ImageIcon } from "lucide-react"
+import { ActionForm } from "@/components/admin/ActionForm"
+import { GenericImageUploader } from "@/components/admin/GenericImageUploader"
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd"
 import { updateBannerOrder } from "@/app/actions/banner-actions"
 import { useRouter } from "next/navigation"
@@ -14,7 +16,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { ActionForm } from "@/components/admin/ActionForm"
+
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
@@ -162,14 +164,21 @@ export function BannerTableClient({ initialBanners, currentType }: { initialBann
                                   const imageUrl = formData.get("imageUrl") as string
                                   const linkUrl = formData.get("linkUrl") as string
                                   const type = formData.get("type") as string
-                                  if (id && imageUrl) return await updateBanner(id, { title, imageUrl, linkUrl, type })
+                                  const showTitle = formData.get("showTitle") === "on";
+                                  const titleColor = formData.get("titleColor") as string || "#FFFFFF";
+                                  const titlePosition = formData.get("titlePosition") as string || "CENTER";
+                                  const titleSize = formData.get("titleSize") as string || "LARGE";
+                                  if (id && imageUrl) return await updateBanner(id, { 
+                                    title, imageUrl, linkUrl, type,
+                                    showTitle, titleColor, titlePosition, titleSize
+                                  })
                                   return { success: false, error: "Зургийн URL заавал оруулна уу" }
                                 }} className="space-y-4" successMessage="Амжилттай заслаа" onSuccess={() => { setEditingBannerId(null); router.refresh(); }}>
                                   <input type="hidden" name="id" value={banner.id} />
                                   <input type="hidden" name="type" value={banner.type || currentType} />
                                   <div className="space-y-2">
-                                    <label htmlFor={`edit-img-${banner.id}`} className="text-sm font-medium">Зургийн URL *</label>
-                                    <Input key={`img-${banner.id}-${banner.imageUrl}`} id={`edit-img-${banner.id}`} name="imageUrl" defaultValue={banner.imageUrl} required placeholder="https://..." />
+                                    <label className="text-sm font-medium">Зураг *</label>
+                                    <GenericImageUploader key={`img-${banner.id}-${banner.imageUrl}`} name="imageUrl" defaultValue={banner.imageUrl} folder="banners" required />
                                   </div>
                                   <div className="space-y-2">
                                     <label htmlFor={`edit-title-${banner.id}`} className="text-sm font-medium">Гарчиг (Заавал биш)</label>
@@ -179,6 +188,53 @@ export function BannerTableClient({ initialBanners, currentType }: { initialBann
                                     <label htmlFor={`edit-link-${banner.id}`} className="text-sm font-medium">Үсрэх линк (Заавал биш)</label>
                                     <Input key={`link-${banner.id}-${banner.linkUrl}`} id={`edit-link-${banner.id}`} name="linkUrl" defaultValue={banner.linkUrl || ""} placeholder="/category/electronics" />
                                   </div>
+
+                                  {/* Text Config */}
+                                  <div className="pt-4 border-t border-slate-100 space-y-4">
+                                    <div className="flex items-center justify-between">
+                                      <h3 className="text-sm font-semibold text-slate-800">Текст тохиргоо</h3>
+                                      <label className="flex items-center gap-2 cursor-pointer">
+                                        {/* @ts-ignore */}
+                                        <input type="checkbox" name="showTitle" id={`showTitle-${banner.id}`} defaultChecked={banner.showTitle ?? true} className="rounded border-gray-300 text-[#4F46E5] focus:ring-[#4F46E5] w-4 h-4" />
+                                        <span className="text-sm font-medium">Гарчиг харуулах</span>
+                                      </label>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                      <div className="space-y-2">
+                                        <label htmlFor={`titleColor-${banner.id}`} className="text-sm font-medium">Өнгө</label>
+                                        <div className="flex items-center gap-2">
+                                          {/* @ts-ignore */}
+                                          <Input type="color" id={`titleColor-${banner.id}`} name="titleColor" defaultValue={banner.titleColor || "#FFFFFF"} className="w-12 p-1 h-10" />
+                                        </div>
+                                      </div>
+                                      <div className="space-y-2">
+                                        <label htmlFor={`titleSize-${banner.id}`} className="text-sm font-medium">Хэмжээ</label>
+                                        {/* @ts-ignore */}
+                                        <select id={`titleSize-${banner.id}`} name="titleSize" defaultValue={banner.titleSize || "LARGE"} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4F46E5]/30">
+                                          <option value="SMALL">Жижиг</option>
+                                          <option value="MEDIUM">Дунд</option>
+                                          <option value="LARGE">Том</option>
+                                          <option value="XLARGE">Хэт том</option>
+                                        </select>
+                                      </div>
+                                      <div className="space-y-2 col-span-2">
+                                        <label htmlFor={`titlePosition-${banner.id}`} className="text-sm font-medium">Байрлал</label>
+                                        {/* @ts-ignore */}
+                                        <select id={`titlePosition-${banner.id}`} name="titlePosition" defaultValue={banner.titlePosition || "CENTER"} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4F46E5]/30">
+                                          <option value="TOP_LEFT">Зүүн дээд</option>
+                                          <option value="TOP_CENTER">Гол дээд</option>
+                                          <option value="TOP_RIGHT">Баруун дээд</option>
+                                          <option value="CENTER_LEFT">Зүүн гол</option>
+                                          <option value="CENTER">Тэг дунд</option>
+                                          <option value="CENTER_RIGHT">Баруун гол</option>
+                                          <option value="BOTTOM_LEFT">Зүүн доод</option>
+                                          <option value="BOTTOM_CENTER">Гол доод</option>
+                                          <option value="BOTTOM_RIGHT">Баруун доод</option>
+                                        </select>
+                                      </div>
+                                    </div>
+                                  </div>
+
                                   <DialogFooter>
                                     <Button type="submit" className="bg-[#4F46E5] hover:bg-[#4338ca] text-white">Хадгалах</Button>
                                   </DialogFooter>

@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
-import { SectionType } from "@prisma/client"
+import { SectionType, VisibilityTarget, DeviceTarget, LayoutVariant } from "@prisma/client"
 
 export async function getHomePageSections() {
   try {
@@ -23,8 +23,17 @@ export async function getHomePageSections() {
 
 export async function getStorefrontHomePageSections() {
   try {
+    const now = new Date();
     const sections = await db.homePageSection.findMany({
-      where: { isActive: true },
+      where: { 
+        isActive: true,
+        OR: [
+          { startDate: null, endDate: null },
+          { startDate: { lte: now }, endDate: null },
+          { startDate: null, endDate: { gte: now } },
+          { startDate: { lte: now }, endDate: { gte: now } },
+        ]
+      },
       orderBy: { sortOrder: "asc" },
       include: {
         category: {
@@ -110,6 +119,16 @@ export async function createHomePageSection(data: {
   sortOrder?: number
   rowCount?: number
   autoScroll?: boolean
+  startDate?: Date | null
+  endDate?: Date | null
+  visibilityTarget?: VisibilityTarget
+  deviceTarget?: DeviceTarget
+  layoutVariant?: LayoutVariant
+  bannerText?: string | null
+  showBannerText?: boolean
+  bannerTextColor?: string
+  bannerTextPosition?: any
+  bannerTextSize?: any
 }) {
   try {
     const section = await db.homePageSection.create({
@@ -123,6 +142,16 @@ export async function createHomePageSection(data: {
         sortOrder: data.sortOrder ?? 0,
         rowCount: data.rowCount ?? 2,
         autoScroll: data.autoScroll ?? false,
+        startDate: data.startDate || null,
+        endDate: data.endDate || null,
+        visibilityTarget: data.visibilityTarget ?? "ALL",
+        deviceTarget: data.deviceTarget ?? "ALL",
+        layoutVariant: data.layoutVariant ?? "DEFAULT",
+        bannerText: data.bannerText ?? null,
+        showBannerText: data.showBannerText ?? true,
+        bannerTextColor: data.bannerTextColor ?? "#FFFFFF",
+        bannerTextPosition: data.bannerTextPosition ?? "TOP_LEFT",
+        bannerTextSize: data.bannerTextSize ?? "LARGE",
       }
     })
     revalidatePath("/")
@@ -143,6 +172,16 @@ export async function updateHomePageSection(id: string, data: Partial<{
   sortOrder: number
   rowCount: number
   autoScroll: boolean
+  startDate: Date | null
+  endDate: Date | null
+  visibilityTarget: VisibilityTarget
+  deviceTarget: DeviceTarget
+  layoutVariant: LayoutVariant
+  bannerText: string | null
+  showBannerText: boolean
+  bannerTextColor: string
+  bannerTextPosition: any
+  bannerTextSize: any
 }>) {
   try {
     const section = await db.homePageSection.update({
@@ -152,6 +191,8 @@ export async function updateHomePageSection(id: string, data: Partial<{
         categoryId: data.categoryId === undefined ? undefined : data.categoryId || null,
         bannerImageUrl: data.bannerImageUrl === undefined ? undefined : data.bannerImageUrl || null,
         bannerLink: data.bannerLink === undefined ? undefined : data.bannerLink || null,
+        startDate: data.startDate === undefined ? undefined : data.startDate || null,
+        endDate: data.endDate === undefined ? undefined : data.endDate || null,
       }
     })
     revalidatePath("/")

@@ -84,7 +84,7 @@ export function ShopFilters({ categories, selectedCategorySlug }: { categories?:
               <option value="all">Бүх ангилал</option>
               {categories.map((category) => (
                 <option key={category.id} value={category.slug}>
-                  {category.name}
+                  {category.displayName || category.name}
                 </option>
               ))}
             </select>

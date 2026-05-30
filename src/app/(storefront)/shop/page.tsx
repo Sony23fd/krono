@@ -32,12 +32,12 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
 
   const selectedCategory = categories?.find((cat: any) => cat.slug === categorySlug)
 
-  let title = selectedCategory ? selectedCategory.name : "Дэлгүүр"
+  let title = selectedCategory ? (selectedCategory.displayName || selectedCategory.name) : "Дэлгүүр"
   let subtitle = selectedCategory
-    ? `"${selectedCategory.name}" ангиллын бүтээгдэхүүнүүд`
+    ? `"${selectedCategory.displayName || selectedCategory.name}" ангиллын бүтээгдэхүүнүүд`
     : "Манай дэлгүүрт байгаа бүх барааны жагсаалт"
   let theme: "ready" | "preorder" | string = "ready"
-  let badge = selectedCategory ? selectedCategory.name : "Каталог"
+  let badge = selectedCategory ? (selectedCategory.displayName || selectedCategory.name) : "Каталог"
 
   if (isSale) {
     title = "Хямдралтай бараанууд"

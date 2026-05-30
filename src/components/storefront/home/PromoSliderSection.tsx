@@ -20,6 +20,12 @@ interface PromoSliderSectionProps {
   products: any[]
   rowCount?: number
   autoScroll?: boolean
+  layoutVariant?: string
+  bannerText?: string | null
+  showBannerText?: boolean
+  bannerTextColor?: string
+  bannerTextPosition?: string
+  bannerTextSize?: string
 }
 
 export function PromoSliderSection({
@@ -32,6 +38,12 @@ export function PromoSliderSection({
   products,
   rowCount = 2,
   autoScroll = false,
+  layoutVariant = "DEFAULT",
+  bannerText,
+  showBannerText = true,
+  bannerTextColor = "#FFFFFF",
+  bannerTextPosition = "TOP_LEFT",
+  bannerTextSize = "LARGE"
 }: PromoSliderSectionProps) {
   const prevRef = useRef<HTMLButtonElement>(null)
   const nextRef = useRef<HTMLButtonElement>(null)
@@ -59,127 +71,171 @@ export function PromoSliderSection({
             </Link>
           )}
 
-          {/* Custom Navigation (Hidden on Mobile) */}
-          <div className="hidden md:flex items-center gap-2">
-            <button
-              ref={prevRef}
-              className="w-9 h-9 rounded-full border border-gray-200 bg-white shadow-sm flex items-center justify-center hover:bg-gray-50 hover:border-gray-300 transition-all text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              aria-label="Previous slide"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              ref={nextRef}
-              className="w-9 h-9 rounded-full border border-gray-200 bg-white shadow-sm flex items-center justify-center hover:bg-gray-50 hover:border-gray-300 transition-all text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              aria-label="Next slide"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
+          {/* Custom Navigation (Hidden on Mobile) - Only show for DEFAULT layout */}
+          {layoutVariant === "DEFAULT" && (
+            <div className="hidden md:flex items-center gap-2">
+              <button
+                ref={prevRef}
+                className="w-9 h-9 rounded-full border border-gray-200 bg-white shadow-sm flex items-center justify-center hover:bg-gray-50 hover:border-gray-300 transition-all text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Previous slide"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                ref={nextRef}
+                className="w-9 h-9 rounded-full border border-gray-200 bg-white shadow-sm flex items-center justify-center hover:bg-gray-50 hover:border-gray-300 transition-all text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Next slide"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 md:gap-8 items-stretch">
         
         {/* Left Promotional Banner Card */}
-        <div className="lg:col-span-1 rounded-2xl bg-gradient-to-br from-[#F26522] to-[#FF4B2B] p-6 md:p-8 flex flex-col justify-between relative overflow-hidden shadow-md text-white min-h-[300px] lg:min-h-full">
-          {/* Optional decorative shapes or image */}
-          {promoImage && (
-             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] opacity-20 pointer-events-none mix-blend-overlay">
-               {/* eslint-disable-next-line @next/next/no-img-element */}
-               <img src={promoImage} alt="" className="object-cover w-full h-full" />
-             </div>
-          )}
-          <div className="absolute -top-24 -right-24 w-48 h-48 bg-white opacity-10 rounded-full blur-2xl"></div>
+        {(() => {
+          const BannerWrapper = promoLink ? Link : "div" as any;
+          const displayTitle = bannerText || promoTitle;
+
+          // Horizontal alignment
+          let alignClass = "items-start text-left"; // default left
+          if (bannerTextPosition?.includes("CENTER") && !bannerTextPosition?.includes("LEFT") && !bannerTextPosition?.includes("RIGHT")) {
+            alignClass = "items-center text-center";
+          } else if (bannerTextPosition?.includes("RIGHT")) {
+            alignClass = "items-end text-right";
+          }
           
-          <div className="relative z-10">
-            {promoSubtitle && (
-              <p className="text-white/80 font-semibold uppercase tracking-wider text-sm mb-2">{promoSubtitle}</p>
-            )}
-            <h3 className="text-3xl md:text-4xl font-black leading-tight drop-shadow-sm">
-              {promoTitle}
-            </h3>
-          </div>
+          // Vertical alignment
+          let justifyClass = "justify-start"; // default top
+          if (bannerTextPosition?.includes("BOTTOM")) {
+            justifyClass = "justify-end";
+          } else if (bannerTextPosition?.startsWith("CENTER")) {
+            justifyClass = "justify-center";
+          }
 
-          <div className="relative z-10 mt-8">
-            <Link 
-              href={promoLink}
-              className="inline-flex items-center gap-2 bg-white text-[#F26522] font-bold py-3 px-6 rounded-full hover:bg-gray-50 hover:scale-105 active:scale-95 transition-all shadow-sm"
+          // Size
+          let sizeClass = "text-3xl md:text-4xl";
+          if (bannerTextSize === "SMALL") sizeClass = "text-xl md:text-2xl";
+          if (bannerTextSize === "MEDIUM") sizeClass = "text-2xl md:text-3xl";
+          if (bannerTextSize === "XLARGE") sizeClass = "text-4xl md:text-5xl lg:text-6xl";
+
+          return (
+            <BannerWrapper 
+              href={promoLink || "#"} 
+              className={`lg:col-span-1 rounded-2xl p-6 md:p-8 flex flex-col ${justifyClass} ${alignClass} relative overflow-hidden shadow-md text-white min-h-[300px] lg:min-h-full ${promoImage ? 'bg-slate-100' : 'bg-gradient-to-br from-[#F26522] to-[#FF4B2B]'} ${promoLink ? 'hover:shadow-lg transition-shadow cursor-pointer' : ''}`}
             >
-              {promoLinkText}
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-        </div>
+              {promoImage ? (
+                 <div className="absolute inset-0 w-full h-full pointer-events-none">
+                   {/* eslint-disable-next-line @next/next/no-img-element */}
+                   <img src={promoImage} alt="" className="object-cover w-full h-full" />
+                 </div>
+              ) : (
+                <div className="absolute -top-24 -right-24 w-48 h-48 bg-white opacity-10 rounded-full blur-2xl pointer-events-none"></div>
+              )}
+              
+              {showBannerText && displayTitle && (
+                <div className="relative z-10 w-full">
+                  <h3 
+                    className={`${sizeClass} font-black leading-tight drop-shadow-md`} 
+                    style={{ color: bannerTextColor }}
+                  >
+                    {displayTitle}
+                  </h3>
+                </div>
+              )}
+            </BannerWrapper>
+          )
+        })()}
 
-        {/* Right Product Slider */}
+        {/* Right Product Slider / Grid */}
         <div className="lg:col-span-3 -mx-4 px-4 md:mx-0 md:px-0 flex flex-col">
-          <Swiper
-            modules={[Navigation, FreeMode, Autoplay]}
-            navigation={{
-              prevEl: prevRef.current,
-              nextEl: nextRef.current,
-            }}
-            autoplay={autoScroll ? { delay: 3000, disableOnInteraction: false } : false}
-            onInit={(swiper) => {
-              // @ts-ignore
-              swiper.params.navigation.prevEl = prevRef.current
-              // @ts-ignore
-              swiper.params.navigation.nextEl = nextRef.current
-              swiper.navigation.init()
-              swiper.navigation.update()
-            }}
-            freeMode={true}
-            slidesPerView="auto"
-            spaceBetween={16}
-            className="w-full h-full !pb-4"
-            breakpoints={{
-              320: {
-                slidesPerView: 2.2,
-                spaceBetween: 12,
-              },
-              640: {
-                slidesPerView: 3.2,
-                spaceBetween: 16,
-              },
-              768: {
-                slidesPerView: 3.2,
-                spaceBetween: 16,
-                freeMode: false,
-              },
-              1024: {
-                slidesPerView: 3.5,
-                spaceBetween: 20,
-                freeMode: false,
-              },
-              1280: {
-                slidesPerView: 4,
-                spaceBetween: 20,
-                freeMode: false,
-              },
-            }}
-          >
-            {rowCount === 1 ? (
-              products.map((product, index) => (
-                <SwiperSlide key={`slide-${index}`} className="!h-auto">
+          {layoutVariant === "GRID" ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 md:gap-5 pb-4">
+              {products.map((product, index) => (
+                <div key={`grid-${index}`}>
                   <SliderProductCard product={product} />
-                </SwiperSlide>
-              ))
-            ) : (
-              Array.from({ length: Math.ceil(products.length / 2) }).map((_, index) => {
-                const p1 = products[index * 2]
-                const p2 = products[index * 2 + 1]
-                return (
+                </div>
+              ))}
+            </div>
+          ) : layoutVariant === "MASONRY" ? (
+            <div className="columns-2 sm:columns-3 md:columns-4 gap-3 md:gap-5 space-y-3 md:space-y-5 pb-4">
+              {products.map((product, index) => (
+                <div key={`masonry-${index}`} className="break-inside-avoid">
+                  <SliderProductCard product={product} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <Swiper
+              modules={[Navigation, FreeMode, Autoplay]}
+              navigation={{
+                prevEl: prevRef.current,
+                nextEl: nextRef.current,
+              }}
+              autoplay={autoScroll ? { delay: 3000, disableOnInteraction: false } : false}
+              onInit={(swiper) => {
+                // @ts-ignore
+                swiper.params.navigation.prevEl = prevRef.current
+                // @ts-ignore
+                swiper.params.navigation.nextEl = nextRef.current
+                swiper.navigation.init()
+                swiper.navigation.update()
+              }}
+              freeMode={true}
+              slidesPerView="auto"
+              spaceBetween={16}
+              className="w-full h-full !pb-4"
+              breakpoints={{
+                320: {
+                  slidesPerView: 2.2,
+                  spaceBetween: 12,
+                },
+                640: {
+                  slidesPerView: 3.2,
+                  spaceBetween: 16,
+                },
+                768: {
+                  slidesPerView: 3.2,
+                  spaceBetween: 16,
+                  freeMode: false,
+                },
+                1024: {
+                  slidesPerView: 3.5,
+                  spaceBetween: 20,
+                  freeMode: false,
+                },
+                1280: {
+                  slidesPerView: 4,
+                  spaceBetween: 20,
+                  freeMode: false,
+                },
+              }}
+            >
+              {rowCount === 1 ? (
+                products.map((product, index) => (
                   <SwiperSlide key={`slide-${index}`} className="!h-auto">
-                    <div className="flex flex-col gap-4">
-                      {p1 && <SliderProductCard product={p1} />}
-                      {p2 && <SliderProductCard product={p2} />}
-                    </div>
+                    <SliderProductCard product={product} />
                   </SwiperSlide>
-                )
-              })
-            )}
-          </Swiper>
+                ))
+              ) : (
+                Array.from({ length: Math.ceil(products.length / 2) }).map((_, index) => {
+                  const p1 = products[index * 2]
+                  const p2 = products[index * 2 + 1]
+                  return (
+                    <SwiperSlide key={`slide-${index}`} className="!h-auto">
+                      <div className="flex flex-col gap-4">
+                        {p1 && <SliderProductCard product={p1} />}
+                        {p2 && <SliderProductCard product={p2} />}
+                      </div>
+                    </SwiperSlide>
+                  )
+                })
+              )}
+            </Swiper>
+          )}
         </div>
 
       </div>

@@ -25,6 +25,20 @@ export function ProductCard({ product, index = 0, theme = "default" }: { product
     toggleFavorite(product.id)
   }
 
+  // Parse secondary image for hover effect
+  let secondaryImage = null;
+  if (product.images) {
+    try {
+      const parsedImages = typeof product.images === 'string' ? JSON.parse(product.images) : product.images;
+      if (Array.isArray(parsedImages) && parsedImages.length > 0) {
+        // Find the first image that is not the primary image
+        secondaryImage = parsedImages.find((img: string) => img !== product.imageUrl) || parsedImages[0];
+      }
+    } catch (e) {
+      // Ignore parsing errors
+    }
+  }
+
   return (
     <div 
       className="bg-white rounded-xl p-2.5 md:p-3.5 flex flex-col group border border-slate-100 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
@@ -41,14 +55,34 @@ export function ProductCard({ product, index = 0, theme = "default" }: { product
             className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500 pointer-events-none"
           />
         ) : product.imageUrl ? (
-          <ProductImage
-            src={product.imageUrl}
-            alt={product.name || "Бараа"}
-            fill
-            className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            priority={index < 4}
-          />
+          <>
+            <ProductImage
+              src={product.imageUrl}
+              alt={product.name || "Бараа"}
+              fill
+              className={`object-cover w-full h-full transition-all duration-700 ${secondaryImage ? 'group-hover:opacity-0 group-hover:scale-105' : 'group-hover:scale-105'}`}
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              priority={index < 4}
+            />
+            {secondaryImage && (
+              <ProductImage
+                src={secondaryImage}
+                alt={`${product.name || "Бараа"} 2`}
+                fill
+                className="object-cover w-full h-full absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-700 group-hover:scale-105"
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              />
+            )}
+            
+            {/* Quick View Floating Overlay */}
+            <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+            
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 z-20">
+              <span className="bg-white text-slate-900 px-4 py-1.5 rounded-full text-xs font-bold shadow-lg shadow-black/10 flex items-center gap-1.5 whitespace-nowrap border border-slate-100 hover:bg-[#F26522] hover:text-white transition-colors">
+                Дэлгэрэнгүй
+              </span>
+            </div>
+          </>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-slate-300 font-medium text-sm">Зураггүй</div>
         )}

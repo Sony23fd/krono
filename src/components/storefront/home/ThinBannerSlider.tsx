@@ -12,6 +12,10 @@ export interface Banner {
   title: string | null
   imageUrl: string
   linkUrl: string | null
+  showTitle?: boolean | null
+  titleColor?: string | null
+  titlePosition?: string | null
+  titleSize?: string | null
 }
 
 export function ThinBannerSlider({ banners }: { banners: Banner[] }) {
@@ -53,6 +57,30 @@ export function ThinBannerSlider({ banners }: { banners: Banner[] }) {
 }
 
 function SlideContent({ banner }: { banner: Banner }) {
+  // Horizontal alignment
+  let alignClass = "items-start text-left"; // default left
+  if (banner.titlePosition?.includes("CENTER") && !banner.titlePosition?.includes("LEFT") && !banner.titlePosition?.includes("RIGHT")) {
+    alignClass = "items-center text-center mx-auto";
+  } else if (banner.titlePosition?.includes("RIGHT")) {
+    alignClass = "items-end text-right ml-auto";
+  }
+  
+  // Vertical alignment
+  let justifyClass = "justify-center"; // default center for thin banner
+  if (banner.titlePosition?.includes("BOTTOM")) {
+    justifyClass = "justify-end";
+  } else if (banner.titlePosition?.includes("TOP")) {
+    justifyClass = "justify-start";
+  }
+
+  // Size
+  let sizeClass = "text-lg md:text-2xl lg:text-3xl";
+  if (banner.titleSize === "SMALL") sizeClass = "text-base md:text-lg lg:text-xl";
+  if (banner.titleSize === "MEDIUM") sizeClass = "text-lg md:text-xl lg:text-2xl";
+  if (banner.titleSize === "XLARGE") sizeClass = "text-xl md:text-3xl lg:text-4xl";
+
+  const showTitle = banner.showTitle ?? true;
+
   return (
     <div className="relative w-full h-full overflow-hidden group/slide">
       <Image 
@@ -61,12 +89,15 @@ function SlideContent({ banner }: { banner: Banner }) {
         fill
         className="object-cover object-center transform group-hover/slide:scale-105 transition-transform duration-[8000ms] ease-out"
       />
-      {/* Soft overlay for contrast if title exists */}
-      {banner.title && (
-        <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent flex items-center p-6 md:p-10">
-          <h3 className="text-white text-lg md:text-2xl lg:text-3xl font-extrabold drop-shadow-md tracking-tight max-w-xl">
-            {banner.title}
-          </h3>
+      {showTitle && banner.title && (
+        <div className="absolute inset-0 pointer-events-none p-6 md:p-10 flex flex-col">
+          <div className={`w-full h-full flex flex-col ${justifyClass} ${alignClass}`}>
+            <div className="backdrop-blur-sm bg-black/30 p-3 md:p-4 rounded-xl border border-white/10 shadow-lg">
+              <h3 className={`${sizeClass} font-extrabold drop-shadow-md tracking-tight`} style={{ color: banner.titleColor || "#FFFFFF" }}>
+                {banner.title}
+              </h3>
+            </div>
+          </div>
         </div>
       )}
     </div>

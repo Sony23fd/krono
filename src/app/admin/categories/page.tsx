@@ -10,6 +10,7 @@ import {
   SheetTrigger 
 } from "@/components/ui/sheet"
 import { ActionForm } from "@/components/admin/ActionForm"
+import { GenericImageUploader } from "@/components/admin/GenericImageUploader"
 import { CategoryTableClient } from "./CategoryTableClient"
 
 export default async function OrderCategoriesPage() {
@@ -69,8 +70,8 @@ export default async function OrderCategoriesPage() {
                 </select>
               </div>
               <div className="space-y-2">
-                <label htmlFor="imageUrl" className="text-sm font-medium">Зургийн URL</label>
-                <Input id="imageUrl" name="imageUrl" placeholder="https://..." />
+                <label className="text-sm font-medium">Ангиллын зураг</label>
+                <GenericImageUploader name="imageUrl" folder="categories" imageClassName="h-32" />
               </div>
               <div className="space-y-2">
                 <label htmlFor="metaTitle" className="text-sm font-medium">SEO Title</label>

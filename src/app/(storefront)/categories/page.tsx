@@ -18,6 +18,7 @@ export default async function CategoriesPage() {
         <div className="max-w-6xl mx-auto px-3 sm:px-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
           {categories.filter((c: any) => !c.parentId).map((category: any) => {
             const subCats = categories.filter((sub: any) => sub.parentId === category.id)
+            const totalProducts = (category._count?.products ?? 0) + subCats.reduce((sum: number, sub: any) => sum + (sub._count?.products ?? 0), 0)
             return (
               <div key={category.id} className="group bg-white rounded-2xl sm:rounded-3xl border border-slate-200/60 shadow-sm hover:shadow-md transition-all flex flex-row sm:flex-col overflow-hidden items-center sm:items-stretch p-2 sm:p-0 gap-3 sm:gap-0">
                 <Link
@@ -44,7 +45,7 @@ export default async function CategoriesPage() {
                         {category.displayName || category.name}
                       </h2>
                     </Link>
-                    <p className="text-[11px] sm:text-sm text-slate-500 mb-1.5 sm:mb-4">{category._count?.products ?? 0} бүтээгдэхүүн</p>
+                    <p className="text-[11px] sm:text-sm text-slate-500 mb-1.5 sm:mb-4">{totalProducts} бүтээгдэхүүн</p>
                     
                     {subCats.length > 0 && (
                       <div className="mb-1 sm:mb-6 mt-auto overflow-hidden">

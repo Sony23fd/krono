@@ -7,6 +7,7 @@ import { updateCategoryOrder } from "@/app/actions/category-actions"
 import { useRouter } from "next/navigation"
 import { CategoryExcelImport } from "@/components/admin/CategoryExcelImport"
 import { CategoryProductsSheet } from "./CategoryProductsSheet"
+import { GenericImageUploader } from "@/components/admin/GenericImageUploader"
 import {
   Dialog,
   DialogContent,
@@ -248,8 +249,8 @@ export function CategoryTableClient({ initialCategories }: { initialCategories: 
                                     </select>
                                   </div>
                                   <div className="space-y-2">
-                                    <label htmlFor={`edit-img-${cat.id}`} className="text-sm font-medium">Зургийн URL (Image URL)</label>
-                                    <Input key={`img-${cat.id}-${cat.imageUrl}`} id={`edit-img-${cat.id}`} name="imageUrl" defaultValue={cat.imageUrl || ""} placeholder="https://..." />
+                                    <label className="text-sm font-medium">Ангиллын зураг (Image)</label>
+                                    <GenericImageUploader key={`img-${cat.id}-${cat.imageUrl}`} name="imageUrl" defaultValue={cat.imageUrl || ""} folder="categories" imageClassName="h-32" />
                                   </div>
                                   <div className="space-y-2">
                                     <label htmlFor={`edit-metaTitle-${cat.id}`} className="text-sm font-medium">SEO Title</label>

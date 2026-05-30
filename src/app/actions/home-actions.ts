@@ -13,6 +13,10 @@ export async function getBanners() {
         imageUrl: true,
         linkUrl: true,
         type: true,
+        showTitle: true,
+        titleColor: true,
+        titlePosition: true,
+        titleSize: true,
       }
     })
     

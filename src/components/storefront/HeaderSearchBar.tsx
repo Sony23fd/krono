@@ -7,7 +7,9 @@ import { useSearchParams } from "next/navigation"
 interface Category {
   id: string
   name: string
+  displayName?: string | null
   slug: string
+  parentId?: string | null
 }
 
 export function HeaderSearchBar({ categories }: { categories: Category[] }) {
@@ -19,9 +21,10 @@ export function HeaderSearchBar({ categories }: { categories: Category[] }) {
   const [selected, setSelected] = useState(selectedSlug)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
+  const selectedCategory = categories.find(c => c.slug === selected)
   const selectedLabel = selected === "all"
     ? "Бүх ангилал"
-    : categories.find(c => c.slug === selected)?.name || "Бүх ангилал"
+    : selectedCategory?.displayName || selectedCategory?.name || "Бүх ангилал"
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -60,7 +63,7 @@ export function HeaderSearchBar({ categories }: { categories: Category[] }) {
               <button
                 type="button"
                 onClick={() => { setSelected("all"); setIsOpen(false) }}
-                className={`w-full text-left px-4 py-2.5 text-sm flex items-center justify-between transition-colors ${
+                className={`w-full text-left px-4 py-2 text-sm flex items-center justify-between transition-colors ${
                   selected === "all"
                     ? "bg-[#F26522]/5 text-[#F26522] font-semibold"
                     : "text-gray-700 hover:bg-gray-50 hover:text-[#F26522]"
@@ -69,20 +72,37 @@ export function HeaderSearchBar({ categories }: { categories: Category[] }) {
                 <span>Бүх ангилал</span>
                 {selected === "all" && <Check className="w-4 h-4 text-[#F26522]" />}
               </button>
-              {categories.map((cat) => (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => { setSelected(cat.slug); setIsOpen(false) }}
-                  className={`w-full text-left px-4 py-2.5 text-sm flex items-center justify-between transition-colors ${
-                    selected === cat.slug
-                      ? "bg-[#F26522]/5 text-[#F26522] font-semibold"
-                      : "text-gray-700 hover:bg-gray-50 hover:text-[#F26522]"
-                  }`}
-                >
-                  <span className="truncate">{cat.name}</span>
-                  {selected === cat.slug && <Check className="w-4 h-4 text-[#F26522]" />}
-                </button>
+              {categories.filter(c => !c.parentId).map((cat) => (
+                <div key={cat.id}>
+                  <button
+                    type="button"
+                    onClick={() => { setSelected(cat.slug); setIsOpen(false) }}
+                    className={`w-full text-left px-4 py-2 text-sm flex items-center justify-between transition-colors ${
+                      selected === cat.slug
+                        ? "bg-[#F26522]/5 text-[#F26522] font-semibold"
+                        : "text-gray-800 font-medium hover:bg-gray-50 hover:text-[#F26522]"
+                    }`}
+                  >
+                    <span className="truncate">{cat.displayName || cat.name}</span>
+                    {selected === cat.slug && <Check className="w-4 h-4 text-[#F26522]" />}
+                  </button>
+                  {/* Subcategories */}
+                  {categories.filter(sub => sub.parentId === cat.id).map(sub => (
+                    <button
+                      key={sub.id}
+                      type="button"
+                      onClick={() => { setSelected(sub.slug); setIsOpen(false) }}
+                      className={`w-full text-left pl-8 pr-4 py-1.5 text-sm flex items-center justify-between transition-colors ${
+                        selected === sub.slug
+                          ? "bg-[#F26522]/5 text-[#F26522] font-semibold"
+                          : "text-gray-600 hover:bg-gray-50 hover:text-[#F26522]"
+                      }`}
+                    >
+                      <span className="truncate">- {sub.displayName || sub.name}</span>
+                      {selected === sub.slug && <Check className="w-4 h-4 text-[#F26522]" />}
+                    </button>
+                  ))}
+                </div>
               ))}
             </div>
           </div>

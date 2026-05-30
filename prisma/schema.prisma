@@ -260,6 +260,13 @@ model Banner {
   linkUrl   String?
   isActive  Boolean  @default(true)
   sortOrder Int      @default(0)
+  
+  // Banner Text Configuration
+  showTitle     Boolean @default(true)
+  titleColor    String? @default("#FFFFFF")
+  titlePosition String? @default("CENTER")
+  titleSize     String? @default("LARGE")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -289,6 +296,21 @@ model HomePageSection {
   sortOrder       Int      @default(0)
   rowCount        Int      @default(2)
   autoScroll      Boolean  @default(false)
+  
+  // New scheduling and targeting fields
+  startDate       DateTime?
+  endDate         DateTime?
+  visibilityTarget VisibilityTarget @default(ALL)
+  deviceTarget    DeviceTarget     @default(ALL)
+  layoutVariant   LayoutVariant    @default(DEFAULT)
+  
+  // Banner Text Configuration
+  bannerText           String?
+  showBannerText       Boolean            @default(true)
+  bannerTextColor      String?            @default("#FFFFFF")
+  bannerTextPosition   BannerTextPosition @default(TOP_LEFT)
+  bannerTextSize       BannerTextSize     @default(LARGE)
+  
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   
@@ -346,4 +368,45 @@ enum PaymentStatus {
 enum SectionType {
   PRODUCT_SLIDER
   PROMO_SLIDER
+  HERO_BANNER
+  THIN_BANNER
+  CATEGORY_MENU
+  HOW_IT_WORKS
+}
+
+enum VisibilityTarget {
+  ALL
+  LOGGED_IN_ONLY
+  GUEST_ONLY
+}
+
+enum DeviceTarget {
+  ALL
+  MOBILE_ONLY
+  DESKTOP_ONLY
+}
+
+enum LayoutVariant {
+  DEFAULT
+  GRID
+  MASONRY
+}
+
+enum BannerTextPosition {
+  TOP_LEFT
+  TOP_CENTER
+  TOP_RIGHT
+  CENTER_LEFT
+  CENTER
+  CENTER_RIGHT
+  BOTTOM_LEFT
+  BOTTOM_CENTER
+  BOTTOM_RIGHT
+}
+
+enum BannerTextSize {
+  SMALL
+  MEDIUM
+  LARGE
+  XLARGE
 }

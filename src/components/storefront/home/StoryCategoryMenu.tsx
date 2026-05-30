@@ -85,9 +85,9 @@ export function StoryCategoryMenu({ categories }: { categories: any[] }) {
                 <SwiperSlide key={cat.id || idx} className="!w-auto">
                   <Link 
                     href={`/categories/${cat.slug}`}
-                    className="flex flex-col items-center gap-2 group w-[72px] md:w-[88px]"
+                    className="flex flex-col items-center gap-2 group w-[72px] md:w-[88px] active:scale-95 transition-transform duration-200"
                   >
-                    <div className="w-[64px] h-[64px] md:w-[76px] md:h-[76px] rounded-full p-[3px] bg-gradient-to-tr from-[#F26522] to-yellow-400 group-hover:scale-105 transition-transform duration-300 shadow-sm">
+                    <div className="w-[64px] h-[64px] md:w-[76px] md:h-[76px] rounded-full p-[3px] bg-gradient-to-tr from-[#F26522] via-orange-400 to-yellow-400 group-hover:from-orange-500 group-hover:to-orange-500 transition-all duration-300 shadow-md">
                       <div className="w-full h-full rounded-full border-2 border-white bg-orange-50 flex items-center justify-center overflow-hidden text-[#F26522]">
                         {cat.imageUrl ? (
                           <img src={cat.imageUrl} alt={cat.name} className="w-full h-full object-cover" />

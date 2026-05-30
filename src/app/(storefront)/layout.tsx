@@ -79,7 +79,7 @@ export default async function StorefrontLayout({ children }: { children: ReactNo
         <AgeVerificationProvider>
         {/* Navigation / Top Header */}
       {/* Navigation / Top Header */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-lg border-b border-slate-100 shadow-sm" suppressHydrationWarning>
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-100/50 shadow-sm" suppressHydrationWarning>
         <div className="max-w-7xl mx-auto px-3 md:px-4 py-2.5 md:py-3 flex items-center justify-between gap-3 md:gap-6" suppressHydrationWarning>
           
           {/* Logo */}

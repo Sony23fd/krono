@@ -16,6 +16,7 @@ interface ProductSliderSectionProps {
   viewAllLink?: string
   rowCount?: number
   autoScroll?: boolean
+  layoutVariant?: string
 }
 
 export function ProductSliderSection({
@@ -24,6 +25,7 @@ export function ProductSliderSection({
   viewAllLink = "/shop",
   rowCount = 2,
   autoScroll = false,
+  layoutVariant = "DEFAULT"
 }: ProductSliderSectionProps) {
   const prevRef = useRef<HTMLButtonElement>(null)
   const nextRef = useRef<HTMLButtonElement>(null)
@@ -50,75 +52,95 @@ export function ProductSliderSection({
             </Link>
           )}
 
-          {/* Custom Navigation (Hidden on Mobile) */}
-          <div className="hidden md:flex items-center gap-2">
-            <button
-              ref={prevRef}
-              className="w-9 h-9 rounded-full border border-gray-200 bg-white shadow-sm flex items-center justify-center hover:bg-gray-50 hover:border-gray-300 transition-all text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              aria-label="Previous slide"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              ref={nextRef}
-              className="w-9 h-9 rounded-full border border-gray-200 bg-white shadow-sm flex items-center justify-center hover:bg-gray-50 hover:border-gray-300 transition-all text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              aria-label="Next slide"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
+          {/* Custom Navigation (Hidden on Mobile) - Only show for DEFAULT layout */}
+          {layoutVariant === "DEFAULT" && (
+            <div className="hidden md:flex items-center gap-2">
+              <button
+                ref={prevRef}
+                className="w-9 h-9 rounded-full border border-gray-200 bg-white shadow-sm flex items-center justify-center hover:bg-gray-50 hover:border-gray-300 transition-all text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Previous slide"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                ref={nextRef}
+                className="w-9 h-9 rounded-full border border-gray-200 bg-white shadow-sm flex items-center justify-center hover:bg-gray-50 hover:border-gray-300 transition-all text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Next slide"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Slider */}
+      {/* Content Based on Layout Variant */}
       <div className="-mx-4 px-4 md:mx-0 md:px-0 relative pb-10">
-        <Swiper
-          modules={[Navigation, FreeMode, Autoplay]}
-          navigation={{
-            prevEl: prevRef.current,
-            nextEl: nextRef.current,
-          }}
-          autoplay={autoScroll ? { delay: 3000, disableOnInteraction: false } : false}
-          onInit={(swiper) => {
-            // @ts-ignore
-            swiper.params.navigation.prevEl = prevRef.current
-            // @ts-ignore
-            swiper.params.navigation.nextEl = nextRef.current
-            swiper.navigation.init()
-            swiper.navigation.update()
-          }}
-          freeMode={true}
-          slidesPerView="auto"
-          spaceBetween={16}
-          className="w-full relative z-10"
-          breakpoints={{
-            320: { slidesPerView: 2.2, spaceBetween: 12 },
-            640: { slidesPerView: 3.2, spaceBetween: 16 },
-            768: { slidesPerView: 4, spaceBetween: 16, freeMode: false },
-            1024: { slidesPerView: 5, spaceBetween: 20, freeMode: false },
-          }}
-        >
-          {rowCount === 1 ? (
-            products.map((product, index) => (
-              <SwiperSlide key={`slide-${index}`} className="!h-auto pb-6">
+        {layoutVariant === "GRID" ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-5">
+            {products.map((product, index) => (
+              <div key={`grid-${index}`}>
                 <SliderProductCard product={product} />
-              </SwiperSlide>
-            ))
-          ) : (
-            Array.from({ length: Math.ceil(products.length / 2) }).map((_, index) => {
-              const p1 = products[index * 2]
-              const p2 = products[index * 2 + 1]
-              return (
+              </div>
+            ))}
+          </div>
+        ) : layoutVariant === "MASONRY" ? (
+          <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-3 md:gap-5 space-y-3 md:space-y-5">
+            {products.map((product, index) => (
+              <div key={`masonry-${index}`} className="break-inside-avoid">
+                <SliderProductCard product={product} />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <Swiper
+            modules={[Navigation, FreeMode, Autoplay]}
+            navigation={{
+              prevEl: prevRef.current,
+              nextEl: nextRef.current,
+            }}
+            autoplay={autoScroll ? { delay: 3000, disableOnInteraction: false } : false}
+            onInit={(swiper) => {
+              // @ts-ignore
+              swiper.params.navigation.prevEl = prevRef.current
+              // @ts-ignore
+              swiper.params.navigation.nextEl = nextRef.current
+              swiper.navigation.init()
+              swiper.navigation.update()
+            }}
+            freeMode={true}
+            slidesPerView="auto"
+            spaceBetween={16}
+            className="w-full relative z-10"
+            breakpoints={{
+              320: { slidesPerView: 2.2, spaceBetween: 12 },
+              640: { slidesPerView: 3.2, spaceBetween: 16 },
+              768: { slidesPerView: 4, spaceBetween: 16, freeMode: false },
+              1024: { slidesPerView: 5, spaceBetween: 20, freeMode: false },
+            }}
+          >
+            {rowCount === 1 ? (
+              products.map((product, index) => (
                 <SwiperSlide key={`slide-${index}`} className="!h-auto pb-6">
-                  <div className="flex flex-col gap-4">
-                    {p1 && <SliderProductCard product={p1} />}
-                    {p2 && <SliderProductCard product={p2} />}
-                  </div>
+                  <SliderProductCard product={product} />
                 </SwiperSlide>
-              )
-            })
-          )}
-        </Swiper>
+              ))
+            ) : (
+              Array.from({ length: Math.ceil(products.length / 2) }).map((_, index) => {
+                const p1 = products[index * 2]
+                const p2 = products[index * 2 + 1]
+                return (
+                  <SwiperSlide key={`slide-${index}`} className="!h-auto pb-6">
+                    <div className="flex flex-col gap-4">
+                      {p1 && <SliderProductCard product={p1} />}
+                      {p2 && <SliderProductCard product={p2} />}
+                    </div>
+                  </SwiperSlide>
+                )
+              })
+            )}
+          </Swiper>
+        )}
       </div>
     </div>
   )

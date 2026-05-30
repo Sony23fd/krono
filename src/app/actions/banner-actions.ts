@@ -18,7 +18,16 @@ export async function getBanners(type?: string) {
   }
 }
 
-export async function createBanner(data: { title?: string; imageUrl: string; linkUrl?: string; type?: string }) {
+export async function createBanner(data: { 
+  title?: string; 
+  imageUrl: string; 
+  linkUrl?: string; 
+  type?: string;
+  showTitle?: boolean;
+  titleColor?: string;
+  titlePosition?: string;
+  titleSize?: string;
+}) {
   try {
     const count = await db.banner.count()
     const banner = await db.banner.create({
@@ -28,6 +37,10 @@ export async function createBanner(data: { title?: string; imageUrl: string; lin
         linkUrl: data.linkUrl,
         type: data.type || "HERO",
         sortOrder: count,
+        showTitle: data.showTitle ?? true,
+        titleColor: data.titleColor ?? "#FFFFFF",
+        titlePosition: data.titlePosition ?? "CENTER",
+        titleSize: data.titleSize ?? "LARGE",
       }
     })
     revalidatePath("/admin/marketing/banners")
@@ -38,7 +51,17 @@ export async function createBanner(data: { title?: string; imageUrl: string; lin
   }
 }
 
-export async function updateBanner(id: string, data: { title?: string; imageUrl?: string; linkUrl?: string; isActive?: boolean; type?: string }) {
+export async function updateBanner(id: string, data: { 
+  title?: string; 
+  imageUrl?: string; 
+  linkUrl?: string; 
+  isActive?: boolean; 
+  type?: string;
+  showTitle?: boolean;
+  titleColor?: string;
+  titlePosition?: string;
+  titleSize?: string;
+}) {
   try {
     const banner = await db.banner.update({
       where: { id },
