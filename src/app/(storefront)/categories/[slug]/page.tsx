@@ -34,8 +34,21 @@ export default async function CategoryDetailPage({ params, searchParams }: { par
   const category = categories?.find((cat: any) => cat.slug === decodedSlug)
   if (!category) return notFound()
 
-  const displayName = category.displayName || category.name
-  const subCats = categories?.filter((c: any) => c.parentId === category.id) || []
+  // Determine the display parent and the siblings/children
+  let displayCategory = category;
+  let activeSubSlug = "all";
+
+  if (category.parentId) {
+    // We are on a subcategory page!
+    const parentCat = categories?.find((c: any) => c.id === category.parentId);
+    if (parentCat) {
+      displayCategory = parentCat;
+      activeSubSlug = category.slug; // Mark this subcategory as active
+    }
+  }
+
+  const displayName = displayCategory.displayName || displayCategory.name
+  const subCats = categories?.filter((c: any) => c.parentId === displayCategory.id) || []
 
   let title = `${displayName}`
   let subtitle = `${total} бүтээгдэхүүнтэй ангилал`
@@ -60,7 +73,7 @@ export default async function CategoryDetailPage({ params, searchParams }: { par
     <div className="bg-white min-h-screen pt-8 pb-12">
       <div className="max-w-7xl mx-auto px-4">
         <div className="lg:flex lg:gap-8">
-          <ShopSidebar categories={categories || []} selectedCategorySlug={category.slug} />
+          <ShopSidebar categories={categories || []} selectedCategorySlug={displayCategory.slug} />
           
           <div className="flex-1">
             <div className="mb-6">
@@ -71,13 +84,31 @@ export default async function CategoryDetailPage({ params, searchParams }: { par
                   <p className="text-slate-500 mt-2">{total} бүтээгдэхүүнтэй ангилал</p>
                   
                   {subCats.length > 0 && (
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <span className="text-sm text-slate-400 py-1.5 mr-2">Дэд ангиллууд:</span>
+                    <div className="mt-4 flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-semibold text-slate-700 py-1.5 mr-2">Ангилал:</span>
+                      
+                      {/* "All" Tab */}
+                      <Link 
+                        href={`/categories/${displayCategory.slug}`}
+                        className={`inline-flex items-center justify-center rounded-full px-5 py-2 text-sm font-medium transition-all ${
+                          activeSubSlug === "all" 
+                            ? "bg-[#F26522] text-white shadow-md" 
+                            : "bg-slate-100 text-slate-700 hover:bg-slate-200 border border-transparent"
+                        }`}
+                      >
+                        Бүгд
+                      </Link>
+
+                      {/* Subcategory Tabs */}
                       {subCats.map((sub: any) => (
                         <Link 
                           key={sub.id} 
                           href={`/categories/${sub.slug}`}
-                          className="inline-flex items-center justify-center rounded-full bg-slate-100 px-4 py-1.5 text-sm font-medium text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors border border-slate-200 hover:border-indigo-100"
+                          className={`inline-flex items-center justify-center rounded-full px-5 py-2 text-sm font-medium transition-all ${
+                            activeSubSlug === sub.slug 
+                              ? "bg-[#F26522] text-white shadow-md" 
+                              : "bg-slate-100 text-slate-700 hover:bg-slate-200 border border-transparent"
+                          }`}
                         >
                           {sub.displayName || sub.name}
                         </Link>
@@ -85,7 +116,7 @@ export default async function CategoryDetailPage({ params, searchParams }: { par
                     </div>
                   )}
                 </div>
-                <Link href="/shop" className="rounded-full bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-200 transition-colors lg:hidden">Дэлгүүрт бүх бараа харах</Link>
+                <Link href="/shop" className="rounded-full bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-200 transition-colors lg:hidden whitespace-nowrap">Дэлгүүр үзэх</Link>
               </div>
             </div>
 
