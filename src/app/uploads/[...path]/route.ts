@@ -5,9 +5,10 @@ import { existsSync } from "fs";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { path: string[] } }
+  context: { params: Promise<{ path: string[] }> }
 ) {
   try {
+    const params = await context.params;
     const pathArray = params.path;
     // Prevent directory traversal attacks
     if (pathArray.some(p => p.includes(".."))) {
