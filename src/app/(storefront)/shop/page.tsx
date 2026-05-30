@@ -1,10 +1,9 @@
 import { getActiveProducts } from "@/app/actions/product-actions"
 import { getCategories } from "@/app/actions/category-actions"
-import { ActiveBatchesList } from "@/components/storefront/home/ActiveBatchesList"
 import { ShopFilters } from "@/components/storefront/ShopFilters"
 import { ShopSidebar } from "@/components/storefront/ShopSidebar"
-import { Pagination } from "@/components/storefront/Pagination"
-import { Package } from "lucide-react"
+import { ProductGridWithLoadMore } from "@/components/storefront/product/ProductGridWithLoadMore"
+import { TrendingUp, Package } from "lucide-react"
 
 export const dynamic = "force-dynamic"
 
@@ -24,11 +23,25 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
       type: "all",
       categorySlug: categorySlug !== "all" ? categorySlug : undefined,
       sort: sort as "newest" | "oldest" | "price_asc" | "price_desc" | "stock_asc" | "stock_desc",
-      page,
+      page: 1, // initial page is always 1 for Server Component
       limit: 24,
       sale: isSale,
     }),
   ])
+
+  async function loadMore(nextPage: number) {
+    "use server";
+    const { products } = await getActiveProducts({
+      search: query,
+      type: "all",
+      categorySlug: categorySlug !== "all" ? categorySlug : undefined,
+      sort: sort as "newest" | "oldest" | "price_asc" | "price_desc" | "stock_asc" | "stock_desc",
+      page: nextPage,
+      limit: 24,
+      sale: isSale,
+    });
+    return products;
+  }
 
   const selectedCategory = categories?.find((cat: any) => cat.slug === categorySlug)
 
@@ -63,26 +76,28 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
             <ShopFilters categories={categories || []} selectedCategorySlug={selectedCategory?.slug} />
 
             {products && products.length > 0 ? (
-              <>
-                <ActiveBatchesList 
-                  batches={products} 
-                  title={title}
-                  subtitle={subtitle}
-                  badge={badge}
-                  theme={theme}
+              <div className="pt-8">
+                {(title || badge || subtitle) && (
+                  <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+                    <div>
+                      {badge && (
+                        <div className={`inline-flex items-center gap-2 mb-3 px-3 py-1 rounded-full border ${theme === "preorder" ? "bg-amber-100/50 border-amber-200/50 text-amber-600" : "bg-indigo-100/50 border-indigo-200/50 text-[#4e3dc7]"}`}>
+                          <TrendingUp className="w-4 h-4" />
+                          <span className="text-xs font-bold uppercase tracking-wider">{badge}</span>
+                        </div>
+                      )}
+                      {title && <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">{title}</h2>}
+                      {subtitle && <p className="text-slate-500 mt-2 text-lg">{subtitle}</p>}
+                    </div>
+                  </div>
+                )}
+                
+                <ProductGridWithLoadMore 
+                  initialProducts={products}
+                  initialTotalPages={totalPages}
+                  fetchNextPage={loadMore}
                 />
-                <Pagination 
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  baseUrl="/shop"
-                  searchParams={new URLSearchParams({
-                    ...(query && { q: query }),
-                    ...(categorySlug !== "all" && { category: categorySlug }),
-                    ...(sort !== "newest" && { sort }),
-                    ...(isSale && { sale: "true" }),
-                  }).toString()}
-                />
-              </>
+              </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-32 px-4 border-t border-slate-100">
                 <Package className="w-16 h-16 text-slate-200 mb-4" />

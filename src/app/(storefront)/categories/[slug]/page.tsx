@@ -2,10 +2,9 @@ import { notFound } from "next/navigation"
 import Link from "next/link"
 import { getCategories } from "@/app/actions/category-actions"
 import { getActiveProducts } from "@/app/actions/product-actions"
-import { ActiveBatchesList } from "@/components/storefront/home/ActiveBatchesList"
 import { ShopFilters } from "@/components/storefront/ShopFilters"
 import { ShopSidebar } from "@/components/storefront/ShopSidebar"
-import { Pagination } from "@/components/storefront/Pagination"
+import { ProductGridWithLoadMore } from "@/components/storefront/product/ProductGridWithLoadMore"
 import { Package } from "lucide-react"
 
 export const dynamic = "force-dynamic"
@@ -26,10 +25,23 @@ export default async function CategoryDetailPage({ params, searchParams }: { par
       type: filterType as "all" | "ready" | "preorder",
       search: query,
       sort: sort as "newest" | "oldest" | "price_asc" | "price_desc" | "stock_asc" | "stock_desc",
-      page,
+      page: 1, // Start on page 1 for initial load
       limit: 24,
     }),
   ])
+
+  async function loadMore(nextPage: number) {
+    "use server";
+    const { products } = await getActiveProducts({
+      categorySlug: decodedSlug,
+      type: filterType as "all" | "ready" | "preorder",
+      search: query,
+      sort: sort as "newest" | "oldest" | "price_asc" | "price_desc" | "stock_asc" | "stock_desc",
+      page: nextPage,
+      limit: 24,
+    });
+    return products;
+  }
 
   const category = categories?.find((cat: any) => cat.slug === decodedSlug)
   if (!category) return notFound()
@@ -123,25 +135,13 @@ export default async function CategoryDetailPage({ params, searchParams }: { par
             <ShopFilters categories={categories || []} selectedCategorySlug={category.slug} />
 
       {products && products.length > 0 ? (
-        <>
-          <ActiveBatchesList
-            batches={products}
-            title={null}
-            subtitle={null}
-            badge={null}
-            theme={theme}
+        <div className="pt-6">
+          <ProductGridWithLoadMore 
+            initialProducts={products}
+            initialTotalPages={totalPages}
+            fetchNextPage={loadMore}
           />
-          <Pagination 
-            currentPage={currentPage}
-            totalPages={totalPages}
-            baseUrl={`/categories/${decodedSlug}`}
-            searchParams={new URLSearchParams({
-              type: filterType,
-              q: query,
-              sort,
-            }).toString()}
-          />
-        </>
+        </div>
       ) : (
         <div className="flex flex-col items-center justify-center py-32 px-4">
           <Package className="w-16 h-16 text-slate-200 mb-4" />
