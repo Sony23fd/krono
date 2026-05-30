@@ -86,7 +86,7 @@ export default async function StorefrontHomePage() {
                 <PromoSliderSection
                   title={section.title}
                   promoTitle={section.title}
-                  promoSubtitle={section.category ? (section.category.displayName || section.category.name) : "Онцгой санал"}
+                  promoSubtitle={section.category ? ((section.category as any).displayName || section.category.name) : "Онцгой санал"}
                   promoLink={section.bannerLink || (section.categoryId ? `/categories/${section.category?.slug}` : "/shop")}
                   promoImage={section.bannerImageUrl || undefined}
                   products={section.products || []}
