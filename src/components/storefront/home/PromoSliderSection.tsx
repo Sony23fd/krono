@@ -216,7 +216,7 @@ export function PromoSliderSection({
             >
               {rowCount === 1 ? (
                 products.map((product, index) => (
-                  <SwiperSlide key={`slide-${index}`} className="!h-auto">
+                  <SwiperSlide key={`slide-${index}`} className="h-auto">
                     <SliderProductCard product={product} />
                   </SwiperSlide>
                 ))
@@ -225,8 +225,8 @@ export function PromoSliderSection({
                   const p1 = products[index * 2]
                   const p2 = products[index * 2 + 1]
                   return (
-                    <SwiperSlide key={`slide-${index}`} className="!h-auto">
-                      <div className="flex flex-col gap-4">
+                    <SwiperSlide key={`slide-${index}`} className="h-auto">
+                      <div className="flex flex-col gap-4 h-full">
                         {p1 && <SliderProductCard product={p1} />}
                         {p2 && <SliderProductCard product={p2} />}
                       </div>

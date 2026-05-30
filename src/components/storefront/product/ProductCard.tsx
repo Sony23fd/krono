@@ -41,7 +41,7 @@ export function ProductCard({ product, index = 0, theme = "default" }: { product
 
   return (
     <div 
-      className="bg-white rounded-xl p-2.5 md:p-3.5 flex flex-col group border border-slate-100 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
+      className="bg-white rounded-xl p-2.5 md:p-3.5 flex flex-col group border border-slate-100 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 h-full"
       suppressHydrationWarning
     >
       <Link href={`/product/${product.id}`} className="block relative bg-gray-50 rounded-lg overflow-hidden aspect-square mb-2.5 md:mb-3">

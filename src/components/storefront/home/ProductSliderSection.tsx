@@ -79,7 +79,7 @@ export function ProductSliderSection({
         {layoutVariant === "GRID" ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-5">
             {products.map((product, index) => (
-              <div key={`grid-${index}`}>
+              <div key={`grid-${index}`} className="h-full">
                 <SliderProductCard product={product} />
               </div>
             ))}
@@ -87,7 +87,7 @@ export function ProductSliderSection({
         ) : layoutVariant === "MASONRY" ? (
           <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-3 md:gap-5 space-y-3 md:space-y-5">
             {products.map((product, index) => (
-              <div key={`masonry-${index}`} className="break-inside-avoid">
+              <div key={`masonry-${index}`} className="break-inside-avoid h-full">
                 <SliderProductCard product={product} />
               </div>
             ))}
@@ -121,7 +121,7 @@ export function ProductSliderSection({
           >
             {rowCount === 1 ? (
               products.map((product, index) => (
-                <SwiperSlide key={`slide-${index}`} className="!h-auto pb-6">
+                <SwiperSlide key={`slide-${index}`} className="pb-6 h-auto">
                   <SliderProductCard product={product} />
                 </SwiperSlide>
               ))
@@ -130,8 +130,8 @@ export function ProductSliderSection({
                 const p1 = products[index * 2]
                 const p2 = products[index * 2 + 1]
                 return (
-                  <SwiperSlide key={`slide-${index}`} className="!h-auto pb-6">
-                    <div className="flex flex-col gap-4">
+                  <SwiperSlide key={`slide-${index}`} className="pb-6 h-auto">
+                    <div className="flex flex-col gap-4 h-full">
                       {p1 && <SliderProductCard product={p1} />}
                       {p2 && <SliderProductCard product={p2} />}
                     </div>
