@@ -6,7 +6,7 @@ import { User, Phone, LogOut, Loader2, Package, Shield, RefreshCcw, CheckCircle2
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import Link from "next/link"
-import { LoyaltySection } from "@/components/storefront/LoyaltySection"
+
 import { RegionMapModal } from "@/components/storefront/RegionMapModal"
 
 export default function ProfilePage() {
