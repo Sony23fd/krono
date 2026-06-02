@@ -310,6 +310,7 @@ model HomePageSection {
   bannerTextColor      String?            @default("#FFFFFF")
   bannerTextPosition   BannerTextPosition @default(TOP_LEFT)
   bannerTextSize       BannerTextSize     @default(LARGE)
+  bannerPosition       String             @default("LEFT") // "LEFT" | "RIGHT"
   
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

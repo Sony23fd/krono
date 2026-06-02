@@ -26,6 +26,7 @@ interface PromoSliderSectionProps {
   bannerTextColor?: string
   bannerTextPosition?: string
   bannerTextSize?: string
+  bannerPosition?: string
 }
 
 export function PromoSliderSection({
@@ -43,7 +44,8 @@ export function PromoSliderSection({
   showBannerText = true,
   bannerTextColor = "#FFFFFF",
   bannerTextPosition = "TOP_LEFT",
-  bannerTextSize = "LARGE"
+  bannerTextSize = "LARGE",
+  bannerPosition = "LEFT"
 }: PromoSliderSectionProps) {
   const prevRef = useRef<HTMLButtonElement>(null)
   const nextRef = useRef<HTMLButtonElement>(null)
@@ -93,9 +95,9 @@ export function PromoSliderSection({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 md:gap-8 items-stretch">
+      <div className={`grid grid-cols-1 lg:grid-cols-4 gap-6 md:gap-8 items-stretch ${bannerPosition === "RIGHT" ? "lg:flex-row-reverse" : ""}`}>
         
-        {/* Left Promotional Banner Card */}
+        {/* Left/Right Promotional Banner Card */}
         {(() => {
           const BannerWrapper = promoLink ? Link : "div" as any;
           const displayTitle = bannerText || promoTitle;
@@ -150,8 +152,8 @@ export function PromoSliderSection({
           )
         })()}
 
-        {/* Right Product Slider / Grid */}
-        <div className="lg:col-span-3 -mx-4 px-4 md:mx-0 md:px-0 flex flex-col">
+        {/* Product Slider / Grid */}
+        <div className={`lg:col-span-3 -mx-4 px-4 md:mx-0 md:px-0 flex flex-col ${bannerPosition === "RIGHT" ? "lg:order-first" : ""}`}>
           {layoutVariant === "GRID" ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 md:gap-5 pb-4">
               {products.map((product, index) => (

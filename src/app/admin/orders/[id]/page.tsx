@@ -171,7 +171,14 @@ export default async function AdminOrderDetailPage({ params }: { params: Promise
           {order.deliveryAddress && (
             <div>
               <p className="text-slate-400 text-xs">Хүргэлтийн хаяг</p>
-              <p className="font-medium text-slate-800">{order.deliveryAddress}</p>
+              <p className="font-medium text-slate-800 flex items-start gap-2 flex-wrap">
+                {order.deliveryAddress.match(/^\[(.*?)\]/) && (
+                  <span className="inline-block mt-0.5 px-1.5 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold rounded uppercase">
+                    {order.deliveryAddress.match(/^\[(.*?)\]/)?.[1]}
+                  </span>
+                )}
+                <span>{order.deliveryAddress.replace(/^\[.*?\]\s*/, "")}</span>
+              </p>
             </div>
           )}
         </div>

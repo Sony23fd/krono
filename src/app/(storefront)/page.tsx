@@ -98,6 +98,7 @@ export default async function StorefrontHomePage() {
                   bannerTextColor={section.bannerTextColor || undefined}
                   bannerTextPosition={section.bannerTextPosition || undefined}
                   bannerTextSize={section.bannerTextSize || undefined}
+                  bannerPosition={section.bannerPosition || "LEFT"}
                 />
               </div>
             )

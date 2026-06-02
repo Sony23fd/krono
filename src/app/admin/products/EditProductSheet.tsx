@@ -50,6 +50,7 @@ export function EditProductSheet({ product, categories }: EditProductSheetProps)
   const [loading, setLoading] = useState(false)
   const [options, setOptions] = useState<{name: string, values: string}[]>([])
   const [variantStock, setVariantStock] = useState<Record<string, number>>({})
+  const [variantPrice, setVariantPrice] = useState<Record<string, number>>({})
   const router = useRouter()
 
   useEffect(() => {
@@ -60,6 +61,24 @@ export function EditProductSheet({ product, categories }: EditProductSheetProps)
         values: Array.isArray(opt.values) ? opt.values.join(", ") : (opt.values || "")
       }))
       setOptions(formatted)
+    }
+    
+    // Initialize variant stocks and prices if variants exist
+    if (product?.variants?.length > 0) {
+      const initialStock: Record<string, number> = {}
+      const initialPrice: Record<string, number> = {}
+      
+      product.variants.forEach((v: any) => {
+        // Find the matching key from options
+        if (v.options) {
+          const key = Object.values(v.options).join("-")
+          initialStock[key] = v.stockQuantity || 0
+          initialPrice[key] = Number(v.price) || 0
+        }
+      })
+      
+      setVariantStock(initialStock)
+      setVariantPrice(initialPrice)
     }
   }, [product])
 
@@ -98,9 +117,23 @@ export function EditProductSheet({ product, categories }: EditProductSheetProps)
       ? Object.fromEntries(variantCombos.map(v => [v.key, variantStock[v.key] || 0]))
       : null
 
+    const finalVariantPrice = variantCombos.length > 0 
+      ? Object.fromEntries(variantCombos.map(v => [v.key, variantPrice[v.key] || 0]))
+      : null
+
     const remainingQuantity = variantCombos.length > 0 
       ? totalVariantStock 
       : Number(formData.get("remainingQuantity") || 0)
+
+    const baseSku = product.sku
+
+    const variantsData = variantCombos.length > 0 ? variantCombos.map(v => ({
+      sku: `${baseSku}-${v.key}`,
+      name: Object.values(v.labels).join(" "),
+      price: finalVariantPrice ? finalVariantPrice[v.key] : Number(formData.get("price") || 0),
+      stockQuantity: finalVariantStock ? finalVariantStock[v.key] : 0,
+      options: v.labels
+    })) : undefined
 
     const promise = updateProduct(product.id, {
       name: formData.get("name") as string,
@@ -115,6 +148,7 @@ export function EditProductSheet({ product, categories }: EditProductSheetProps)
       isFeatured: formData.get("isFeatured") === "on",
       requiresAgeVerification: formData.get("requiresAgeVerification") === "on",
       customBadge: (formData.get("customBadge") as string) || undefined,
+      variants: variantsData,
     })
 
     toast.promise(promise, {
@@ -206,16 +240,35 @@ export function EditProductSheet({ product, categories }: EditProductSheetProps)
                         {Object.entries(v.labels).map(([k, val]) => `${k}: ${val}`).join(' · ')}
                       </p>
                     </div>
-                    <Input
-                      type="number"
-                      min={0}
-                      value={variantStock[v.key] ?? 0}
-                      onChange={(e) => setVariantStock(prev => ({
-                        ...prev,
-                        [v.key]: Math.max(0, Number(e.target.value) || 0)
-                      }))}
-                      className="w-20 h-8 text-xs text-center font-bold"
-                    />
+                    <div className="flex gap-2">
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          min={0}
+                          placeholder="Үнэ"
+                          value={variantPrice[v.key] ?? ""}
+                          onChange={(e) => setVariantPrice(prev => ({
+                            ...prev,
+                            [v.key]: Math.max(0, Number(e.target.value) || 0)
+                          }))}
+                          className="w-24 h-8 text-xs font-bold pl-2 pr-6"
+                        />
+                        <span className="absolute right-2 top-2 text-[10px] text-slate-400 font-bold">₮</span>
+                      </div>
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          min={0}
+                          placeholder="Тоо"
+                          value={variantStock[v.key] ?? 0}
+                          onChange={(e) => setVariantStock(prev => ({
+                            ...prev,
+                            [v.key]: Math.max(0, Number(e.target.value) || 0)
+                          }))}
+                          className="w-20 h-8 text-xs text-center font-bold"
+                        />
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>

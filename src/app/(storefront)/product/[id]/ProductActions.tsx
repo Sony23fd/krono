@@ -12,14 +12,13 @@ interface Props {
   name: string
   imageUrl?: string | null
   unitPrice: number
-  deliveryFee: number
   remainingQuantity: number
   isPreOrder?: boolean
   options?: Array<{ name: string, values: string[] }>
   variants?: Array<{ id: string; sku: string; name: string; stockQuantity: number; price?: number }>
 }
 
-export function ProductActions({ productId, name, imageUrl, unitPrice, deliveryFee, remainingQuantity, isPreOrder, options, variants }: Props) {
+export function ProductActions({ productId, name, imageUrl, unitPrice, remainingQuantity, isPreOrder, options, variants }: Props) {
   const router = useRouter()
   const { addItem, items } = useCart()
   const [qty, setQty] = useState(1)
@@ -72,7 +71,6 @@ export function ProductActions({ productId, name, imageUrl, unitPrice, deliveryF
       name: displayName,
       imageUrl: imageUrl,
       unitPrice: selectedVariant?.price ?? unitPrice,
-      deliveryFee,
       isPreOrder,
       qty,
     })
@@ -99,7 +97,6 @@ export function ProductActions({ productId, name, imageUrl, unitPrice, deliveryF
       name: displayName,
       imageUrl: imageUrl,
       unitPrice: selectedVariant?.price ?? unitPrice,
-      deliveryFee,
       isPreOrder,
       qty,
     })

@@ -129,6 +129,7 @@ export async function createHomePageSection(data: {
   bannerTextColor?: string
   bannerTextPosition?: any
   bannerTextSize?: any
+  bannerPosition?: string
 }) {
   try {
     const section = await db.homePageSection.create({
@@ -152,6 +153,7 @@ export async function createHomePageSection(data: {
         bannerTextColor: data.bannerTextColor ?? "#FFFFFF",
         bannerTextPosition: data.bannerTextPosition ?? "TOP_LEFT",
         bannerTextSize: data.bannerTextSize ?? "LARGE",
+        bannerPosition: data.bannerPosition ?? "LEFT",
       }
     })
     revalidatePath("/")
@@ -182,6 +184,7 @@ export async function updateHomePageSection(id: string, data: Partial<{
   bannerTextColor: string
   bannerTextPosition: any
   bannerTextSize: any
+  bannerPosition: string
 }>) {
   try {
     const section = await db.homePageSection.update({
@@ -193,6 +196,8 @@ export async function updateHomePageSection(id: string, data: Partial<{
         bannerLink: data.bannerLink === undefined ? undefined : data.bannerLink || null,
         startDate: data.startDate === undefined ? undefined : data.startDate || null,
         endDate: data.endDate === undefined ? undefined : data.endDate || null,
+        bannerTextPosition: data.bannerTextPosition === null ? undefined : data.bannerTextPosition,
+        bannerTextSize: data.bannerTextSize === null ? undefined : data.bannerTextSize,
       }
     })
     revalidatePath("/")

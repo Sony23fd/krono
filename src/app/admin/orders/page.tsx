@@ -270,6 +270,11 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
                     <Link href={`/admin/customers?q=${order.customerPhone}`} className="group block">
                       <p className="font-medium text-slate-800 group-hover:text-indigo-600 transition-colors">{order.customerName}</p>
                       <p className="text-xs text-slate-400 group-hover:text-indigo-500 transition-colors">{order.customerPhone}</p>
+                      {order.deliveryAddress && order.deliveryAddress.match(/^\[(.*?)\]/) && (
+                        <span className="inline-block mt-1 px-1.5 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold rounded uppercase">
+                          {order.deliveryAddress.match(/^\[(.*?)\]/)?.[1]}
+                        </span>
+                      )}
                     </Link>
                   </td>
                   <td className="px-4 py-3 max-w-[200px] truncate text-slate-600">

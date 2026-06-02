@@ -47,8 +47,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
   const unitPrice = Number(product.price)
   const availableStock = product.stockQuantity - product.reservedStock
-  const globalFee = Number(shopSettings.delivery_fee || 0)
-  const deliveryFee = globalFee
+  const deliveryFee = Number(shopSettings.delivery_fee_below_threshold || 8000)
 
   return (
     <div className="bg-white min-h-screen pb-20 md:pb-0">
@@ -158,11 +157,10 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                 name={product.name}
                 imageUrl={product.imageUrl}
                 unitPrice={unitPrice}
-                deliveryFee={deliveryFee}
                 remainingQuantity={availableStock}
                 isPreOrder={product.isPreOrder}
-                options={product.options as any}
-                variants={product.variants as any}
+                options={product.options ? JSON.parse(JSON.stringify(product.options)) : undefined}
+                variants={product.variants ? JSON.parse(JSON.stringify(product.variants)) : undefined}
               />
             </div>
           </div>

@@ -97,7 +97,7 @@ export async function getActiveProducts(filters?: {
   try {
     const page = filters?.page || 1
     const limit = filters?.limit || 24
-    const where: any = { status: "ACTIVE" }
+    const where: any = { status: { in: ["ACTIVE", "OUT_OF_STOCK"] } }
 
     if (filters?.categorySlug && filters.categorySlug !== "all") {
       const targetCategory = await db.category.findUnique({
@@ -118,12 +118,9 @@ export async function getActiveProducts(filters?: {
       where.stockQuantity = { gt: 0 }
     } else if (filters?.type === "preorder") {
       where.isPreOrder = true
-    } else {
-      where.OR = [
-        { isPreOrder: true },
-        { isPreOrder: false, stockQuantity: { gt: 0 } },
-      ]
     }
+    // For type === "all", we don't filter by stockQuantity or isPreOrder anymore
+    // so that OUT_OF_STOCK products remain visible in the store and search results.
 
     if (filters?.search?.trim()) {
       const q = filters.search.trim()
@@ -319,6 +316,7 @@ export async function updateProduct(productId: string, data: {
   customBadge?: string
   options?: any
   images?: string[]
+  variants?: { sku: string; name: string; price?: number; stockQuantity: number; options: any }[]
 }) {
   try {
     const existing = await db.product.findUnique({ where: { id: productId } })
@@ -359,6 +357,46 @@ export async function updateProduct(productId: string, data: {
         ...(data.images !== undefined && { images: data.images }),
       },
     })
+
+    // Handle variants if provided
+    if (data.variants !== undefined) {
+      if (data.variants.length === 0) {
+        // If variants array is empty but provided, it means all variants were removed
+        await db.productVariant.deleteMany({ where: { productId } })
+      } else {
+        // Upsert variants based on SKU
+        const currentVariantSkus = data.variants.map(v => v.sku)
+        
+        // Delete variants that are no longer in the list
+        await db.productVariant.deleteMany({
+          where: { 
+            productId,
+            sku: { notIn: currentVariantSkus }
+          }
+        })
+        
+        // Upsert new/existing variants
+        for (const variant of data.variants) {
+          await db.productVariant.upsert({
+            where: { sku: variant.sku },
+            update: {
+              name: variant.name,
+              price: variant.price,
+              stockQuantity: variant.stockQuantity,
+              options: variant.options,
+            },
+            create: {
+              productId: productId,
+              sku: variant.sku,
+              name: variant.name,
+              price: variant.price,
+              stockQuantity: variant.stockQuantity,
+              options: variant.options,
+            }
+          })
+        }
+      }
+    }
 
     revalidatePath("/admin/products")
     revalidatePath("/")

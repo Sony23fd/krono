@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useCallback, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Loader2, CheckCircle2, AlertCircle, MessageSquare, ArrowLeft, ArrowRight, Lock } from "lucide-react"
 import Link from "next/link"
 import { startPhoneVerification } from "@/app/actions/verify-actions"
@@ -36,6 +36,8 @@ function clearPendingPhone() {
 
 export default function RegisterPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const callbackUrl = searchParams.get('callbackUrl') || "/"
   const { refreshCustomer } = useCustomerAuth()
   const pollRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -217,10 +219,9 @@ export default function RegisterPage() {
       return
     }
 
-    // Refresh context
     await refreshCustomer()
     toast.success("Та амжилттай бүртгэгдлээ!")
-    router.push("/")
+    router.push(callbackUrl)
   }
 
   function handlePhoneChange(value: string) {
@@ -409,7 +410,7 @@ export default function RegisterPage() {
         <div className="mt-6 pt-6 border-t border-slate-200">
           <p className="text-center text-sm text-slate-500 mb-4">Бүртгэлтэй хэрэглэгч үү?</p>
           <Link
-            href="/login"
+            href={`/login${callbackUrl !== '/' ? `?callbackUrl=${encodeURIComponent(callbackUrl)}` : ''}`}
             className="w-full py-3 border-2 border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-colors flex items-center justify-center"
           >
             Нэвтрэх

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Loader2, AlertCircle, ArrowRight, Lock, Phone } from "lucide-react"
 import Link from "next/link"
 import { loginWithPassword } from "@/app/actions/auth-actions"
@@ -10,6 +10,9 @@ import { isValidPhone } from "@/lib/customer-utils"
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const callbackUrl = searchParams.get('callbackUrl') || "/"
+  
   const { customer, isReady, refreshCustomer } = useCustomerAuth()
 
   const [phone, setPhone] = useState("")
@@ -22,9 +25,9 @@ export default function LoginPage() {
   // Redirect if already logged in
   useEffect(() => {
     if (isReady && customer) {
-      router.push("/")
+      router.push(callbackUrl)
     }
-  }, [isReady, customer, router])
+  }, [isReady, customer, router, callbackUrl])
 
   function handlePhoneChange(value: string) {
     const digits = value.replace(/\D/g, "")
@@ -68,7 +71,7 @@ export default function LoginPage() {
       setShowSuccess(true)
       await refreshCustomer() // Update context from JWT
       setTimeout(() => {
-        router.push("/")
+        router.push(callbackUrl)
       }, 1000)
     } else {
       setGeneralError(result.error || "Нэвтрэхэд алдаа гарлаа")
@@ -107,7 +110,7 @@ export default function LoginPage() {
                 <CheckCircleIcon className="w-8 h-8 text-emerald-500" />
               </div>
               <p className="text-slate-700 font-bold text-lg">Амжилттай нэвтэрлээ!</p>
-              <p className="text-slate-500 text-sm">Нүүр хуудас руу шилжиж байна...</p>
+              <p className="text-slate-500 text-sm">Түр хүлээнэ үү...</p>
             </div>
           ) : (
             <>
@@ -179,7 +182,7 @@ export default function LoginPage() {
               <div className="mt-6 pt-6 border-t border-slate-100">
                 <p className="text-center text-sm text-slate-500 mb-4">Бүртгэлгүй бол шинээр бүртгүүлэх</p>
                 <Link
-                  href="/register"
+                  href={`/register${callbackUrl !== '/' ? `?callbackUrl=${encodeURIComponent(callbackUrl)}` : ''}`}
                   className="w-full py-3 border-2 border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-colors flex items-center justify-center"
                 >
                   Бүртгүүлэх

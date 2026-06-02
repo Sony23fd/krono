@@ -20,6 +20,7 @@ import { VisitorTracker } from "@/components/storefront/VisitorTracker"
 import { SocialProofToast } from "@/components/storefront/SocialProofToast"
 import { BottomNavigation } from "@/components/storefront/BottomNavigation"
 import { FooterMap } from "@/components/storefront/FooterMap"
+import { PopupBannerModal } from "@/components/storefront/PopupBannerModal"
 
 export const dynamic = "force-dynamic"
 
@@ -27,18 +28,24 @@ export default async function StorefrontLayout({ children }: { children: ReactNo
   let siteLogo = null;
   let isMaintenanceMode = false;
   let categories: any[] = []
+  let popupBanner = null;
 
   try {
-    const [settings, categoriesResult] = await Promise.all([
+    const [settings, categoriesResult, popupResult] = await Promise.all([
       db.shopSettings.findMany({
         where: { key: { in: ["site_logo", "maintenance_mode"] } }
       }),
       getCategories(),
+      db.banner.findFirst({
+        where: { type: "POPUP", isActive: true },
+        orderBy: { sortOrder: "asc" }
+      })
     ])
 
     siteLogo = settings.find(s => s.key === "site_logo")?.value;
     isMaintenanceMode = settings.find(s => s.key === "maintenance_mode")?.value === "true";
     categories = categoriesResult.categories || []
+    popupBanner = popupResult ? JSON.parse(JSON.stringify(popupResult)) : null;
   } catch (error) {
     console.error("Failed to load settings in layout:", error)
   }
@@ -146,9 +153,12 @@ export default async function StorefrontLayout({ children }: { children: ReactNo
       {/* Global Analytics & Social Proof */}
       <VisitorTracker />
       <SocialProofToast />
+      
+      {/* Pop-up Banner */}
+      <PopupBannerModal banner={popupBanner} />
 
       {/* Modern Premium Footer */}
-      <footer className="bg-slate-900 text-slate-300 pt-16 pb-8 px-4 md:px-8 lg:px-16 mt-auto hidden md:block" suppressHydrationWarning>
+      <footer className="bg-slate-900 text-slate-300 pt-16 pb-24 md:pb-8 px-4 md:px-8 lg:px-16 mt-auto" suppressHydrationWarning>
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-10 mb-16">
             
@@ -250,7 +260,7 @@ export default async function StorefrontLayout({ children }: { children: ReactNo
             </div>
             <div className="md:w-1/3 text-center">
             </div>
-            <div className="md:w-1/3 flex justify-center md:justify-end gap-6">
+            <div className="md:w-1/3 flex justify-center md:justify-end gap-4 md:gap-6 flex-wrap">
               <Link href="/delivery-terms" className="hover:text-white transition-colors">Хүргэлтийн нөхцөл</Link>
               <Link href="/terms" className="hover:text-white transition-colors">Үйлчилгээний нөхцөл</Link>
               <Link href="/privacy" className="hover:text-white transition-colors">Нууцлалын бодлого</Link>

@@ -9,7 +9,7 @@ export interface CartItem {
   name: string
   imageUrl?: string | null
   unitPrice: number
-  deliveryFee: number
+  deliveryFee?: number
   qty: number
   isPreOrder?: boolean
 }

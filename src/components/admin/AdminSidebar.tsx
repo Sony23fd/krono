@@ -77,7 +77,7 @@ const SIDEBAR_STRUCTURE: SidebarGroup[] = [
     id: "marketing",
     label: "Маркетинг",
     items: [
-      { name: "Нүүрний баннер", url: "/admin/marketing/banners", icon: ImageIcon, roles: ["ADMIN"] },
+      { name: "Слайд & Попап баннер", url: "/admin/marketing/banners", icon: ImageIcon, roles: ["ADMIN"] },
       { name: "Нүүрний хэсгүүд", url: "/admin/marketing/homepage-sections", icon: LayoutDashboard, roles: ["ADMIN"] },
       { name: "Хямдрал & Урамшуулал", url: "/admin/marketing/promotions", icon: Tag, roles: ["ADMIN"] }
     ]

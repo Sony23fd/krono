@@ -36,20 +36,19 @@ export function GeneralSettingsClient({ initialSettings, userRole }: Props) {
     return str.split(",").map(Number).filter(n => !isNaN(n))
   })
 
-  const DAY_NAMES = ["Ням", "Даваа", "Мягмар", "Лхагва", "Пүрэв", "Баасан", "Бямба"]
+  // Delivery Fees
+  const [deliveryThreshold, setDeliveryThreshold] = useState(initialSettings["delivery_threshold"] || "50000")
+  const [deliveryFeeBelow, setDeliveryFeeBelow] = useState(initialSettings["delivery_fee_below_threshold"] || "8000")
+  const [deliveryFeeAbove, setDeliveryFeeAbove] = useState(initialSettings["delivery_fee_above_threshold"] || "5000")
 
-  const initialCarouselStr = initialSettings["hero_carousel_images"]
-  const [carouselImages, setCarouselImages] = useState<string[]>(
-    initialCarouselStr ? JSON.parse(initialCarouselStr) : []
-  )
+  // Map Images
+  const [mapNewDarkhan, setMapNewDarkhan] = useState(initialSettings["map_new_darkhan"] || "")
+  const [mapOldDarkhan, setMapOldDarkhan] = useState(initialSettings["map_old_darkhan"] || "")
+
+  const DAY_NAMES = ["Ням", "Даваа", "Мягмар", "Лхагва", "Пүрэв", "Баасан", "Бямба"]
 
   const [isUploading, setIsUploading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-
-  const [promoTitle, setPromoTitle] = useState(initialSettings["promo_title"] || "СУПЕР ХЯМДРАЛ")
-  const [promoSubtitle, setPromoSubtitle] = useState(initialSettings["promo_subtitle"] || "Зөвхөн өнөөдөр")
-  const [promoLink, setPromoLink] = useState(initialSettings["promo_link"] || "/shop?sale=true")
-  const [promoImage, setPromoImage] = useState(initialSettings["promo_image"] || "")
 
   const [loyaltyDiscountPercent, setLoyaltyDiscountPercent] = useState(initialSettings["loyalty_discount_percent"] || "3")
 
@@ -72,6 +71,36 @@ export function GeneralSettingsClient({ initialSettings, userRole }: Props) {
 
       setLogoUrl(data.url)
       toast.success("Зураг хуулагдлаа. 'Хадгалах' товчийг дарна уу.")
+    } catch (error: any) {
+      toast.error(error.message)
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  async function handleMapUpload(e: React.ChangeEvent<HTMLInputElement>, type: "NEW" | "OLD") {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setIsUploading(true)
+    const formData = new FormData()
+    formData.append("file", file)
+
+    try {
+      const res = await fetch("/api/admin/settings/upload", {
+        method: "POST",
+        body: formData,
+      })
+      const data = await res.json()
+
+      if (!res.ok) throw new Error(data.error || "Унших үед алдаа гарлаа")
+
+      if (type === "NEW") {
+        setMapNewDarkhan(data.url)
+      } else {
+        setMapOldDarkhan(data.url)
+      }
+      toast.success("Зураг амжилттай хуулагдлаа. 'Хадгалах' товчийг дарж баталгаажуулна уу.")
     } catch (error: any) {
       toast.error(error.message)
     } finally {
@@ -138,19 +167,10 @@ export function GeneralSettingsClient({ initialSettings, userRole }: Props) {
       })
       if (!resSchedule.ok) throw new Error("Хүргэлтийн хуваарь хадгалахад алдаа гарлаа")
 
-      // Save carousel images
-      const resCarousel = await fetch("/api/admin/settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key: "hero_carousel_images", value: JSON.stringify(carouselImages) }),
-      })
-      if (!resCarousel.ok) throw new Error("Carousel хадгалахад алдаа гарлаа")
-
-      // Save promo settings
-      await fetch("/api/admin/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "promo_title", value: promoTitle }) })
-      await fetch("/api/admin/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "promo_subtitle", value: promoSubtitle }) })
-      await fetch("/api/admin/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "promo_link", value: promoLink }) })
-      await fetch("/api/admin/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "promo_image", value: promoImage }) })
+      // Save conditional delivery fees
+      await fetch("/api/admin/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "delivery_threshold", value: deliveryThreshold }) })
+      await fetch("/api/admin/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "delivery_fee_below_threshold", value: deliveryFeeBelow }) })
+      await fetch("/api/admin/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "delivery_fee_above_threshold", value: deliveryFeeAbove }) })
 
       // Save loyalty settings
       await fetch("/api/admin/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "loyalty_discount_percent", value: loyaltyDiscountPercent }) })
@@ -349,144 +369,111 @@ export function GeneralSettingsClient({ initialSettings, userRole }: Props) {
             </div>
 
             <div className="w-full pt-4 border-t border-slate-100 space-y-4">
-              <div className="space-y-0.5">
-                <label className="text-base font-semibold text-slate-800">Carousel зургууд (Слайд)</label>
+              <div className="space-y-0.5 mb-2">
+                <label className="text-base font-semibold text-slate-800">🚚 Хүргэлтийн үнийн нөхцөл</label>
                 <p className="text-sm text-slate-500">
-                  Нүүр хуудсанд текстийн оронд буюу нийтдээ харагдах слайд зургуудыг энд оруулна.
+                  Сагсан дахь нийт дүнгээс хамааруулан хүргэлтийн төлбөрийг өөр өөрөөр бодох тохиргоо.
                 </p>
               </div>
-              <div className="flex flex-wrap gap-4 items-center">
-                {carouselImages.map((img, idx) => (
-                  <div key={idx} className="relative w-32 h-20 rounded-lg overflow-hidden border border-slate-200 group">
-                    <Image src={img} alt={`Slide ${idx}`} fill className="object-cover" />
-                    <button 
-                      onClick={() => setCarouselImages(prev => prev.filter((_, i) => i !== idx))}
-                      className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity shadow-sm z-10 text-xs font-bold hover:bg-red-600"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-                
-                <div className="relative w-32 h-20 rounded-lg border-2 border-dashed border-slate-300 flex items-center justify-center bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Босго дүн (₮)</label>
                   <input
-                    type="file"
-                    accept="image/*"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0]
-                      if (!file) return
-                      setIsUploading(true)
-                      const formData = new FormData()
-                      formData.append("file", file)
-                      try {
-                        const res = await fetch("/api/admin/settings/upload", { method: "POST", body: formData })
-                        const data = await res.json()
-                        if (!res.ok) throw new Error(data.error)
-                        setCarouselImages(prev => [...prev, data.url])
-                      } catch (error: any) {
-                        toast.error(error.message)
-                      } finally {
-                        setIsUploading(false)
-                      }
-                    }}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                    disabled={isUploading}
+                    type="number"
+                    value={deliveryThreshold}
+                    onChange={e => setDeliveryThreshold(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
                   />
-                  <div className="text-center text-slate-400">
-                    <Upload className="w-5 h-5 mx-auto mb-1" />
-                    <span className="text-[10px] font-semibold uppercase">Оруулах</span>
-                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Босгоос доош үед (₮)</label>
+                  <input
+                    type="number"
+                    value={deliveryFeeBelow}
+                    onChange={e => setDeliveryFeeBelow(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Босгоос дээш үед (₮)</label>
+                  <input
+                    type="number"
+                    value={deliveryFeeAbove}
+                    onChange={e => setDeliveryFeeAbove(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                  />
                 </div>
               </div>
             </div>
           </div>
+        </CardContent>
+        <CardFooter className="bg-slate-50 border-t border-slate-100 flex justify-end">
+          <Button 
+            onClick={handleSave} 
+            disabled={isUploading || isSaving}
+            className="bg-[#4e3dc7] hover:bg-indigo-700 text-white shadow-sm font-medium px-6"
+          >
+            {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+            Хадгалах
+          </Button>
+        </CardFooter>
+      </Card>
 
-          <div className="pt-6 border-t border-slate-100 space-y-4">
-            <div className="space-y-0.5 mb-4">
-              <label className="text-base font-semibold text-slate-800">"СУПЕР ХЯМДРАЛ" Баннер (Promo Slider)</label>
-              <p className="text-sm text-slate-500">
-                Нүүр хуудасны хямдралтай барааны хажуудах онцгой саналын текстийг солих
-              </p>
+      <Card className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+        <CardHeader className="bg-slate-50 border-b border-slate-100 pb-4 pt-5">
+          <CardTitle className="text-lg font-bold text-slate-800">Бүсчлэлийн газрын зураг</CardTitle>
+          <CardDescription>Шинэ болон Хуучин Дархан бүсийн газрын зургийг оруулах. Хэрэглэгч бүсээ сонгохдоо эдгээр зургийг харах болно.</CardDescription>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold text-slate-800">Шинэ Дархан газрын зураг</h4>
+              <div className="relative w-full aspect-video rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 overflow-hidden hover:border-indigo-400 hover:bg-indigo-50/50 transition-colors group flex items-center justify-center">
+                {mapNewDarkhan ? (
+                  <img src={mapNewDarkhan} alt="Шинэ Дархан" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="flex flex-col items-center gap-2 text-slate-400">
+                    <ImageIcon className="w-8 h-8" />
+                    <span className="text-xs font-medium">Зураг оруулах</span>
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <span className="text-white font-bold text-sm bg-black/50 px-3 py-1.5 rounded-full backdrop-blur-sm shadow-sm flex items-center gap-2">
+                    <Upload className="w-4 h-4" /> Өөрчлөх
+                  </span>
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  onChange={(e) => handleMapUpload(e, "NEW")}
+                  disabled={isUploading}
+                />
+              </div>
             </div>
             
-            <div className="mb-4">
-              <label className="text-sm font-medium mb-2 block">Баннерын Арын Зураг (Заавал биш)</label>
-              <div className="flex items-center gap-4">
-                <div className="relative w-48 h-24 rounded-lg border-2 border-dashed border-slate-300 flex items-center justify-center bg-slate-50 overflow-hidden group">
-                  {promoImage ? (
-                    <>
-                      <Image src={promoImage} alt="Promo" fill className="object-cover" />
-                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-10">
-                        <button
-                          onClick={() => setPromoImage("")}
-                          className="w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center text-sm hover:bg-red-600 transition-colors shadow-sm"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="text-center text-slate-400 p-2 cursor-pointer relative w-full h-full flex flex-col items-center justify-center hover:bg-slate-100 transition-colors">
-                      <Upload className="w-5 h-5 mx-auto mb-1" />
-                      <span className="text-[10px] font-semibold uppercase">Оруулах</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        disabled={isUploading}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0]
-                          if (!file) return
-                          setIsUploading(true)
-                          const formData = new FormData()
-                          formData.append("file", file)
-                          try {
-                            const res = await fetch("/api/admin/settings/upload", { method: "POST", body: formData })
-                            const data = await res.json()
-                            if (!res.ok) throw new Error(data.error)
-                            setPromoImage(data.url)
-                          } catch (error: any) {
-                            toast.error(error.message)
-                          } finally {
-                            setIsUploading(false)
-                          }
-                        }}
-                      />
-                    </div>
-                  )}
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold text-slate-800">Хуучин Дархан газрын зураг</h4>
+              <div className="relative w-full aspect-video rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 overflow-hidden hover:border-indigo-400 hover:bg-indigo-50/50 transition-colors group flex items-center justify-center">
+                {mapOldDarkhan ? (
+                  <img src={mapOldDarkhan} alt="Хуучин Дархан" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="flex flex-col items-center gap-2 text-slate-400">
+                    <ImageIcon className="w-8 h-8" />
+                    <span className="text-xs font-medium">Зураг оруулах</span>
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <span className="text-white font-bold text-sm bg-black/50 px-3 py-1.5 rounded-full backdrop-blur-sm shadow-sm flex items-center gap-2">
+                    <Upload className="w-4 h-4" /> Өөрчлөх
+                  </span>
                 </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Том Гарчиг</label>
                 <input
-                  type="text"
-                  value={promoTitle}
-                  onChange={e => setPromoTitle(e.target.value)}
-                  placeholder="СУПЕР ХЯМДРАЛ"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Дэд Гарчиг</label>
-                <input
-                  type="text"
-                  value={promoSubtitle}
-                  onChange={e => setPromoSubtitle(e.target.value)}
-                  placeholder="Зөвхөн өнөөдөр"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
-                />
-              </div>
-              <div className="space-y-2 md:col-span-2">
-                <label className="text-sm font-medium">Холбоос (Линк)</label>
-                <input
-                  type="text"
-                  value={promoLink}
-                  onChange={e => setPromoLink(e.target.value)}
-                  placeholder="/shop?sale=true"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                  type="file"
+                  accept="image/*"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  onChange={(e) => handleMapUpload(e, "OLD")}
+                  disabled={isUploading}
                 />
               </div>
             </div>

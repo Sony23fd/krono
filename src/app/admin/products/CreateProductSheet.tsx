@@ -38,6 +38,7 @@ export function CreateProductSheet({ categories }: { categories: any[] }) {
   const [selectedCategoryId, setSelectedCategoryId] = useState("")
   const [options, setOptions] = useState<{name: string, values: string}[]>([])
   const [variantStock, setVariantStock] = useState<Record<string, number>>({})
+  const [variantPrice, setVariantPrice] = useState<Record<string, number>>({})
   const router = useRouter()
 
   const addOption = () => setOptions([...options, { name: "", values: "" }])
@@ -71,12 +72,26 @@ export function CreateProductSheet({ categories }: { categories: any[] }) {
       ? Object.fromEntries(variantCombos.map(v => [v.key, variantStock[v.key] || 0]))
       : undefined
 
+    const finalVariantPrice = variantCombos.length > 0 
+      ? Object.fromEntries(variantCombos.map(v => [v.key, variantPrice[v.key] || 0]))
+      : undefined
+
     const remainingQuantity = variantCombos.length > 0 
       ? totalVariantStock 
       : Number(formData.get("remainingQuantity") || 0)
+      
+    const baseSku = (formData.get("sku") as string) || `SKU-${Date.now()}`
+
+    const variantsData = variantCombos.length > 0 ? variantCombos.map(v => ({
+      sku: `${baseSku}-${v.key}`,
+      name: Object.values(v.labels).join(" "),
+      price: finalVariantPrice ? finalVariantPrice[v.key] : Number(formData.get("price") || 0),
+      stockQuantity: finalVariantStock ? finalVariantStock[v.key] : 0,
+      options: v.labels
+    })) : undefined
 
     const promise = createProduct({
-      sku: (formData.get("sku") as string) || `SKU-${Date.now()}`,
+      sku: baseSku,
       name: formData.get("name") as string,
       description: formData.get("description") as string,
       stockQuantity: remainingQuantity,
@@ -86,6 +101,7 @@ export function CreateProductSheet({ categories }: { categories: any[] }) {
       categoryId: selectedCategoryId || undefined,
       customBadge: (formData.get("customBadge") as string) || undefined,
       options: formattedOptions.length > 0 ? formattedOptions : undefined,
+      variants: variantsData,
     })
 
     toast.promise(promise, {
@@ -96,6 +112,7 @@ export function CreateProductSheet({ categories }: { categories: any[] }) {
           setOpen(false)
           setOptions([])
           setVariantStock({})
+          setVariantPrice({})
           setSelectedCategoryId("")
           router.refresh()
           return "Амжилттай хадгалагдлаа"
@@ -200,16 +217,35 @@ export function CreateProductSheet({ categories }: { categories: any[] }) {
                         {Object.entries(v.labels).map(([k, val]) => `${k}: ${val}`).join(' · ')}
                       </p>
                     </div>
-                    <Input
-                      type="number"
-                      min={0}
-                      value={variantStock[v.key] ?? 0}
-                      onChange={(e) => setVariantStock(prev => ({
-                        ...prev,
-                        [v.key]: Math.max(0, Number(e.target.value) || 0)
-                      }))}
-                      className="w-20 h-8 text-xs text-center font-bold"
-                    />
+                    <div className="flex gap-2">
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          min={0}
+                          placeholder="Үнэ"
+                          value={variantPrice[v.key] ?? ""}
+                          onChange={(e) => setVariantPrice(prev => ({
+                            ...prev,
+                            [v.key]: Math.max(0, Number(e.target.value) || 0)
+                          }))}
+                          className="w-24 h-8 text-xs font-bold pl-2 pr-6"
+                        />
+                        <span className="absolute right-2 top-2 text-[10px] text-slate-400 font-bold">₮</span>
+                      </div>
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          min={0}
+                          placeholder="Тоо"
+                          value={variantStock[v.key] ?? 0}
+                          onChange={(e) => setVariantStock(prev => ({
+                            ...prev,
+                            [v.key]: Math.max(0, Number(e.target.value) || 0)
+                          }))}
+                          className="w-20 h-8 text-xs text-center font-bold"
+                        />
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>

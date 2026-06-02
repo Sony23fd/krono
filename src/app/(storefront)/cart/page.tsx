@@ -10,11 +10,12 @@ export default async function CartPage() {
       termsOfService={settings.terms_of_service}
       deliveryTerms={settings.delivery_terms}
       qpayEnabled={settings.qpay_enabled === "true"}
-      globalDeliveryFee={Number(settings.delivery_fee || 0)}
       deliveryScheduleDays={settings.delivery_schedule_days || "3,6"}
-      phoneVerificationEnabled={settings.phone_verification_enabled !== "false"}
       loyaltyPercent={Number(settings.loyalty_discount_percent || 3)}
       loyaltyEnabled={settings.loyalty_enabled !== "false"}
+      deliveryThreshold={Number(settings.delivery_threshold || 50000)}
+      deliveryFeeBelowThreshold={Number(settings.delivery_fee_below_threshold || 8000)}
+      deliveryFeeAboveThreshold={Number(settings.delivery_fee_above_threshold || 5000)}
     />
   )
 }

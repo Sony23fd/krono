@@ -12,24 +12,30 @@ import { getUpcomingDeliveryDates } from "@/lib/utils"
 import { isValidPhone } from "@/lib/customer-utils"
 import { useCustomerAuth } from "@/context/CustomerAuthContext"
 
+import { RegionMapModal } from "@/components/storefront/RegionMapModal"
+
 export function CartClient({ 
   termsOfService, 
   deliveryTerms, 
   qpayEnabled, 
-  globalDeliveryFee = 0, 
   deliveryScheduleDays = "3,6",
   phoneVerificationEnabled = true,
   loyaltyPercent,
-  loyaltyEnabled = true
+  loyaltyEnabled = true,
+  deliveryThreshold,
+  deliveryFeeBelowThreshold,
+  deliveryFeeAboveThreshold
 }: { 
   termsOfService?: string; 
   deliveryTerms?: string; 
   qpayEnabled?: boolean;
-  globalDeliveryFee?: number;
   deliveryScheduleDays?: string;
   phoneVerificationEnabled?: boolean;
   loyaltyPercent?: number;
   loyaltyEnabled?: boolean;
+  deliveryThreshold?: number;
+  deliveryFeeBelowThreshold?: number;
+  deliveryFeeAboveThreshold?: number;
 }) {
   const { items, removeItem, updateQty, clearCart, totalPrice } = useCart()
   const { customer, updateAddress } = useCustomerAuth()
@@ -39,7 +45,6 @@ export function CartClient({
   const [submitting, setSubmitting] = useState(false)
   const [isRedirecting, setIsRedirecting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [phoneError, setPhoneError] = useState<string | null>(null)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [selectedDeliveryDate, setSelectedDeliveryDate] = useState<string | null>(null)
   
@@ -56,184 +61,27 @@ export function CartClient({
   const [loyaltyError, setLoyaltyError] = useState<string | null>(null)
 
   // ─── Address State ───
+  const [deliveryRegion, setDeliveryRegion] = useState("Шинэ Дархан")
+  const [isMapModalOpen, setIsMapModalOpen] = useState(false)
   const [useSavedAddress, setUseSavedAddress] = useState(false)
   useEffect(() => {
-    if (customer?.address) setUseSavedAddress(true)
+    if (customer?.address) {
+      setUseSavedAddress(true)
+      const match = customer.address.match(/^\[(.*?)\]\s*(.*)$/)
+      if (match) {
+        setDeliveryRegion(match[1])
+      }
+    }
   }, [customer?.address])
 
-  // ─── Phone Verification State ───
-  const [phoneVerified, setPhoneVerified] = useState(false)
-  const [verifySessionId, setVerifySessionId] = useState<string | null>(null)
-  const [verifySmsUri, setVerifySmsUri] = useState<string | null>(null)
-  const [verifyInstruction, setVerifyInstruction] = useState<string | null>(null)
-  const [verifyExpiresAt, setVerifyExpiresAt] = useState<string | null>(null)
-  const [verifyLoading, setVerifyLoading] = useState(false)
-  const [verifyError, setVerifyError] = useState<string | null>(null)
-  const pollRef = useRef<NodeJS.Timeout | null>(null)
-
-  // ─── localStorage helpers for persistent verification ───
-  const VERIFY_STORAGE_KEY = "anar_verified_phone"
-  const VERIFY_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
-
-  function getStoredVerifiedPhone(): string | null {
-    try {
-      const raw = localStorage.getItem(VERIFY_STORAGE_KEY)
-      if (!raw) return null
-      const { phone, verifiedAt } = JSON.parse(raw)
-      if (Date.now() - verifiedAt > VERIFY_TTL_MS) {
-        localStorage.removeItem(VERIFY_STORAGE_KEY)
-        return null
-      }
-      return phone
-    } catch { return null }
-  }
-
-  function saveVerifiedPhone(phone: string) {
-    try {
-      localStorage.setItem(VERIFY_STORAGE_KEY, JSON.stringify({ phone, verifiedAt: Date.now() }))
-    } catch { /* ignore */ }
-  }
-
-  // Cleanup polling on unmount
   useEffect(() => {
-    // If phone verification is disabled globally, set it as verified immediately
-    if (!phoneVerificationEnabled) {
-      setPhoneVerified(true)
-    }
-
     // If there are no terms to agree to, set agreedToTerms to true by default
     const hasTerms = Boolean(termsOfService || (wantsDelivery && deliveryTerms));
     if (!hasTerms) {
       setAgreedToTerms(true);
     }
+  }, [termsOfService, deliveryTerms, wantsDelivery])
 
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current)
-    }
-  }, [phoneVerificationEnabled, termsOfService, deliveryTerms, wantsDelivery])
-
-  // Poll verify.mn status
-  const startPolling = useCallback((sessionId: string, expiresAt: string) => {
-    if (pollRef.current) clearInterval(pollRef.current)
-
-    pollRef.current = setInterval(async () => {
-      // Check if expired
-      if (Date.now() > new Date(expiresAt).getTime()) {
-        if (pollRef.current) clearInterval(pollRef.current)
-        setVerifyError("Хугацаа дууслаа. Дахин оролдоно уу.")
-        setVerifySessionId(null)
-        setVerifySmsUri(null)
-        setVerifyInstruction(null)
-        return
-      }
-
-      try {
-        const res = await fetch(`/api/verify-mn/status/${sessionId}`, { cache: "no-store" })
-        const data = await res.json()
-
-        if (data.status === "VERIFIED") {
-          if (pollRef.current) clearInterval(pollRef.current)
-          setPhoneVerified(true)
-          setVerifySessionId(null)
-          setVerifySmsUri(null)
-          setVerifyInstruction(null)
-          // Save to localStorage for persistence
-          const phoneInput = document.querySelector('input[name="phoneNumber"]') as HTMLInputElement
-          if (phoneInput) saveVerifiedPhone(phoneInput.value.replace(/\D/g, ""))
-          toast.success("Утас амжилттай баталгаажлаа!")
-        } else if (data.status === "EXPIRED") {
-          if (pollRef.current) clearInterval(pollRef.current)
-          setVerifyError("Хугацаа дууслаа. Дахин оролдоно уу.")
-          setVerifySessionId(null)
-          setVerifySmsUri(null)
-          setVerifyInstruction(null)
-        }
-      } catch {
-        // Silent — will retry on next interval
-      }
-    }, 3000)
-  }, [toast])
-
-  async function handleVerifyPhone(phoneValue: string) {
-    const digits = phoneValue.replace(/\D/g, "")
-    if (!isValidPhone(digits)) return
-
-    // Check localStorage first
-    const storedPhone = getStoredVerifiedPhone()
-    if (storedPhone === digits) {
-      setPhoneVerified(true)
-      return
-    }
-
-    setVerifyLoading(true)
-    setVerifyError(null)
-
-    const result = await startPhoneVerification(digits)
-
-    if (!result.success) {
-      setVerifyError(result.error || "Алдаа гарлаа")
-      setVerifyLoading(false)
-      return
-    }
-
-    // If already verified or skipped (no API key)
-    if (result.sessionId === "already-verified" || result.sessionId === "skipped" || result.status === "VERIFIED") {
-      setPhoneVerified(true)
-      saveVerifiedPhone(digits)
-      setVerifyLoading(false)
-      toast.success("Утас амжилттай баталгаажлаа!")
-      return
-    }
-
-    setVerifySessionId(result.sessionId!)
-    setVerifySmsUri(result.smsUri || null)
-    setVerifyInstruction(result.displayInstruction || null)
-    setVerifyExpiresAt(result.expiresAt || null)
-    setVerifyLoading(false)
-
-    // Start polling
-    if (result.sessionId && result.expiresAt) {
-      startPolling(result.sessionId, result.expiresAt)
-    }
-  }
-
-  async function validatePhone(value: string) {
-    const digits = value.replace(/\D/g, "")
-    if (digits.length !== 8) {
-      setPhoneError("Утасны дугаар заавал 8 оронтой байх ёстой")
-      if (phoneVerificationEnabled) setPhoneVerified(false)
-    } else if (!isValidPhone(digits)) {
-      setPhoneError("Зөв утасны дугаар оруулна уу (жишээ: 99112233)")
-      if (phoneVerificationEnabled) setPhoneVerified(false)
-    } else {
-      setPhoneError(null)
-      if (!phoneVerificationEnabled) {
-        setPhoneVerified(true)
-        return
-      }
-
-      // 1. Check localStorage first
-      const storedPhone = getStoredVerifiedPhone()
-      if (storedPhone === digits) {
-        setPhoneVerified(true)
-        return
-      } 
-      
-      // 2. Check Database via server action
-      const verified = await checkPhoneVerified(digits)
-      if (verified) {
-        setPhoneVerified(true)
-        saveVerifiedPhone(digits)
-        return
-      }
-
-      if (phoneVerified) {
-        setPhoneVerified(false)
-      }
-    }
-    // Stop any active polling
-    if (pollRef.current) clearInterval(pollRef.current)
-  }
 
   async function verifyLoyaltyCard() {
     if (!loyaltyCardNumber.trim()) {
@@ -272,11 +120,18 @@ export function CartClient({
   const hasInStock = items.some(i => !i.isPreOrder)
   const isMixedCart = hasPreOrder && hasInStock
 
-  // One-time delivery fee = highest delivery fee among cart items, fallback to global if all are 0
+  // Conditional delivery fee logic
+  // TODO: Шинэ Дархан, Хуучин Дархан зэрэг бүсчлэлээр хүргэлтийн үнэ ялгах бол энд `deliveryRegion` ашиглаж тооцно
+  // const regionFee = deliveryRegion === "Хуучин Дархан" ? 2000 : 0;
+  const baseDeliveryFee = totalPrice >= (deliveryThreshold ?? 50000) 
+    ? (deliveryFeeAboveThreshold ?? 5000) 
+    : (deliveryFeeBelowThreshold ?? 8000);
+
+  // Still allow products to have custom delivery fee if they are higher (e.g. large items)
   const maxItemFee = items.length > 0 ? Math.max(0, ...items.map(i => i.deliveryFee || 0)) : 0
-  const singleDeliveryFee = (wantsDelivery && !hasPreOrder)
-    ? (maxItemFee > 0 ? maxItemFee : globalDeliveryFee)
-    : 0
+  const finalDeliveryFee = Math.max(baseDeliveryFee, maxItemFee);
+
+  const singleDeliveryFee = (wantsDelivery && !hasPreOrder) ? finalDeliveryFee : 0
   
   // Base Grand Total
   const baseGrandTotal = totalPrice + singleDeliveryFee
@@ -332,7 +187,9 @@ export function CartClient({
       const customerName = formData.get("customerName") as string
       const phoneNumber = formData.get("phoneNumber") as string
       const accountNumber = ""
-      const deliveryAddress = formData.get("deliveryAddress") as string
+      const rawAddress = formData.get("deliveryAddress") as string
+      const deliveryRegionValue = formData.get("deliveryRegion") as string
+      const deliveryAddress = useSavedAddress ? rawAddress : `[${deliveryRegionValue}] ${rawAddress}`
       const saveAddress = formData.get("saveAddress") === "true"
       
       const deliveryNotes = formData.get("deliveryNotes") as string
@@ -466,29 +323,37 @@ export function CartClient({
 
         {/* Checkout Form */}
         <div className="lg:col-span-2">
-          <form
-            onSubmit={async (e) => {
-              e.preventDefault()
-              const fd = new FormData(e.currentTarget)
-              const phone = (fd.get("phoneNumber") as string || "").replace(/\D/g, "")
-              if (phone.length !== 8) {
-                setPhoneError("Утасны дугаар заавал 8 оронтой байх ёстой")
-                return
-              }
-              if (!isValidPhone(phone)) {
-                setPhoneError("Зөв утасны дугаар оруулна уу (жишээ: 99112233)")
-                return
-              }
-              if (!agreedToTerms) { setError("Нөхцөлүүдтэй зөвшөөрнө үү"); return }
-              await handleCheckout(fd)
-            }}
-            className="bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/40 p-6 sm:p-8 space-y-6 sticky top-24"
-          >
-            <h2 className="font-bold text-slate-900 text-lg">Захиалгын мэдээлэл</h2>
+          {!customer ? (
+            <div className="bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/40 p-6 sm:p-8 space-y-6 sticky top-24 text-center">
+              <div className="w-16 h-16 bg-blue-50 text-[#1B3561] rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertCircle className="w-8 h-8" />
+              </div>
+              <div>
+                <h2 className="font-bold text-slate-900 text-xl">Нэвтрэх шаардлагатай</h2>
+                <p className="text-slate-600 text-sm mt-2">Та захиалга үүсгэхийн тулд системд нэвтрэх эсвэл шинээр бүртгүүлэх шаардлагатай.</p>
+              </div>
+              
+              <div className="pt-4 space-y-3">
+                <Link href="/login?callbackUrl=/cart" className="flex items-center justify-center w-full bg-[#1B3561] hover:bg-blue-900 text-white py-3.5 rounded-xl font-bold transition-colors">
+                  Нэвтрэх
+                </Link>
+                <Link href="/register?callbackUrl=/cart" className="flex items-center justify-center w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-3.5 rounded-xl font-bold transition-colors">
+                  Бүртгүүлэх
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault()
+                const fd = new FormData(e.currentTarget)
+                if (!agreedToTerms) { setError("Нөхцөлүүдтэй зөвшөөрнө үү"); return }
+                await handleCheckout(fd)
+              }}
+              className="bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/40 p-6 sm:p-8 space-y-6 sticky top-24"
+            >
+              <h2 className="font-bold text-slate-900 text-lg">Захиалгын мэдээлэл</h2>
 
-
-
-            {customer ? (
               <div className="bg-[#1B3561]/5 border border-[#1B3561]/10 rounded-2xl p-4 flex items-center justify-between mb-4">
                 <div>
                   <p className="text-xs text-slate-500 font-semibold mb-1 uppercase tracking-wider">Захиалагч</p>
@@ -501,121 +366,6 @@ export function CartClient({
                 <input type="hidden" name="customerName" value={customer.name} />
                 <input type="hidden" name="phoneNumber" value={customer.phone} />
               </div>
-            ) : (
-              <>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Таны нэр</label>
-                  <input name="customerName" required placeholder="Жишээ: Отгоо" className="w-full border border-slate-200 bg-slate-50 rounded-xl px-4 py-2.5 text-sm focus:bg-white transition-colors focus:outline-none focus:ring-2 focus:ring-[#1B3561]/30" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Утасны дугаар</label>
-                  <div className="flex flex-col gap-2">
-                    <input
-                      name="phoneNumber"
-                      type="tel"
-                      inputMode="numeric"
-                      required
-                      maxLength={8}
-                      placeholder="Утасны дугаар"
-                      onChange={e => validatePhone(e.target.value)}
-                      className={`w-full border border-slate-200 bg-slate-50 rounded-xl px-4 py-2.5 text-sm focus:bg-white transition-colors focus:outline-none focus:ring-2 ${phoneVerified ? "bg-green-50 border-green-300 text-green-800" : phoneError ? "border-red-400 focus:ring-red-300" : "focus:ring-[#1B3561]/30"}`}
-                    />
-                    
-                    {phoneError && (
-                      <p className="text-xs text-red-500 flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" /> {phoneError}
-                      </p>
-                    )}
-                    {verifyError && (
-                      <p className="text-xs text-red-500 flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" /> {verifyError}
-                      </p>
-                    )}
-
-                    {!phoneVerified && phoneVerificationEnabled && (
-                      <button
-                        type="button"
-                        disabled={!!phoneError || verifyLoading || !!verifySessionId}
-                        onClick={() => {
-                          const phoneInput = document.querySelector('input[name="phoneNumber"]') as HTMLInputElement
-                          if (phoneInput) handleVerifyPhone(phoneInput.value)
-                        }}
-                        className="flex items-center justify-center gap-1.5 px-3 py-2.5 w-full bg-[#1B3561] text-white text-sm font-semibold rounded-lg hover:bg-blue-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        {verifyLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageSquare className="w-4 h-4" />}
-                        {verifyLoading ? "Уншиж байна..." : "Утасны дугаар баталгаажуулах"}
-                      </button>
-                    )}
-
-                    {phoneVerified && phoneVerificationEnabled && (
-                      <div className="flex items-center justify-center gap-1 text-green-600 text-sm font-semibold px-3 py-2.5 bg-green-50 border border-green-200 rounded-lg w-full">
-                        <CheckCircle2 className="w-4 h-4" /> Амжилттай баталгаажсан
-                      </div>
-                    )}
-                  </div>
-
-              {/* SMS Verification Instructions */}
-              {verifySessionId && !phoneVerified && (
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3 mt-2">
-                  <div className="flex items-start gap-2">
-                    <MessageSquare className="w-5 h-5 text-[#1B3561] shrink-0 mt-0.5" />
-                    <div className="space-y-1.5">
-                      <p className="text-sm font-semibold text-[#1B3561]">SMS баталгаажуулалт</p>
-                      {verifyInstruction && (
-                        <p className="text-xs text-blue-700 leading-relaxed">{verifyInstruction}</p>
-                      )}
-                      <p className="text-xs text-[#F26522]">
-                        Доорх товчийг дарж SMS мессежээ илгээнэ үү. Илгээсний дараа автоматаар баталгаажна.
-                      </p>
-                    </div>
-                  </div>
-
-                  {verifySmsUri && (
-                    <a
-                      href={verifySmsUri}
-                      className="flex items-center justify-center gap-2 w-full py-3 bg-[#1B3561] text-white rounded-lg font-semibold text-sm hover:bg-blue-900 transition-colors shadow-sm"
-                    >
-                      <MessageSquare className="w-4 h-4" />
-                      📱 SMS илгээх (144773)
-                    </a>
-                  )}
-
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 text-xs text-[#1B3561]">
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      SMS хүлээж байна...
-                    </div>
-                    <button
-                      type="button"
-                      disabled={verifyLoading}
-                      onClick={async () => {
-                        if(!verifySessionId) return;
-                        setVerifyLoading(true);
-                        try {
-                          const res = await fetch(`/api/verify-mn/status/${verifySessionId}`, { cache: "no-store" });
-                          const data = await res.json();
-                          if (data.status === "VERIFIED") {
-                            setPhoneVerified(true);
-                            setVerifySessionId(null);
-                            const phoneInput = document.querySelector('input[name="phoneNumber"]') as HTMLInputElement;
-                            if (phoneInput) saveVerifiedPhone(phoneInput.value.replace(/\D/g, ""));
-                            toast.success("Утас амжилттай баталгаажлаа!")
-                          } else {
-                            toast.info("Баталгаажаагүй байна. SMS илгээсэн бол түр хүлээнэ үү.")
-                          }
-                        } catch {}
-                        setVerifyLoading(false);
-                      }}
-                      className="text-xs bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg font-medium hover:bg-blue-200 transition-colors"
-                    >
-                      Гараар шалгах
-                    </button>
-                  </div>
-                </div>
-              )}
-                </div>
-              </>
-            )}
             {/* Delivery Form */}
             {!hasPreOrder ? (
               <div className="space-y-3">
@@ -688,9 +438,32 @@ export function CartClient({
                         </div>
                       </div>
                       <input type="hidden" name="deliveryAddress" value={customer.address} />
+                      <input type="hidden" name="deliveryRegion" value={deliveryRegion} />
                     </div>
                   ) : (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="text-sm font-medium text-slate-700 block">Бүсчлэл сонгох</label>
+                          <button
+                            type="button"
+                            onClick={() => setIsMapModalOpen(true)}
+                            className="text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-full flex items-center gap-1 transition-colors"
+                          >
+                            🗺️ Газрын зургаар харах
+                          </button>
+                        </div>
+                        <div className="flex gap-4">
+                          <label className="flex items-center gap-2 cursor-pointer bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg">
+                            <input type="radio" name="deliveryRegion" value="Шинэ Дархан" checked={deliveryRegion === "Шинэ Дархан"} onChange={e => setDeliveryRegion(e.target.value)} className="accent-[#1B3561] w-4 h-4" />
+                            <span className="text-sm font-medium text-slate-700">Шинэ Дархан</span>
+                          </label>
+                          <label className="flex items-center gap-2 cursor-pointer bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg">
+                            <input type="radio" name="deliveryRegion" value="Хуучин Дархан" checked={deliveryRegion === "Хуучин Дархан"} onChange={e => setDeliveryRegion(e.target.value)} className="accent-[#1B3561] w-4 h-4" />
+                            <span className="text-sm font-medium text-slate-700">Хуучин Дархан</span>
+                          </label>
+                        </div>
+                      </div>
                       <textarea name="deliveryAddress" required={wantsDelivery} rows={2}
                         placeholder="Дүүрэг, Хороо, Байр, Тоот..."
                         className="w-full border border-slate-200 bg-slate-50 rounded-xl px-4 py-2.5 text-sm focus:bg-white transition-colors focus:outline-none focus:ring-2 focus:ring-[#1B3561]/30 resize-none shadow-sm" />
@@ -945,7 +718,7 @@ export function CartClient({
 
             <button
               type="submit"
-              disabled={submitting || !agreedToTerms || !!phoneError}
+              disabled={submitting || !agreedToTerms}
               className="w-full bg-[#F26522] hover:bg-[#E85B1C] text-white py-4 rounded-2xl font-bold text-[15px] shadow-lg shadow-orange-500/20 active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {submitting ? (
@@ -960,17 +733,15 @@ export function CartClient({
               )}
             </button>
 
-            {!customer && (
-              <p className="text-center text-xs text-slate-500">
-                Бүртгэлтэй хэрэглэгч?{" "}
-                <Link href="/register" className="text-[#1B3561] font-medium hover:underline">
-                  Бүртгүүлэх
-                </Link>
-              </p>
-            )}
-          </form>
+            </form>
+          )}
         </div>
       </div>
+      <RegionMapModal 
+        isOpen={isMapModalOpen} 
+        onClose={() => setIsMapModalOpen(false)} 
+        defaultTab={deliveryRegion as "Шинэ Дархан" | "Хуучин Дархан"} 
+      />
     </div>
   )
 }

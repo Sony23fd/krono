@@ -6,6 +6,8 @@ import { User, Phone, LogOut, Loader2, Package, Shield, RefreshCcw, CheckCircle2
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import Link from "next/link"
+import { LoyaltySection } from "@/components/storefront/LoyaltySection"
+import { RegionMapModal } from "@/components/storefront/RegionMapModal"
 
 export default function ProfilePage() {
   const { customer, login, logout, isReady, isLoggingIn } = useCustomerAuth()
@@ -125,13 +127,27 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false)
   const [editName, setEditName] = useState("")
   const [editAddress, setEditAddress] = useState("")
+  const [editRegion, setEditRegion] = useState("Шинэ Дархан")
+  const [isMapModalOpen, setIsMapModalOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const { updateProfile } = useCustomerAuth()
 
   // Set default values when entering edit mode
   const startEditing = () => {
     setEditName(customer?.name || "")
-    setEditAddress(customer?.address || "")
+    if (customer?.address) {
+      const match = customer.address.match(/^\[(.*?)\]\s*(.*)$/)
+      if (match) {
+        setEditRegion(match[1])
+        setEditAddress(match[2])
+      } else {
+        setEditRegion("Шинэ Дархан")
+        setEditAddress(customer.address)
+      }
+    } else {
+      setEditRegion("Шинэ Дархан")
+      setEditAddress("")
+    }
     setIsEditing(true)
   }
 
@@ -139,7 +155,8 @@ export default function ProfilePage() {
     e.preventDefault()
     setIsSaving(true)
     try {
-      await updateProfile(editName, editAddress)
+      const fullAddress = `[${editRegion}] ${editAddress}`
+      await updateProfile(editName, fullAddress)
       toast.success("Профайл амжилттай шинэчлэгдлээ!")
       setIsEditing(false)
     } catch (error) {
@@ -207,7 +224,29 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">Хүргэлтийн хаяг</label>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-semibold text-slate-700">Бүсчлэл сонгох</label>
+                      <button
+                        type="button"
+                        onClick={() => setIsMapModalOpen(true)}
+                        className="text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-full flex items-center gap-1 transition-colors"
+                      >
+                        🗺️ Газрын зургаар харах
+                      </button>
+                    </div>
+                    <div className="flex gap-4 mb-2">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="editRegion" value="Шинэ Дархан" checked={editRegion === "Шинэ Дархан"} onChange={e => setEditRegion(e.target.value)} className="accent-[#1B3561] w-4 h-4" />
+                        <span className="text-sm font-medium text-slate-700">Шинэ Дархан</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="editRegion" value="Хуучин Дархан" checked={editRegion === "Хуучин Дархан"} onChange={e => setEditRegion(e.target.value)} className="accent-[#1B3561] w-4 h-4" />
+                        <span className="text-sm font-medium text-slate-700">Хуучин Дархан</span>
+                      </label>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">Дэлгэрэнгүй хаяг</label>
                     <textarea 
                       value={editAddress}
                       onChange={(e) => setEditAddress(e.target.value)}
@@ -270,6 +309,11 @@ export default function ProfilePage() {
             )}
           </div>
         </div>
+        <RegionMapModal 
+          isOpen={isMapModalOpen} 
+          onClose={() => setIsMapModalOpen(false)} 
+          defaultTab={editRegion as "Шинэ Дархан" | "Хуучин Дархан"} 
+        />
       </div>
     )
   }

@@ -17,7 +17,10 @@ import Link from "next/link"
 
 export default async function BannersPage({ searchParams }: { searchParams: Promise<{ type?: string }> }) {
   const params = await searchParams;
-  const currentType = params.type === "THIN" ? "THIN" : "HERO";
+  let currentType = "HERO";
+  if (params.type === "THIN") currentType = "THIN";
+  else if (params.type === "POPUP") currentType = "POPUP";
+  
   const { banners, success } = await getBanners(currentType);
 
   return (
@@ -126,6 +129,9 @@ export default async function BannersPage({ searchParams }: { searchParams: Prom
         </Link>
         <Link href="?type=THIN" className={`px-4 py-2 border-b-2 font-medium text-sm transition-colors ${currentType === 'THIN' ? 'border-[#4F46E5] text-[#4F46E5]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
           Нарийн баннер
+        </Link>
+        <Link href="?type=POPUP" className={`px-4 py-2 border-b-2 font-medium text-sm transition-colors ${currentType === 'POPUP' ? 'border-[#4F46E5] text-[#4F46E5]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
+          Попап баннер
         </Link>
       </div>
 

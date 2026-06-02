@@ -47,6 +47,7 @@ export async function checkout(input: CheckoutInput) {
 
   // ──── 2. INPUT VALIDATION ────
   if (!input.items.length) return { success: false, error: "Сагс хоосон байна" }
+  if (!input.userId) return { success: false, error: "Та системд нэвтэрч байж захиалга үүсгэх боломжтой" }
   if (!input.customerName.trim()) return { success: false, error: "Нэрээ оруулна уу" }
   const phone = input.phoneNumber.replace(/\D/g, "")
   if (phone.length !== 8) return { success: false, error: "Утасны дугаар 8 оронтой байх ёстой" }
@@ -131,8 +132,25 @@ export async function checkout(input: CheckoutInput) {
       // Хүргэлтийн төлбөр тохиргооноос авах
       let deliveryFee = 0
       if (input.wantsDelivery) {
-        const setting = await tx.shopSettings.findUnique({ where: { key: "delivery_fee" } })
-        deliveryFee = Number(setting?.value || 6000)
+        const settings = await tx.shopSettings.findMany({
+          where: { key: { in: ["delivery_threshold", "delivery_fee_below_threshold", "delivery_fee_above_threshold"] } }
+        })
+        const threshold = Number(settings.find(s => s.key === "delivery_threshold")?.value || 50000)
+        const feeBelow = Number(settings.find(s => s.key === "delivery_fee_below_threshold")?.value || 8000)
+        const feeAbove = Number(settings.find(s => s.key === "delivery_fee_above_threshold")?.value || 5000)
+
+        const baseDeliveryFee = subtotal >= threshold ? feeAbove : feeBelow;
+
+        // Custom delivery fee from items (e.g. large items)
+        let maxItemFee = 0;
+        for (const item of snapshots) {
+          const product = await tx.product.findUnique({ where: { id: item.productId } })
+          // @ts-ignore - Assuming product model might have custom fields or we fetch from schema
+          const itemFee = Number((product as any)?.deliveryFee || 0)
+          if (itemFee > maxItemFee) maxItemFee = itemFee
+        }
+
+        deliveryFee = Math.max(baseDeliveryFee, maxItemFee)
       }
 
       let totalAmount = subtotal + deliveryFee
