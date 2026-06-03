@@ -322,3 +322,55 @@ export async function getOrderById(orderId: string) {
     return { success: false, error: error.message }
   }
 }
+
+// ═══════════════════════════════════════════════════
+// МЭДЭГДЛҮҮД АВАХ
+// ═══════════════════════════════════════════════════
+
+export async function getRecentNotifications() {
+  try {
+    const recentOrders = await db.order.findMany({
+      where: {
+        orderStatus: { in: ["PENDING", "PAID"] },
+        createdAt: { gte: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) } // last 3 days
+      },
+      include: { items: true },
+      orderBy: { createdAt: "desc" },
+      take: 20
+    })
+
+    const notifications = recentOrders.map(order => {
+      if (order.orderStatus === "PENDING") {
+        return {
+          type: "new-order",
+          transactionRef: order.idempotencyKey,
+          customerName: order.customerName,
+          customerPhone: order.customerPhone,
+          items: order.items.map(item => ({
+            orderId: item.orderId,
+            productName: item.productName,
+            quantity: item.quantity,
+            totalAmount: Number(item.price) * item.quantity,
+            batchId: item.id
+          })),
+          totalAmount: Number(order.totalAmount),
+          wantsDelivery: order.wantsDelivery,
+          createdAt: order.createdAt.toISOString()
+        }
+      } else {
+        return {
+          type: "order-confirmed",
+          transactionRef: order.idempotencyKey,
+          name: order.customerName,
+          phone: order.customerPhone,
+          totalAmount: Number(order.totalAmount),
+          createdAt: order.createdAt.toISOString()
+        }
+      }
+    })
+
+    return { success: true, notifications }
+  } catch (error: any) {
+    return { success: false, notifications: [] }
+  }
+}

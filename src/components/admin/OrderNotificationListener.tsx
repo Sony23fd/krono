@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react"
 import { Bell, CheckCircle2, Truck, User } from "lucide-react"
 import Link from "next/link"
+import { getRecentNotifications } from "@/app/actions/order-actions"
 
 interface OrderItem {
   orderId: string
@@ -76,6 +77,13 @@ export function OrderNotificationListener() {
   }, [])
 
   useEffect(() => {
+    getRecentNotifications().then(res => {
+      if (res.success && res.notifications) {
+        setNotifications(res.notifications as OrderNotification[])
+        // If we want the bell to show unread count for existing pending orders, keep seenCount 0.
+      }
+    })
+
     const es = new EventSource("/api/notifications/stream")
     es.onmessage = (e) => {
       try {
