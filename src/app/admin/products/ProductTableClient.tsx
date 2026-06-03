@@ -83,7 +83,10 @@ export function ProductTableClient({ products, categories, search, currentPage =
                       />
                     </td>
                     <td className="px-3 py-4 text-center text-[11px] text-slate-400 font-medium">{serialNumber}</td>
-                    <td className="px-4 py-4 font-mono text-[11px] text-slate-400">{product.sku}</td>
+                    <td className="px-4 py-4 font-mono text-[11px] text-slate-400">
+                      <p>SKU: {product.sku}</p>
+                      {product.barcode && <p className="text-[10px] text-slate-300 mt-0.5">BC: {product.barcode}</p>}
+                    </td>
                     <td className="px-4 py-4">
                       <div className="flex flex-col gap-1">
                         <span className="font-semibold text-slate-900 text-[13px] leading-snug">{product.name}</span>
@@ -195,7 +198,10 @@ export function ProductTableClient({ products, categories, search, currentPage =
                       <span className="text-slate-400 font-normal mr-1.5">{serialNumber}.</span>
                       {product.name}
                     </h3>
-                    <p className="text-[11px] text-slate-400 font-mono mt-0.5">SKU: {product.sku}</p>
+                    <div className="flex gap-2 text-[11px] text-slate-400 font-mono mt-0.5">
+                      <p>SKU: {product.sku}</p>
+                      {product.barcode && <p>• BC: {product.barcode}</p>}
+                    </div>
                     <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                       {product.category && (
                         <span className="text-[10px] font-medium bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">

@@ -25,7 +25,7 @@ conn.on('ready', () => {
     git pull origin main &&
     npm install &&
     npx prisma generate &&
-    npx prisma db push &&
+    npx prisma db push --accept-data-loss &&
     npm run build &&
     pm2 restart all
   `;

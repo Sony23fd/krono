@@ -190,12 +190,12 @@ export function OrderNotificationListener() {
                         <p className="text-xs font-bold text-green-600 mt-0.5">₮{Number(n.totalAmount).toLocaleString()}</p>
                       </Link>
                     ) : n.type === "system-alert" ? (
-                      <div className="px-4 py-3">
+                      <Link href="/admin/products?status=DRAFT" onClick={() => setVisible(false)} className="block px-4 py-3">
                         <p className="text-sm font-semibold text-slate-900 leading-tight">Системийн мэдээлэл</p>
                         <p className="text-xs font-medium text-slate-700 mt-0.5">{n.message}</p>
                         {n.details && <p className="text-[11px] text-slate-500 mt-0.5">{n.details}</p>}
                         <p className="text-[10px] text-slate-400 mt-1">{formatTime(n.createdAt)}</p>
-                      </div>
+                      </Link>
                     ) : (
                       <Link href="/admin/orders" onClick={() => setVisible(false)} className="block px-4 py-3">
                         <div className="flex justify-between items-start mb-1">
