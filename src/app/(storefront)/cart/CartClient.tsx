@@ -680,10 +680,12 @@ export function CartClient({
                 <div className="flex flex-wrap gap-4 pl-7">
                   {termsOfService && (
                     <Dialog>
-                      <DialogTrigger asChild>
-                        <button type="button" className="text-sm font-semibold text-[#1B3561] hover:text-[#F26522] underline underline-offset-4 transition-colors">
-                          Үйлчилгээний нөхцөл
-                        </button>
+                      <DialogTrigger 
+                        render={
+                          <button type="button" className="text-sm font-semibold text-[#1B3561] hover:text-[#F26522] underline underline-offset-4 transition-colors" />
+                        }
+                      >
+                        Үйлчилгээний нөхцөл
                       </DialogTrigger>
                       <DialogContent className="max-h-[85vh] overflow-y-auto max-w-2xl">
                         <DialogHeader>
@@ -697,10 +699,12 @@ export function CartClient({
                   )}
                   {wantsDelivery && deliveryTerms && (
                     <Dialog>
-                      <DialogTrigger asChild>
-                        <button type="button" className="text-sm font-semibold text-[#1B3561] hover:text-[#F26522] underline underline-offset-4 transition-colors">
-                          Хүргэлтийн нөхцөл
-                        </button>
+                      <DialogTrigger 
+                        render={
+                          <button type="button" className="text-sm font-semibold text-[#1B3561] hover:text-[#F26522] underline underline-offset-4 transition-colors" />
+                        }
+                      >
+                        Хүргэлтийн нөхцөл
                       </DialogTrigger>
                       <DialogContent className="max-h-[85vh] overflow-y-auto max-w-2xl">
                         <DialogHeader>
