@@ -5,6 +5,7 @@ import { Edit2, Trash2, GripVertical, ImagePlus } from "lucide-react"
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd"
 import { updateCategoryOrder } from "@/app/actions/category-actions"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { CategoryExcelImport } from "@/components/admin/CategoryExcelImport"
 import { CategoryProductsSheet } from "./CategoryProductsSheet"
 import { GenericImageUploader } from "@/components/admin/GenericImageUploader"
@@ -105,12 +106,14 @@ export function CategoryTableClient({ initialCategories }: { initialCategories: 
                   </td>
                   <td className="px-6 py-4 font-medium text-slate-900">
                     {cat.displayName ? (
-                      <div className="flex flex-col">
-                        <span>{cat.displayName}</span>
-                        <span className="text-xs text-slate-400 font-normal mt-0.5">({cat.name})</span>
-                      </div>
+                      <Link href={`/admin/products?category=${cat.id}`} className="flex flex-col hover:text-[#001f3f] transition-colors group">
+                        <span className="group-hover:underline">{cat.displayName}</span>
+                        <span className="text-xs text-slate-400 font-normal mt-0.5 group-hover:text-slate-600">({cat.name})</span>
+                      </Link>
                     ) : (
-                      <span>{cat.name}</span>
+                      <Link href={`/admin/products?category=${cat.id}`} className="hover:text-[#001f3f] hover:underline transition-colors block">
+                        {cat.name}
+                      </Link>
                     )}
                   </td>
                   <td className="px-6 py-4 text-center">
@@ -170,17 +173,21 @@ export function CategoryTableClient({ initialCategories }: { initialCategories: 
                           </td>
                           <td className="px-6 py-4 font-medium text-slate-900">
                             {cat.displayName ? (
-                              <div className="flex flex-col">
-                                <span>{cat.displayName}</span>
-                                <span className="text-xs text-slate-400 font-normal mt-0.5">({cat.name})</span>
-                              </div>
+                              <Link href={`/admin/products?category=${cat.id}`} className="flex flex-col hover:text-[#001f3f] transition-colors group w-fit">
+                                <span className="group-hover:underline">{cat.displayName}</span>
+                                <span className="text-xs text-slate-400 font-normal mt-0.5 group-hover:text-slate-600">({cat.name})</span>
+                              </Link>
                             ) : (
-                              <span>{cat.name}</span>
+                              <Link href={`/admin/products?category=${cat.id}`} className="hover:text-[#001f3f] hover:underline transition-colors block w-fit">
+                                {cat.name}
+                              </Link>
                             )}
                             {cat.parentId && (
                               <div className="text-xs text-indigo-500 font-normal mt-1 flex items-center gap-1">
                                 <span>↳ Дэд ангилал:</span>
-                                <span className="font-medium">{categories.find(c => c.id === cat.parentId)?.name || "Тодорхойгүй"}</span>
+                                <Link href={`/admin/products?category=${cat.parentId}`} className="font-medium hover:underline hover:text-indigo-700">
+                                  {categories.find(c => c.id === cat.parentId)?.name || "Тодорхойгүй"}
+                                </Link>
                               </div>
                             )}
                           </td>
