@@ -19,9 +19,14 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
   let revenueData: { date: string, amount: number }[] = [];
   let topProducts: { name: string, sales: number }[] = [];
 
+  let aov = 0;
+  let viewsOverTime: { date: string, count: number }[] = [];
+  let categoryStats: { name: string, value: number }[] = [];
+  let topSearches: { keyword: string, count: number }[] = [];
+
   try {
     const validOrderFilter: any = {
-      orderStatus: { notIn: ["CANCELLED", "REFUNDED"] },
+      orderStatus: { in: ["PAID", "PROCESSING", "SHIPPED", "DELIVERED"] },
     };
     
     if (days > 0) {
@@ -46,13 +51,14 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
     successfulOrdersCount = confirmedCount;
     pendingOrdersCount = pendingCount;
     activeProductsCount = activeCount;
+    aov = successfulOrdersCount > 0 ? Math.round(totalRevenue / successfulOrdersCount) : 0;
 
     // Chart 1: Revenue last 7 days
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const recentOrders = await db.order.findMany({
       where: { 
         createdAt: { gte: sevenDaysAgo },
-        orderStatus: { notIn: ["CANCELLED", "REFUNDED"] },
+        orderStatus: { in: ["PAID", "PROCESSING", "SHIPPED", "DELIVERED"] },
       },
       select: { createdAt: true, totalAmount: true }
     });
@@ -77,15 +83,15 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
       amount: revenueByDate[date]
     }));
 
-    // Chart 2: Top selling products (by OrderItem)
+    // Chart 2: Top selling products (by Revenue)
     const topItems = await db.orderItem.groupBy({
       by: ['productId'],
       where: {
-        order: { orderStatus: { notIn: ["CANCELLED", "REFUNDED"] } },
+        order: { orderStatus: { in: ["PAID", "PROCESSING", "SHIPPED", "DELIVERED"] } },
         ...(days > 0 && { order: { createdAt: { gte: new Date(now.getTime() - days * 24 * 60 * 60 * 1000) } } }),
       },
-      _sum: { quantity: true },
-      orderBy: { _sum: { quantity: 'desc' } },
+      _sum: { totalPrice: true },
+      orderBy: { _sum: { totalPrice: 'desc' } },
       take: 10,
     });
 
@@ -101,10 +107,61 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
         const name = product?.name || "Нэргүй";
         return {
           name: name.length > 20 ? name.substring(0, 20) + "..." : name,
-          sales: item._sum.quantity || 0,
+          sales: Number(item._sum.totalPrice || 0),
         };
       });
     }
+
+    // Traffic Data (Views Over Time)
+    const visitorLogs = await db.visitorLog.findMany({
+      where: { createdAt: { gte: sevenDaysAgo } },
+      select: { createdAt: true }
+    });
+    
+    const viewsByDate: Record<string, number> = {};
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      viewsByDate[d.toISOString().split('T')[0]] = 0;
+    }
+    
+    visitorLogs.forEach(log => {
+      const dateStr = log.createdAt.toISOString().split('T')[0];
+      if (viewsByDate[dateStr] !== undefined) {
+        viewsByDate[dateStr]++;
+      }
+    });
+
+    viewsOverTime = Object.keys(viewsByDate).map(date => ({
+      date: date.substring(5),
+      count: viewsByDate[date]
+    }));
+
+    // Category Stats (Pie Chart)
+    const allOrderItems = await db.orderItem.findMany({
+      where: {
+        order: { orderStatus: { in: ["PAID", "PROCESSING", "SHIPPED", "DELIVERED"] } },
+        ...(days > 0 && { order: { createdAt: { gte: new Date(now.getTime() - days * 24 * 60 * 60 * 1000) } } }),
+      },
+      select: { totalPrice: true, product: { select: { category: { select: { name: true } } } } }
+    });
+
+    const catStatsMap: Record<string, number> = {};
+    allOrderItems.forEach(item => {
+      const catName = item.product?.category?.name || "Бусад";
+      catStatsMap[catName] = (catStatsMap[catName] || 0) + Number(item.totalPrice);
+    });
+
+    categoryStats = Object.entries(catStatsMap)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5); // Top 5 categories
+
+    // Top Searched Keywords
+    topSearches = await db.searchKeyword.findMany({
+      orderBy: { count: 'desc' },
+      take: 20
+    });
+
   } catch (error) {
     console.error("Dashboard data fetch error:", error);
   }
@@ -137,7 +194,7 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
       </div>
 
       {/* Stat Cards */}
-      <div className="grid gap-4 md:gap-6 grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:gap-6 grid-cols-2 lg:grid-cols-5">
         {/* Revenue */}
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 group hover:shadow-md transition-shadow relative overflow-hidden">
           <div className="flex items-center justify-between mb-3">
@@ -185,13 +242,26 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
           <p className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">{activeProductsCount}</p>
           <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-[#001f3f]/5 rounded-full blur-2xl"></div>
         </div>
+
+        {/* AOV */}
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 group hover:shadow-md transition-shadow relative overflow-hidden">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Дундаж сагс</span>
+            <div className="p-2 bg-indigo-500/10 rounded-xl group-hover:scale-110 transition-transform">
+              <ShoppingCart className="h-4 w-4 text-indigo-500" />
+            </div>
+          </div>
+          <p className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">₮{aov.toLocaleString()}</p>
+          <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-indigo-500/5 rounded-full blur-2xl"></div>
+        </div>
       </div>
 
       <DashboardCharts 
         revenueData={revenueData} 
         topProducts={topProducts} 
-        viewsOverTime={[]} 
-        categoryStats={[]}
+        viewsOverTime={viewsOverTime} 
+        categoryStats={categoryStats}
+        topSearches={topSearches}
       />
     </div>
   )

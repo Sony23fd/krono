@@ -11,6 +11,7 @@ interface ChartData {
   topProducts: { name: string, sales: number }[];
   viewsOverTime?: { date: string, count: number }[];
   categoryStats?: { name: string, value: number }[];
+  topSearches?: { keyword: string, count: number }[];
 }
 
 const COLORS = [
@@ -26,7 +27,7 @@ const COLORS = [
   '#14b8a6', // Cyan
 ];
 
-export function DashboardCharts({ revenueData, topProducts, viewsOverTime = [], categoryStats = [] }: ChartData) {
+export function DashboardCharts({ revenueData, topProducts, viewsOverTime = [], categoryStats = [], topSearches = [] }: ChartData) {
   const [mounted, setMounted] = useState(false)
 
   // Only render on the client to avoid SSR hydration mismatch
@@ -188,6 +189,25 @@ export function DashboardCharts({ revenueData, topProducts, viewsOverTime = [], 
               <div className="h-full flex items-center justify-center text-slate-400 font-medium">Шүүлтүүрт тохирох дата алга...</div>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Top Searches */}
+      <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+        <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+          Хамгийн их хайгдсан үгс (Топ 20)
+        </h3>
+        <div className="flex flex-wrap gap-3">
+          {topSearches && topSearches.length > 0 ? (
+            topSearches.map((search, i) => (
+              <div key={i} className="flex items-center gap-2 px-4 py-2 bg-slate-50 border border-slate-200 rounded-full hover:border-indigo-300 transition-colors">
+                <span className="font-semibold text-slate-700">{search.keyword}</span>
+                <span className="text-xs bg-indigo-100 text-indigo-700 py-0.5 px-2 rounded-full font-bold">{search.count}</span>
+              </div>
+            ))
+          ) : (
+            <div className="text-slate-400 font-medium py-4 text-sm w-full text-center">Хайлт хийгдээгүй байна...</div>
+          )}
         </div>
       </div>
     </div>

@@ -411,3 +411,14 @@ enum BannerTextSize {
   LARGE
   XLARGE
 }
+
+model SearchKeyword {
+  id        String   @id @default(cuid())
+  keyword   String   @unique
+  count     Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([count])
+  @@index([keyword])
+}

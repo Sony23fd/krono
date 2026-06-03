@@ -10,6 +10,19 @@ export const dynamic = "force-dynamic"
 export default async function ShopPage({ searchParams }: { searchParams: Promise<{ q?: string, category?: string, sort?: string, page?: string, sale?: string }> }) {
   const params = await searchParams
   const query = params.q ? decodeURIComponent(params.q.trim()) : ""
+  
+  if (query && (!params.page || params.page === "1")) {
+    try {
+      const db = (await import("@/lib/db")).db;
+      await db.searchKeyword.upsert({
+        where: { keyword: query.toLowerCase() },
+        update: { count: { increment: 1 } },
+        create: { keyword: query.toLowerCase(), count: 1 }
+      });
+    } catch (error) {
+      console.error("Failed to log search keyword:", error);
+    }
+  }
   const rawCategorySlug = params.category?.trim() || "all"
   const categorySlug = rawCategorySlug !== "all" ? decodeURIComponent(rawCategorySlug) : "all"
   const sort = params.sort || "newest"
