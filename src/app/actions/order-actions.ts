@@ -350,7 +350,7 @@ export async function getRecentNotifications() {
             orderId: item.orderId,
             productName: item.productName,
             quantity: item.quantity,
-            totalAmount: Number(item.price) * item.quantity,
+            totalAmount: Number(item.totalPrice),
             batchId: item.id
           })),
           totalAmount: Number(order.totalAmount),
