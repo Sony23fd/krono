@@ -13,7 +13,13 @@ import { isValidPhone } from "@/lib/customer-utils"
 import { useCustomerAuth } from "@/context/CustomerAuthContext"
 
 import { RegionMapModal } from "@/components/storefront/RegionMapModal"
-
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 export function CartClient({ 
   termsOfService, 
   deliveryTerms, 
@@ -663,21 +669,50 @@ export function CartClient({
 
             {/* Combined Terms — ABOVE total */}
             {(termsOfService || (wantsDelivery && deliveryTerms)) && (
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2">
-                {termsOfService && (
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    <strong>Үйлчилгээний нөхцөл:</strong> {termsOfService}
-                  </p>
-                )}
-                {wantsDelivery && deliveryTerms && (
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    <strong>Хүргэлтийн нөхцөл:</strong> {deliveryTerms}
-                  </p>
-                )}
-                <label className="flex items-center gap-2 cursor-pointer pt-1">
-                  <input type="checkbox" checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)} className="accent-[#F26522]" />
-                  <span className="text-xs text-slate-700 font-medium">Дээрх нөхцөлүүдтэй танилцаж, зөвшөөрч байна</span>
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-3">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input type="checkbox" checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)} className="accent-[#F26522] w-4 h-4 shrink-0 mt-0.5" />
+                  <span className="text-sm text-slate-700 font-medium flex-1">
+                    Би доорх нөхцөлүүдийг уншиж танилцсан бөгөөд зөвшөөрч байна:
+                  </span>
                 </label>
+                
+                <div className="flex flex-wrap gap-4 pl-7">
+                  {termsOfService && (
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <button type="button" className="text-sm font-semibold text-[#1B3561] hover:text-[#F26522] underline underline-offset-4 transition-colors">
+                          Үйлчилгээний нөхцөл
+                        </button>
+                      </DialogTrigger>
+                      <DialogContent className="max-h-[85vh] overflow-y-auto max-w-2xl">
+                        <DialogHeader>
+                          <DialogTitle className="text-xl text-[#1B3561]">Үйлчилгээний нөхцөл</DialogTitle>
+                        </DialogHeader>
+                        <div className="text-sm text-slate-700 whitespace-pre-wrap mt-4 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-100">
+                          {termsOfService}
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  )}
+                  {wantsDelivery && deliveryTerms && (
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <button type="button" className="text-sm font-semibold text-[#1B3561] hover:text-[#F26522] underline underline-offset-4 transition-colors">
+                          Хүргэлтийн нөхцөл
+                        </button>
+                      </DialogTrigger>
+                      <DialogContent className="max-h-[85vh] overflow-y-auto max-w-2xl">
+                        <DialogHeader>
+                          <DialogTitle className="text-xl text-[#1B3561]">Хүргэлтийн нөхцөл</DialogTitle>
+                        </DialogHeader>
+                        <div className="text-sm text-slate-700 whitespace-pre-wrap mt-4 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-100">
+                          {deliveryTerms}
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  )}
+                </div>
               </div>
             )}
 
