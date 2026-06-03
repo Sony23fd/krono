@@ -175,6 +175,14 @@ export function GeneralSettingsClient({ initialSettings, userRole }: Props) {
       // Save loyalty settings
       await fetch("/api/admin/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "loyalty_discount_percent", value: loyaltyDiscountPercent }) })
 
+      // Save maps
+      if (mapNewDarkhan) {
+        await fetch("/api/admin/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "map_new_darkhan", value: mapNewDarkhan }) })
+      }
+      if (mapOldDarkhan) {
+        await fetch("/api/admin/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "map_old_darkhan", value: mapOldDarkhan }) })
+      }
+
       toast.success("Тохиргоонууд хадгалагдлаа")
       router.refresh()
     } catch (error: any) {
