@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server"
-import { orderEmitter, NewOrderEvent, OrderConfirmedEvent, DeliveryRequestEvent } from "@/lib/orderEvents"
+import { orderEmitter, NewOrderEvent, OrderConfirmedEvent, DeliveryRequestEvent, SystemAlertEvent } from "@/lib/orderEvents"
 
 export const dynamic = "force-dynamic"
 
@@ -26,6 +26,11 @@ export async function GET(request: NextRequest) {
         controller.enqueue(encoder.encode(`data: ${data}\n\n`))
       }
 
+      function onSystemAlert(event: SystemAlertEvent) {
+        const data = JSON.stringify({ type: "system-alert", ...event })
+        controller.enqueue(encoder.encode(`data: ${data}\n\n`))
+      }
+
       // Heartbeat every 25 seconds to keep connection alive
       const heartbeat = setInterval(() => {
         try {
@@ -38,6 +43,7 @@ export async function GET(request: NextRequest) {
       orderEmitter.on("new-order", onNewOrder)
       orderEmitter.on("order-confirmed", onOrderConfirmed)
       orderEmitter.on("delivery-request", onDeliveryRequest)
+      orderEmitter.on("system-alert", onSystemAlert)
 
       // Cleanup when client disconnects
       request.signal.addEventListener("abort", () => {
@@ -45,6 +51,7 @@ export async function GET(request: NextRequest) {
         orderEmitter.off("new-order", onNewOrder)
         orderEmitter.off("order-confirmed", onOrderConfirmed)
         orderEmitter.off("delivery-request", onDeliveryRequest)
+        orderEmitter.off("system-alert", onSystemAlert)
         try { controller.close() } catch {}
       })
     }

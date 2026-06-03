@@ -1,86 +1,138 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db'; // Prisma client
 import { Prisma } from '@prisma/client';
+import { orderEmitter } from '@/lib/orderEvents'; // For notifications
 
 export async function POST(request: Request) {
   try {
-    // 1. Аюулгүй байдлын шалгалт (Bearer Token)
-    // process.env.POS_SYNC_API_KEY эсвэл SYNC_SECRET_TOKEN ашиглаж болно.
+    // 1. Аюулгүй байдлын шалгалт
     const authHeader = request.headers.get('authorization');
     const secretToken = process.env.SYNC_SECRET_TOKEN || process.env.POS_SYNC_API_KEY;
 
     if (!secretToken) {
       console.error('POS Sync Token тохируулагдаагүй байна (.env шалгана уу)');
-      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+      return NextResponse.json({ success: false, error: 'Server configuration error' }, { status: 500 });
     }
 
     if (!authHeader || !authHeader.startsWith('Bearer ') || authHeader.split(' ')[1] !== secretToken) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    // 2. Payload датаг унших
+    // 2. Payload датаг унших: { items: [{ itemId, name, barcode, price, stock }] }
     const body = await request.json();
     const items = body.items;
 
     if (!items || !Array.isArray(items)) {
-      return NextResponse.json({ error: 'Invalid payload format. Expected { "items": [...] }' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'Invalid payload format' }, { status: 400 });
     }
 
-    // 3. Payload дотроос бүх itemId-г (эсвэл barcode) ялгаж авах
-    // Анхаарах: Таны баазын загварт (schema.prisma) барааны дахин давтагдахгүй код нь 'sku' гэж байгаа тул 'sku' талбартай тулгалт хийнэ.
-    const itemIds = items.map((item: any) => item.itemId || item.barcode).filter(Boolean);
+    // 3. Payload дотроос itemId-г ялгах
+    const itemIds = items.map((item: any) => item.itemId).filter(Boolean);
 
     if (itemIds.length === 0) {
-      return NextResponse.json({ message: 'No valid items found in payload' }, { status: 200 });
+      return NextResponse.json({ success: true, message: 'No valid items found' }, { status: 200 });
     }
 
-    // 4. Өгөгдлийн сангаас зөвхөн манайд бүртгэлтэй байгаа бараануудыг хайж олох
+    // 4. Өгөгдлийн сангаас itemId (манай sku)-гээр хайх
     const existingProducts = await db.product.findMany({
       where: {
-        sku: {
-          in: itemIds
-        }
+        sku: { in: itemIds }
       },
-      select: { sku: true }
+      select: { sku: true, barcode: true }
     });
 
-    // Олдсон бараануудын sku-үүдээр Set үүсгэх (Хайлт хийхэд илүү хурдан)
-    const existingSkuSet = new Set(existingProducts.map(p => p.sku));
+    const existingMap = new Map(existingProducts.map(p => [p.sku, p]));
 
-    // 5. Зөвхөн баазад бүртгэлтэй байгаа бараануудыг шүүж авах (NO CREATIONS)
-    const matchedItems = items.filter((item: any) => {
-      const id = item.itemId || item.barcode;
-      return existingSkuSet.has(id);
+    // 5. Олдсон болон олдоогүй барааг ялгах
+    const matchedItems: any[] = [];
+    const missingItems: any[] = [];
+
+    items.forEach((item: any) => {
+      const id = item.itemId;
+      if (!id) return;
+      if (existingMap.has(id)) {
+        matchedItems.push({ item, dbRecord: existingMap.get(id) });
+      } else {
+        missingItems.push(item);
+      }
     });
 
-    if (matchedItems.length === 0) {
-      return NextResponse.json({ message: 'No matching items found to update', updatedCount: 0 }, { status: 200 });
-    }
+    // 6. Олдсон бараануудыг шинэчлэх (Update price, stock, and barcode if empty)
+    const updateOperations = matchedItems.map(({ item, dbRecord }) => {
+      const dataToUpdate: any = {
+        price: item.price,
+        stockQuantity: item.stock
+      };
+      
+      // Хэрэв баазад barcode хоосон, харин payload дээр ирсэн бол нөхөж оруулах
+      if (!dbRecord.barcode && item.barcode) {
+        dataToUpdate.barcode = item.barcode;
+      }
 
-    // 6. Prisma Transaction ашиглан олон барааг нэгэн зэрэг шинэчлэх (MATCH & UPDATE ONLY, NO DELETIONS)
-    // updateMany нь өөр өөр утгаар update хийж чаддаггүй тул массив гүйлгэж transaction ашиглана.
-    const updateOperations = matchedItems.map((item: any) => {
-      const id = item.itemId || item.barcode;
       return db.product.update({
-        where: { sku: id },
-        data: {
-          price: item.price,
-          stockQuantity: item.stock
-        }
+        where: { sku: item.itemId },
+        data: dataToUpdate
       });
     });
 
-    await db.$transaction(updateOperations);
+    // 7. Олдоогүй бараануудыг DRAFT төлөвтэйгөөр үүсгэх
+    const draftsToCreate = missingItems.map((item: any) => ({
+      sku: item.itemId,
+      barcode: item.barcode || null,
+      name: item.name || `Шинэ бараа - ${item.itemId}`,
+      slug: `pos-${item.itemId}-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      price: item.price,
+      stockQuantity: item.stock,
+      status: "DRAFT" as const
+    }));
 
-    // 7. Амжилттай болсон тухай хариу илгээх
+    // Транзакц (Transactions) - Шинэчлэх
+    if (updateOperations.length > 0) {
+      await db.$transaction(updateOperations);
+    }
+    
+    // Бөөнөөр үүсгэх (Create Many)
+    if (draftsToCreate.length > 0) {
+      await db.product.createMany({
+        data: draftsToCreate,
+        skipDuplicates: true // давхардал гарвал алгасах
+      });
+
+      // Activity Log бичих
+      try {
+        await (db as any).activityLog.create({
+          data: {
+            userId: "system",
+            userName: "POS Sync System",
+            userRole: "SYSTEM",
+            action: "Шинэ бараа (Draft) нэмэгдлээ",
+            target: "Product",
+            detail: `${draftsToCreate.length} шинэ бараа POS системээс автоматаар DRAFT хэлбэрээр нэмэгдлээ.`
+          }
+        });
+
+        // Админ руу бодит цагийн мэдэгдэл (SSE) явуулах
+        orderEmitter.emit("system-alert", {
+          message: `${draftsToCreate.length} шинэ бараа POS системээс нэмэгдлээ!`,
+          details: "Ноорог хэсгээс шалгаж баталгаажуулна уу.",
+          createdAt: new Date().toISOString()
+        });
+      } catch (e) {
+        console.error("Failed to log or emit event:", e);
+      }
+    }
+
+    // 8. Хариу буцаах
     return NextResponse.json({
-      message: 'Sync successful',
+      success: true,
       receivedCount: items.length,
-      updatedCount: matchedItems.length
+      updatedCount: matchedItems.length,
+      ignoredCount: 0, // Бүгдийг боловсруулдаг болсон тул ignore байхгүй
+      createdDraftsCount: draftsToCreate.length
     }, { status: 200 });
 
   } catch (error) {
     console.error('POS Sync алдаа гарлаа:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });
   }
 }

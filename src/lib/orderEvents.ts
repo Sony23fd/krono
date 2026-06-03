@@ -40,6 +40,12 @@ export type DeliveryRequestEvent = {
   createdAt: string
 }
 
+export type SystemAlertEvent = {
+  message: string
+  details?: string
+  createdAt: string
+}
+
 // ── Server-side debounce grouping ────────────────────────────────────────────
 // Multiple createOrder calls share the same transactionRef (cart checkout).
 // We buffer them for 800ms then emit a single grouped notification.
