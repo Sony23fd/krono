@@ -71,17 +71,17 @@ export function SliderProductCard({ product }: { product: any }) {
           </h3>
         </Link>
 
-        <div className="mt-auto pt-2">
+        <div className="mt-auto pt-2 flex items-end justify-between gap-2">
           {/* Price */}
-          <div className="mb-3 flex items-end gap-2 flex-wrap">
-            <p className="text-lg font-bold text-gray-900">
-              ₮{price.toLocaleString()} <span className="text-sm font-medium text-gray-400">/ {product.unit || "ширхэг"}</span>
-            </p>
+          <div className="flex flex-col">
             {hasDiscount && (
-              <p className="text-sm font-medium text-gray-400 line-through mb-0.5">
+              <p className="text-xs font-medium text-gray-400 line-through mb-0.5">
                 ₮{comparePrice.toLocaleString()}
               </p>
             )}
+            <p className="text-lg font-bold text-gray-900 leading-none">
+              ₮{price.toLocaleString()} <span className="text-xs font-medium text-gray-400">/ {product.unit || "ш"}</span>
+            </p>
           </div>
 
           <AddToCartButton
@@ -92,6 +92,7 @@ export function SliderProductCard({ product }: { product: any }) {
             deliveryFee={Number(product.deliveryFee || 0)}
             isPreOrder={product.isPreOrder}
             requiresAgeVerification={product.requiresAgeVerification}
+            variant="icon"
           />
         </div>
       </div>

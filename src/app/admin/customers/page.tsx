@@ -36,6 +36,12 @@ export default async function CustomersPage({
         address: true,
         createdAt: true,
         _count: { select: { orders: true } },
+        referredBy: {
+          select: {
+            name: true,
+            phone: true
+          }
+        }
       },
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * perPage,
@@ -110,6 +116,11 @@ export default async function CustomersPage({
                     <div>
                       <p className="font-semibold text-slate-800">{c.name || "Нэргүй"}</p>
                       <p className="text-[10px] text-slate-400 font-mono">{c.id}</p>
+                      {c.referredBy && (
+                        <span className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-orange-50 text-orange-600 border border-orange-100">
+                          🎁 Урьсан: {c.referredBy.name || c.referredBy.phone}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </td>

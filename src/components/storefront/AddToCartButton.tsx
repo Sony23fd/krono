@@ -12,9 +12,10 @@ interface Props {
   deliveryFee: number
   isPreOrder?: boolean
   requiresAgeVerification?: boolean
+  variant?: "full" | "icon"
 }
 
-export function AddToCartButton({ batchId, name, imageUrl, unitPrice, deliveryFee, isPreOrder, requiresAgeVerification }: Props) {
+export function AddToCartButton({ batchId, name, imageUrl, unitPrice, deliveryFee, isPreOrder, requiresAgeVerification, variant = "full" }: Props) {
   const { addItem, items, updateQty, removeItem } = useCart()
   const { checkAge } = useAgeVerification()
   const cartItem = items.find(i => i.batchId === batchId)
@@ -33,11 +34,51 @@ export function AddToCartButton({ batchId, name, imageUrl, unitPrice, deliveryFe
   }
 
   if (inCart && cartItem) {
+    if (variant === "icon") {
+      return (
+        <div className="flex flex-col items-center justify-center gap-1">
+          <div className="flex items-center h-10 w-24 rounded-full border border-[#F26522] bg-orange-50 overflow-hidden">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (cartItem.qty <= 1) {
+                  removeItem(batchId);
+                } else {
+                  updateQty(batchId, cartItem.qty - 1);
+                }
+              }}
+              className="flex-1 h-full flex items-center justify-center text-[#F26522] hover:bg-[#F26522] hover:text-white transition-colors"
+            >
+              <Minus className="w-3.5 h-3.5" />
+            </button>
+            <span className="w-6 h-full flex items-center justify-center text-sm font-bold text-slate-900 bg-white select-none border-x border-[#F26522]/20">
+              {cartItem.qty}
+            </span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                updateQty(batchId, cartItem.qty + 1);
+              }}
+              className="flex-1 h-full flex items-center justify-center text-[#F26522] hover:bg-[#F26522] hover:text-white transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      );
+    }
+    
     return (
       <div className="flex items-center h-9 md:h-10 rounded-lg border border-[#F26522] bg-orange-50 overflow-hidden w-full">
         <button
           type="button"
-          onClick={() => {
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
             if (cartItem.qty <= 1) {
               removeItem(batchId)
             } else {
@@ -53,7 +94,11 @@ export function AddToCartButton({ batchId, name, imageUrl, unitPrice, deliveryFe
         </span>
         <button
           type="button"
-          onClick={() => updateQty(batchId, cartItem.qty + 1)}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            updateQty(batchId, cartItem.qty + 1)
+          }}
           className="w-10 md:w-12 h-full flex items-center justify-center text-[#F26522] hover:bg-[#F26522] hover:text-white transition-colors shrink-0"
         >
           <Plus className="w-4 h-4 md:w-4.5 md:h-4.5" />
@@ -62,9 +107,28 @@ export function AddToCartButton({ batchId, name, imageUrl, unitPrice, deliveryFe
     )
   }
 
+  if (variant === "icon") {
+    return (
+      <button
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          handleAdd();
+        }}
+        className="w-10 h-10 rounded-full flex items-center justify-center bg-[#F26522] text-white hover:bg-[#E85B1C] transition-transform hover:scale-105 active:scale-95 shadow-md shadow-orange-500/30 shrink-0"
+      >
+        <ShoppingCart className="w-4.5 h-4.5" />
+      </button>
+    );
+  }
+
   return (
     <button
-      onClick={handleAdd}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        handleAdd();
+      }}
       className="w-full flex items-center justify-center gap-2 h-9 md:h-10 rounded-lg font-bold text-xs md:text-sm bg-[#F26522] text-white hover:bg-[#E85B1C] transition-all active:scale-[0.97] shadow-sm shadow-orange-500/20"
     >
       <ShoppingCart className="w-4 h-4 md:w-4.5 md:h-4.5 shrink-0" />

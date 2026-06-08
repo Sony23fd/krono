@@ -287,6 +287,18 @@ export default function ProfilePage() {
                 </div>
                 <div className="flex flex-col gap-3">
                   <Link
+                    href={`/profile/referral`}
+                    className="flex-1 flex items-center justify-between px-6 py-4 bg-orange-50 border border-orange-100 text-orange-600 font-bold rounded-2xl hover:bg-orange-100 transition-colors group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm text-orange-500">
+                        <span className="text-xl">🎁</span>
+                      </div>
+                      <span>Найзаа урих урамшуулал</span>
+                    </div>
+                    <span className="text-2xl group-hover:translate-x-1 transition-transform">→</span>
+                  </Link>
+                  <Link
                     href={`/track?q=${customer.phone}`}
                     className="flex-1 flex items-center justify-between px-6 py-4 bg-[#1B3561]/5 border border-[#1B3561]/10 text-[#1B3561] font-bold rounded-2xl hover:bg-[#1B3561]/10 transition-colors group"
                   >

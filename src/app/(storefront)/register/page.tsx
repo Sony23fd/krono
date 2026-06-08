@@ -38,6 +38,7 @@ export default function RegisterPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('callbackUrl') || "/"
+  const refCode = searchParams.get('ref')
   const { refreshCustomer } = useCustomerAuth()
   const pollRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -49,6 +50,7 @@ export default function RegisterPage() {
   const [name, setName] = useState("")
   const [phone, setPhone] = useState("")
   const [password, setPassword] = useState("")
+  const [inputRefCode, setInputRefCode] = useState(refCode || "")
   const [phoneError, setPhoneError] = useState<string | null>(null)
   const [infoLoading, setInfoLoading] = useState(false)
 
@@ -211,7 +213,7 @@ export default function RegisterPage() {
     const digits = phone.replace(/\D/g, "")
     
     // Call the new password-based register action
-    const result = await registerWithPassword(digits, name.trim(), password, phoneVerificationEnabled)
+    const result = await registerWithPassword(digits, name.trim(), password, phoneVerificationEnabled, inputRefCode || undefined)
 
     if (!result.success) {
       toast.error(result.error || "Бүртгэл амжилтгүй боллоо")

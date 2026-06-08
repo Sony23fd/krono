@@ -71,26 +71,27 @@ export function PopupBannerModal({ banner }: PopupBannerModalProps) {
           e.preventDefault();
           closePopup();
         }}
-        className="absolute -top-3 -right-3 md:-top-4 md:-right-4 w-8 h-8 md:w-10 md:h-10 bg-white text-slate-800 rounded-full flex items-center justify-center shadow-lg hover:bg-slate-100 hover:text-red-500 hover:scale-110 transition-all z-20 border border-slate-200"
+        className="absolute -top-4 -right-4 w-10 h-10 bg-white text-slate-500 rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(0,0,0,0.1)] hover:bg-red-500 hover:text-white hover:scale-110 hover:rotate-90 transition-all duration-300 z-50 border border-slate-100"
         aria-label="Хаах"
       >
         <X className="w-5 h-5" />
       </button>
-      <div className="w-full relative group rounded-2xl overflow-hidden bg-white flex flex-col">
+      <div className="w-full relative group rounded-[32px] overflow-hidden bg-white flex flex-col shadow-2xl shadow-black/20 ring-1 ring-slate-100">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <div className="relative w-full">
+        <div className="relative w-full bg-slate-50">
           <img 
             src={banner.imageUrl} 
             alt={banner.title || "Popup Banner"} 
-            className="w-full h-auto max-h-[70vh] object-contain relative z-0"
+            className="w-full h-auto max-h-[65vh] object-contain relative z-0"
           />
           {banner.linkUrl && (
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300 z-10 pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10 pointer-events-none" />
           )}
         </div>
         
         {showTitle && banner.title && (
-          <div className={`w-full p-6 md:p-8 flex flex-col ${alignClass} bg-white border-t border-slate-100`}>
+          <div className={`w-full p-8 md:p-10 flex flex-col ${alignClass} bg-white relative`}>
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-400 via-[#F26522] to-orange-400"></div>
             <h2 
               className={`${sizeClass} font-black leading-tight tracking-tight text-slate-900`} 
               style={{ color: banner.titleColor && banner.titleColor !== "#FFFFFF" ? banner.titleColor : undefined }}
@@ -100,10 +101,10 @@ export function PopupBannerModal({ banner }: PopupBannerModalProps) {
               ))}
             </h2>
             {banner.linkUrl && (
-              <div className="mt-4">
-                <span className="inline-flex items-center text-sm font-semibold text-[#F26522] hover:text-[#E85B1C] transition-colors">
+              <div className="mt-6">
+                <span className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#F26522] text-white font-bold rounded-xl hover:bg-[#E85B1C] shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 transition-all hover:-translate-y-0.5">
                   Дэлгэрэнгүй үзэх
-                  <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                  <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
                 </span>
               </div>
             )}
@@ -116,10 +117,10 @@ export function PopupBannerModal({ banner }: PopupBannerModalProps) {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6" suppressHydrationWarning>
       <div 
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-500"
         onClick={closePopup}
       />
-      <div className="relative z-10 w-full max-w-[600px] bg-transparent rounded-2xl animate-in zoom-in-95 fade-in duration-300">
+      <div className="relative z-10 w-full max-w-[600px] bg-transparent rounded-[32px] animate-in zoom-in-[0.9] slide-in-from-bottom-8 fade-in duration-500 ease-out">
         {banner.linkUrl ? (
           <Link href={banner.linkUrl} onClick={() => sessionStorage.setItem(`popup_seen_${banner.id}`, "true")}>
             <BannerContent />

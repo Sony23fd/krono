@@ -29,6 +29,7 @@ interface CheckoutInput {
   }[]
   loyaltyCardNumber?: string
   loyaltyAction?: string
+  useReferralReward?: boolean
 }
 
 export async function checkout(input: CheckoutInput) {
@@ -153,6 +154,21 @@ export async function checkout(input: CheckoutInput) {
         deliveryFee = Math.max(baseDeliveryFee, maxItemFee)
       }
 
+      // Referral Reward Хөнгөлөлт (Зөвхөн хүргэлтээс)
+      let referralRewardUsed = 0
+      if (input.useReferralReward && input.userId && input.wantsDelivery && deliveryFee > 0) {
+        const user = await tx.user.findUnique({ where: { id: input.userId } })
+        if (user && user.referralReward > 0) {
+          referralRewardUsed = Math.min(user.referralReward, deliveryFee)
+          deliveryFee -= referralRewardUsed
+          
+          await tx.user.update({
+            where: { id: user.id },
+            data: { referralReward: { decrement: referralRewardUsed } }
+          })
+        }
+      }
+
       let totalAmount = subtotal + deliveryFee
       let discount = 0
       let loyaltyPointsUsed = 0
@@ -214,6 +230,7 @@ export async function checkout(input: CheckoutInput) {
           loyaltyAction: input.loyaltyAction || null,
           loyaltyPointsUsed,
           loyaltyPointsEarned,
+          referralRewardUsed,
           // OrderItems
           items: {
             create: snapshots.map(s => ({

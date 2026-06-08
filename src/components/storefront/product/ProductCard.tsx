@@ -117,20 +117,20 @@ export function ProductCard({ product, index = 0, theme = "default" }: { product
           </h3>
         </Link>
 
-        <div className="mt-auto pt-1 md:pt-2">
+        <div className="mt-auto pt-1 md:pt-2 flex items-end justify-between gap-2">
           {/* Price */}
-          <div className="mb-2 md:mb-2.5">
-            <div className="flex items-end gap-2">
-              <p className="text-lg md:text-xl font-black text-[#1B3561] tracking-tight">
-                ₮{price.toLocaleString()} <span className="text-sm md:text-base font-bold text-slate-400">/ {product.unit || "ширхэг"}</span>
-              </p>
+          <div className="flex flex-col">
+            <div className="flex flex-col">
               {hasDiscount && (
-                <p className="text-xs md:text-sm font-medium text-slate-400 line-through mb-0.5">
+                <p className="text-[10px] md:text-xs font-medium text-slate-400 line-through mb-0.5">
                   ₮{comparePrice.toLocaleString()}
                 </p>
               )}
+              <p className="text-lg md:text-xl font-black text-[#1B3561] tracking-tight leading-none">
+                ₮{price.toLocaleString()} <span className="text-xs md:text-sm font-bold text-slate-400">/ {product.unit || "ш"}</span>
+              </p>
             </div>
-            <div className="flex items-center gap-2 mt-0.5">
+            <div className="flex items-center gap-2 mt-1">
               {Number(product.deliveryFee) > 0 && (
                 <span className="text-[10px] md:text-[11px] text-slate-400 font-medium">+₮{Number(product.deliveryFee).toLocaleString()} хүргэлт</span>
               )}
@@ -148,6 +148,7 @@ export function ProductCard({ product, index = 0, theme = "default" }: { product
             deliveryFee={Number(product.deliveryFee || 0)}
             isPreOrder={product.isPreOrder}
             requiresAgeVerification={product.requiresAgeVerification}
+            variant="icon"
           />
         </div>
       </div>

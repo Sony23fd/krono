@@ -159,13 +159,13 @@ export default async function StorefrontLayout({ children }: { children: ReactNo
 
       {/* Modern Premium Footer */}
       <footer className="bg-slate-900 text-slate-300 pt-16 pb-24 md:pb-8 px-4 md:px-8 lg:px-16 mt-auto" suppressHydrationWarning>
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-10 mb-16">
+        <div className="max-w-7xl mx-auto" suppressHydrationWarning>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-10 mb-16" suppressHydrationWarning>
             
             {/* Column 1: Brand & About */}
-            <div className="lg:col-span-4 flex flex-col h-full">
-              <div className="flex items-center gap-2 mb-6">
-                <div className="relative flex items-center h-16 bg-white/10 p-3 rounded-xl backdrop-blur-sm w-fit">
+            <div className="lg:col-span-4 flex flex-col h-full" suppressHydrationWarning>
+              <div className="flex items-center gap-2 mb-6" suppressHydrationWarning>
+                <div className="relative flex items-center h-16 bg-white/10 p-3 rounded-xl backdrop-blur-sm w-fit" suppressHydrationWarning>
                   <img
                     src="/logobtm.png"
                     alt="Bileg Logo"

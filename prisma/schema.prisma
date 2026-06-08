@@ -17,9 +17,17 @@ model User {
   role      Role     @default(CUSTOMER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  address   String?
-  cart      Cart?
-  orders    Order[]
+  address        String?
+  cart           Cart?
+  orders         Order[]
+  
+  // Referral System
+  referralCode   String?   @unique
+  referredById   String?
+  referralReward Int       @default(0)
+  referralCount  Int       @default(0)
+  referredBy     User?     @relation("UserReferrals", fields: [referredById], references: [id])
+  referrals      User[]    @relation("UserReferrals")
 
   @@index([role])
 }
@@ -160,6 +168,7 @@ model Order {
   loyaltyCardNumber     String?
   loyaltyPointsEarned   Int            @default(0)
   loyaltyPointsUsed     Int            @default(0)
+  referralRewardUsed    Int            @default(0)
   user                  User?          @relation(fields: [userId], references: [id])
   items                 OrderItem[]
   payments              Payment[]

@@ -30,7 +30,8 @@ export function CartClient({
   loyaltyEnabled = true,
   deliveryThreshold,
   deliveryFeeBelowThreshold,
-  deliveryFeeAboveThreshold
+  deliveryFeeAboveThreshold,
+  initialReferralReward = 0
 }: { 
   termsOfService?: string; 
   deliveryTerms?: string; 
@@ -42,6 +43,7 @@ export function CartClient({
   deliveryThreshold?: number;
   deliveryFeeBelowThreshold?: number;
   deliveryFeeAboveThreshold?: number;
+  initialReferralReward?: number;
 }) {
   const { items, removeItem, updateQty, clearCart, totalPrice } = useCart()
   const { customer, updateAddress } = useCustomerAuth()
@@ -65,6 +67,10 @@ export function CartClient({
   const [loyaltyBalance, setLoyaltyBalance] = useState(0)
   const [loyaltyAction, setLoyaltyAction] = useState<"EARN" | "SPEND">("EARN")
   const [loyaltyError, setLoyaltyError] = useState<string | null>(null)
+
+  // ─── Referral State ───
+  const [useReferralReward, setUseReferralReward] = useState(false)
+  const referralRewardBalance = initialReferralReward || 0
 
   // ─── Address State ───
   const [deliveryRegion, setDeliveryRegion] = useState("Шинэ Дархан")
@@ -137,7 +143,14 @@ export function CartClient({
   const maxItemFee = items.length > 0 ? Math.max(0, ...items.map(i => i.deliveryFee || 0)) : 0
   const finalDeliveryFee = Math.max(baseDeliveryFee, maxItemFee);
 
-  const singleDeliveryFee = (wantsDelivery && !hasPreOrder) ? finalDeliveryFee : 0
+  let singleDeliveryFee = (wantsDelivery && !hasPreOrder) ? finalDeliveryFee : 0
+  
+  // Apply referral reward to delivery fee
+  let referralRewardUsed = 0;
+  if (useReferralReward && referralRewardBalance > 0 && singleDeliveryFee > 0) {
+    referralRewardUsed = Math.min(referralRewardBalance, singleDeliveryFee)
+    singleDeliveryFee -= referralRewardUsed
+  }
   
   // Base Grand Total
   const baseGrandTotal = totalPrice + singleDeliveryFee
@@ -236,6 +249,7 @@ export function CartClient({
         allowSubstitution: allowSubst,
         loyaltyCardNumber: loyaltyStatus === "valid" ? loyaltyCardNumber : undefined,
         loyaltyAction: loyaltyStatus === "valid" ? loyaltyAction : undefined,
+        useReferralReward: useReferralReward,
         items: items.map(item => ({
           productId: item.productId || item.batchId, // fallback for legacy carts
           variantId: item.variantId,
@@ -720,16 +734,49 @@ export function CartClient({
               </div>
             )}
 
+            {/* Referral Reward Section */}
+            {wantsDelivery && !hasPreOrder && referralRewardBalance > 0 && (
+              <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    checked={useReferralReward} 
+                    onChange={e => setUseReferralReward(e.target.checked)} 
+                    className="accent-[#F26522] w-4 h-4 shrink-0 mt-0.5" 
+                  />
+                  <div className="flex-1">
+                    <span className="text-sm text-slate-800 font-bold flex items-center gap-2">
+                      <span className="text-lg">🎁</span> Танд {referralRewardBalance.toLocaleString()}₮ урамшуулал байна, хүргэлтийн төлбөрөөс хасуулах уу?
+                    </span>
+                    {useReferralReward && (
+                      <p className="text-xs text-orange-600 font-medium mt-1">
+                        Хүргэлтийн төлбөрөөс {referralRewardUsed.toLocaleString()}₮ хасагдлаа.
+                      </p>
+                    )}
+                  </div>
+                </label>
+              </div>
+            )}
+
             {/* Price Summary */}
             <div className="border-t pt-4 space-y-1.5">
               <div className="flex justify-between text-sm text-slate-500">
                 <span>Барааны нийт</span>
                 <span>₮{totalPrice.toLocaleString()}</span>
               </div>
-              {wantsDelivery && !hasPreOrder && singleDeliveryFee > 0 && (
+              {wantsDelivery && !hasPreOrder && finalDeliveryFee > 0 && (
                 <div className="flex justify-between text-sm text-slate-500">
                   <span>Хүргэлт <span className="text-xs text-slate-400">(1 удаа)</span></span>
-                  <span>+₮{singleDeliveryFee.toLocaleString()}</span>
+                  <span>
+                    {referralRewardUsed > 0 ? (
+                      <>
+                        <span className="line-through text-slate-400 mr-2">₮{finalDeliveryFee.toLocaleString()}</span>
+                        <span className="text-orange-500 font-bold">+₮{singleDeliveryFee.toLocaleString()}</span>
+                      </>
+                    ) : (
+                      `+₮${singleDeliveryFee.toLocaleString()}`
+                    )}
+                  </span>
                 </div>
               )}
               {loyaltyDiscount > 0 && (

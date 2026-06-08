@@ -66,7 +66,7 @@ export async function loginWithPassword(phone: string, password: string): Promis
  * Register a new user
  * Assumes phone is already verified via verify.mn if phoneVerificationEnabled is true
  */
-export async function registerWithPassword(phone: string, name: string, password: string, phoneVerificationEnabled: boolean): Promise<AuthResult> {
+export async function registerWithPassword(phone: string, name: string, password: string, phoneVerificationEnabled: boolean, refCode?: string): Promise<AuthResult> {
   try {
     const digits = phone.replace(/\D/g, "")
     if (digits.length !== 8) return { success: false, error: "Утасны дугаар буруу байна." }
@@ -86,25 +86,64 @@ export async function registerWithPassword(phone: string, name: string, password
       if (existingUser.password) {
         return { success: false, error: "Энэ дугаар аль хэдийн бүртгэгдсэн байна." }
       }
-      // If user exists but has no password (legacy user), they should use Forgot Password instead, but we can allow them to register to set it if verified
-      // Wait, if they are already verified in DB, we can just update them.
     }
 
     const hashedPassword = await bcrypt.hash(password, 10)
+
+    // Generate unique referral code
+    const generateCode = () => Math.random().toString(36).substring(2, 8).toUpperCase()
+    let myCode = existingUser?.referralCode || generateCode()
+    if (!existingUser?.referralCode) {
+      while (await db.user.findUnique({ where: { referralCode: myCode } })) {
+        myCode = generateCode()
+      }
+    }
+
+    let referredById = existingUser?.referredById || null;
+    let shouldRewardInviter = false;
+
+    if (refCode && !referredById) {
+      const inviter = await db.user.findFirst({ 
+        where: { 
+          OR: [
+            { referralCode: refCode },
+            { phone: refCode }
+          ]
+        } 
+      });
+      if (inviter && inviter.referralCount < 5 && inviter.phone !== digits) {
+        referredById = inviter.id;
+        shouldRewardInviter = true;
+      }
+    }
 
     const user = await db.user.upsert({
       where: { phone: digits },
       update: {
         name: name.trim(),
-        password: hashedPassword
+        password: hashedPassword,
+        referralCode: myCode,
+        ...(referredById && !existingUser?.referredById ? { referredById } : {})
       },
       create: {
         phone: digits,
         name: name.trim(),
         password: hashedPassword,
-        role: "CUSTOMER"
+        role: "CUSTOMER",
+        referralCode: myCode,
+        referredById: referredById
       }
     })
+
+    if (shouldRewardInviter && referredById) {
+      await db.user.update({
+        where: { id: referredById },
+        data: {
+          referralCount: { increment: 1 },
+          referralReward: { increment: 1000 }
+        }
+      });
+    }
 
     // Auto login
     await createCustomerSession({
