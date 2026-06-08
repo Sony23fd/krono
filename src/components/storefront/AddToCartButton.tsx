@@ -115,7 +115,7 @@ export function AddToCartButton({ batchId, name, imageUrl, unitPrice, deliveryFe
           e.stopPropagation();
           handleAdd();
         }}
-        className="w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center bg-[#F26522] text-white hover:bg-[#E85B1C] transition-transform hover:scale-105 active:scale-95 shadow-md shadow-orange-500/30 shrink-0"
+        className="w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center bg-slate-100 text-slate-400 hover:bg-[#F26522] hover:text-white transition-all hover:scale-105 active:scale-95 shadow-sm hover:shadow-md hover:shadow-orange-500/30 shrink-0"
       >
         <ShoppingCart className="w-4 h-4 md:w-4.5 md:h-4.5" />
       </button>
