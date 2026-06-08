@@ -36,8 +36,8 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
       type: "all",
       categorySlug: categorySlug !== "all" ? categorySlug : undefined,
       sort: sort as "newest" | "oldest" | "price_asc" | "price_desc" | "stock_asc" | "stock_desc",
-      page: 1, // initial page is always 1 for Server Component
-      limit: 24,
+      page: 1, // We fetch from page 1 but with a larger limit to get all products up to the current page
+      limit: 24 * page,
       sale: isSale,
     }),
   ])
@@ -108,6 +108,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
                 <ProductGridWithLoadMore 
                   initialProducts={products}
                   initialTotalPages={totalPages}
+                  initialPage={page}
                   fetchNextPage={loadMore}
                 />
               </div>

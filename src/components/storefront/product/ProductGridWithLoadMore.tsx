@@ -12,10 +12,11 @@ export function ProductGridWithLoadMore({
 }: {
   initialProducts: any[],
   initialTotalPages: number,
+  initialPage?: number,
   fetchNextPage: (page: number) => Promise<any[]>
 }) {
   const [products, setProducts] = useState(initialProducts)
-  const [page, setPage] = useState(1)
+  const [page, setPage] = useState(initialPage || 1)
   const [loading, setLoading] = useState(false)
   
   // Keep track if props change (e.g. user changes filters/search)
@@ -25,9 +26,17 @@ export function ProductGridWithLoadMore({
     if (loading || page >= initialTotalPages) return;
     setLoading(true);
     try {
-      const nextProducts = await fetchNextPage(page + 1);
+      const newPage = page + 1;
+      const nextProducts = await fetchNextPage(newPage);
       setProducts(prev => [...prev, ...nextProducts]);
-      setPage(prev => prev + 1);
+      setPage(newPage);
+      
+      // Update URL to support scroll restoration on back navigation
+      if (typeof window !== "undefined") {
+        const url = new URL(window.location.href);
+        url.searchParams.set("page", newPage.toString());
+        window.history.replaceState({}, "", url.toString());
+      }
     } catch (error) {
       console.error("Failed to load more products:", error);
     } finally {

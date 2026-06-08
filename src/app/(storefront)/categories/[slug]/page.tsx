@@ -25,8 +25,8 @@ export default async function CategoryDetailPage({ params, searchParams }: { par
       type: filterType as "all" | "ready" | "preorder",
       search: query,
       sort: sort as "newest" | "oldest" | "price_asc" | "price_desc" | "stock_asc" | "stock_desc",
-      page: 1, // Start on page 1 for initial load
-      limit: 24,
+      page: 1, // Start on page 1 but with larger limit to get all products up to current page
+      limit: 24 * page,
     }),
   ])
 
@@ -138,6 +138,7 @@ export default async function CategoryDetailPage({ params, searchParams }: { par
           <ProductGridWithLoadMore 
             initialProducts={products}
             initialTotalPages={totalPages}
+            initialPage={page}
             fetchNextPage={loadMore}
           />
         </div>
