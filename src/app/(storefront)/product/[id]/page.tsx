@@ -4,6 +4,7 @@ import { Package, Truck, ArrowLeft, ShieldCheck, Zap } from "lucide-react"
 import Link from "next/link"
 import { ProductGallery } from "@/components/storefront/product/ProductGallery"
 import { ProductImage } from "@/components/storefront/ProductImage"
+import { BackButton } from "@/components/storefront/product/BackButton"
 import { ProductActions } from "./ProductActions"
 import { getShopSettings } from "@/app/actions/settings-actions"
 
@@ -53,10 +54,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     <div className="bg-white min-h-screen pb-20 md:pb-0">
       {/* Premium Breadcrumb / Back button */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-        <Link href="/" className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-[#F26522] transition-colors">
-          <ArrowLeft className="w-4 h-4" />
-          Буцах
-        </Link>
+        <BackButton />
       </div>
 
       <div className="max-w-7xl mx-auto px-0 sm:px-6 lg:px-8 pb-16 lg:pb-24">
