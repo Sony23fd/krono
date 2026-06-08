@@ -128,7 +128,6 @@ export default async function CategoryDetailPage({ params, searchParams }: { par
                     </div>
                   )}
                 </div>
-                <Link href="/shop" className="rounded-full bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-200 transition-colors lg:hidden whitespace-nowrap">Дэлгүүр үзэх</Link>
               </div>
             </div>
 

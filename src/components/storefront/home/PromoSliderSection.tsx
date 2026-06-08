@@ -177,7 +177,7 @@ export function PromoSliderSection({
                 prevEl: prevRef.current,
                 nextEl: nextRef.current,
               }}
-              autoplay={autoScroll ? { delay: 3000, disableOnInteraction: false } : false}
+              autoplay={autoScroll ? { delay: 3000, disableOnInteraction: true, pauseOnMouseEnter: true } : false}
               onInit={(swiper) => {
                 // @ts-ignore
                 swiper.params.navigation.prevEl = prevRef.current
