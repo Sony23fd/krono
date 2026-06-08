@@ -66,34 +66,48 @@ export function SliderProductCard({ product }: { product: any }) {
 
       <div className="flex-1 flex flex-col gap-1.5">
         <Link href={`/product/${product.id}`}>
-          <h3 className="font-semibold text-gray-900 text-sm leading-snug hover:text-[#F26522] transition-colors line-clamp-2">
-            {product.name}
-          </h3>
+          <div className="min-h-[2.5rem] md:min-h-[3rem] flex items-start">
+            <h3 className="font-semibold text-gray-900 text-[13px] md:text-sm leading-snug hover:text-[#F26522] transition-colors line-clamp-2">
+              {product.name}
+            </h3>
+          </div>
         </Link>
 
-        <div className="mt-auto pt-2 flex items-end justify-between gap-2">
+        <div className="mt-auto pt-2 flex items-end justify-between gap-1 md:gap-2">
           {/* Price */}
-          <div className="flex flex-col">
-            {hasDiscount && (
-              <p className="text-xs font-medium text-gray-400 line-through mb-0.5">
-                ₮{comparePrice.toLocaleString()}
+          <div className="flex flex-col min-w-0">
+            {price > 0 ? (
+              <>
+                {hasDiscount && (
+                  <p className="text-xs font-medium text-gray-400 line-through mb-0.5">
+                    ₮{comparePrice.toLocaleString()}
+                  </p>
+                )}
+                <p className="text-[15px] md:text-lg font-bold text-gray-900 leading-none truncate">
+                  ₮{price.toLocaleString()} <span className="text-[10px] md:text-xs font-medium text-gray-400">/ {product.unit || "ш"}</span>
+                </p>
+              </>
+            ) : (
+              <p className="text-sm md:text-base font-bold text-slate-400 italic mt-2">
+                Үнэ тодорхойгүй
               </p>
             )}
-            <p className="text-lg font-bold text-gray-900 leading-none">
-              ₮{price.toLocaleString()} <span className="text-xs font-medium text-gray-400">/ {product.unit || "ш"}</span>
-            </p>
           </div>
 
-          <AddToCartButton
-            batchId={product.id}
-            name={product.name}
-            imageUrl={product.imageUrl}
-            unitPrice={price}
-            deliveryFee={Number(product.deliveryFee || 0)}
-            isPreOrder={product.isPreOrder}
-            requiresAgeVerification={product.requiresAgeVerification}
-            variant="icon"
-          />
+          {price > 0 && (
+            <div className="shrink-0">
+              <AddToCartButton
+                batchId={product.id}
+                name={product.name}
+                imageUrl={product.imageUrl}
+                unitPrice={price}
+                deliveryFee={Number(product.deliveryFee || 0)}
+                isPreOrder={product.isPreOrder}
+                requiresAgeVerification={product.requiresAgeVerification}
+                variant="icon"
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>

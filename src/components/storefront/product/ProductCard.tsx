@@ -112,44 +112,58 @@ export function ProductCard({ product, index = 0, theme = "default" }: { product
 
       <div className="flex-1 flex flex-col gap-1 md:gap-1.5">
         <Link href={`/product/${product.id}`}>
-          <h3 className="font-semibold text-[#1B3561] text-sm md:text-base leading-snug hover:text-[#F26522] transition-colors line-clamp-2">
-            {product.name}
-          </h3>
+          <div className="min-h-[2.5rem] md:min-h-[3rem] flex items-start">
+            <h3 className="font-semibold text-[#1B3561] text-[13px] md:text-base leading-snug hover:text-[#F26522] transition-colors line-clamp-2">
+              {product.name}
+            </h3>
+          </div>
         </Link>
 
-        <div className="mt-auto pt-1 md:pt-2 flex items-end justify-between gap-2">
+        <div className="mt-auto pt-1 md:pt-2 flex items-end justify-between gap-1 md:gap-2">
           {/* Price */}
-          <div className="flex flex-col">
-            <div className="flex flex-col">
-              {hasDiscount && (
-                <p className="text-[10px] md:text-xs font-medium text-slate-400 line-through mb-0.5">
-                  ₮{comparePrice.toLocaleString()}
-                </p>
-              )}
-              <p className="text-lg md:text-xl font-black text-[#1B3561] tracking-tight leading-none">
-                ₮{price.toLocaleString()} <span className="text-xs md:text-sm font-bold text-slate-400">/ {product.unit || "ш"}</span>
+          <div className="flex flex-col min-w-0">
+            {price > 0 ? (
+              <>
+                <div className="flex flex-col">
+                  {hasDiscount && (
+                    <p className="text-[10px] md:text-xs font-medium text-slate-400 line-through mb-0.5">
+                      ₮{comparePrice.toLocaleString()}
+                    </p>
+                  )}
+                  <p className="text-sm md:text-xl font-black text-[#1B3561] tracking-tight leading-none truncate">
+                    ₮{price.toLocaleString()} <span className="text-[10px] md:text-sm font-bold text-slate-400">/ {product.unit || "ш"}</span>
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5 md:gap-2 mt-1 flex-wrap">
+                  {Number(product.deliveryFee) > 0 && (
+                    <span className="text-[9px] md:text-[11px] text-slate-400 font-medium">+₮{Number(product.deliveryFee).toLocaleString()}</span>
+                  )}
+                  {hasStock && (
+                    <span className="text-[9px] md:text-[11px] text-emerald-600 font-bold">{stockQty} үлдсэн</span>
+                  )}
+                </div>
+              </>
+            ) : (
+              <p className="text-sm md:text-base font-bold text-slate-400 italic mt-2">
+                Үнэ тодорхойгүй
               </p>
-            </div>
-            <div className="flex items-center gap-2 mt-1">
-              {Number(product.deliveryFee) > 0 && (
-                <span className="text-[10px] md:text-[11px] text-slate-400 font-medium">+₮{Number(product.deliveryFee).toLocaleString()} хүргэлт</span>
-              )}
-              {hasStock && (
-                <span className="text-[10px] md:text-[11px] text-emerald-600 font-bold">{stockQty} үлдсэн</span>
-              )}
-            </div>
+            )}
           </div>
 
-          <AddToCartButton
-            batchId={product.id}
-            name={product.name}
-            imageUrl={product.imageUrl}
-            unitPrice={price}
-            deliveryFee={Number(product.deliveryFee || 0)}
-            isPreOrder={product.isPreOrder}
-            requiresAgeVerification={product.requiresAgeVerification}
-            variant="icon"
-          />
+          {price > 0 && (
+            <div className="shrink-0">
+              <AddToCartButton
+                batchId={product.id}
+                name={product.name}
+                imageUrl={product.imageUrl}
+                unitPrice={price}
+                deliveryFee={Number(product.deliveryFee || 0)}
+                isPreOrder={product.isPreOrder}
+                requiresAgeVerification={product.requiresAgeVerification}
+                variant="icon"
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>

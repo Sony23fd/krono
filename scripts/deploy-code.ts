@@ -16,7 +16,7 @@ conn.on('ready', () => {
   console.log('Client :: ready');
   
   console.log('Executing deployment commands on remote server...');
-  const deployCmd = 'cd /var/www/bileg && git pull && npm install && npx prisma db push && npx prisma generate && npm run build && pm2 restart all';
+  const deployCmd = 'cd /var/www/bileg && git pull && npm install && npx prisma db push --accept-data-loss && npx prisma generate && npm run build && pm2 restart all';
   
   conn.exec(deployCmd, (err, stream) => {
     if (err) throw err;

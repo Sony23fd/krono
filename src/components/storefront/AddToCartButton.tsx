@@ -37,7 +37,7 @@ export function AddToCartButton({ batchId, name, imageUrl, unitPrice, deliveryFe
     if (variant === "icon") {
       return (
         <div className="flex flex-col items-center justify-center gap-1">
-          <div className="flex items-center h-10 w-24 rounded-full border border-[#F26522] bg-orange-50 overflow-hidden">
+          <div className="flex items-center h-8 w-[4.5rem] md:h-10 md:w-20 lg:w-24 rounded-full border border-[#F26522] bg-orange-50 overflow-hidden shadow-sm">
             <button
               type="button"
               onClick={(e) => {
@@ -53,7 +53,7 @@ export function AddToCartButton({ batchId, name, imageUrl, unitPrice, deliveryFe
             >
               <Minus className="w-3.5 h-3.5" />
             </button>
-            <span className="w-6 h-full flex items-center justify-center text-sm font-bold text-slate-900 bg-white select-none border-x border-[#F26522]/20">
+            <span className="w-5 md:w-6 h-full flex items-center justify-center text-xs md:text-sm font-bold text-slate-900 bg-white select-none border-x border-[#F26522]/20">
               {cartItem.qty}
             </span>
             <button
@@ -115,9 +115,9 @@ export function AddToCartButton({ batchId, name, imageUrl, unitPrice, deliveryFe
           e.stopPropagation();
           handleAdd();
         }}
-        className="w-10 h-10 rounded-full flex items-center justify-center bg-[#F26522] text-white hover:bg-[#E85B1C] transition-transform hover:scale-105 active:scale-95 shadow-md shadow-orange-500/30 shrink-0"
+        className="w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center bg-[#F26522] text-white hover:bg-[#E85B1C] transition-transform hover:scale-105 active:scale-95 shadow-md shadow-orange-500/30 shrink-0"
       >
-        <ShoppingCart className="w-4.5 h-4.5" />
+        <ShoppingCart className="w-4 h-4 md:w-4.5 md:h-4.5" />
       </button>
     );
   }
