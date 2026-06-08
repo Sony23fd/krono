@@ -8,6 +8,7 @@ import { Package } from "lucide-react"
 export function ProductGridWithLoadMore({
   initialProducts,
   initialTotalPages,
+  initialPage,
   fetchNextPage
 }: {
   initialProducts: any[],
