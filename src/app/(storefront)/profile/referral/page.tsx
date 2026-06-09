@@ -11,13 +11,13 @@ import { toast } from "sonner"
 export default function ReferralPage() {
   const { isReady, customer } = useCustomerAuth()
   const router = useRouter()
-  
+
   const [loading, setLoading] = useState(true)
-  const [data, setData] = useState<{ 
-    referralCode: string, 
-    referralReward: number, 
+  const [data, setData] = useState<{
+    referralCode: string,
+    referralReward: number,
     referralCount: number,
-    referrals: Array<{id: string, name: string | null, phone: string | null, createdAt: Date}>
+    referrals: Array<{ id: string, name: string | null, phone: string | null, createdAt: Date }>
   } | null>(null)
   const [copied, setCopied] = useState(false)
 
@@ -84,7 +84,7 @@ export default function ReferralPage() {
           <div className="relative z-10">
             <h1 className="text-3xl font-black mb-2">🎁 Найзаа уриад 1,000₮ аваарай!</h1>
             <p className="text-orange-50 font-medium">
-              Таны урилгаар шинээр бүртгүүлсэн найз бүрээс 1,000₮-ийн урамшуулал таны дансанд орно. (Хамгийн ихдээ 5 найз)
+              Таны урилгаар шинээр бүртгүүлсэн найз бүрээс 1,000₮-ийн урамшуулал хүргэлтийн төлбөрөөс хасагдана. (Хамгийн ихдээ 5 найз урих боломжтой.)
             </p>
           </div>
         </div>
@@ -109,7 +109,7 @@ export default function ReferralPage() {
               <span className="text-sm font-medium text-orange-600">{data.referralCount} найз урьсан байна</span>
             </div>
             <div className="h-4 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
-              <div 
+              <div
                 className="h-full bg-gradient-to-r from-orange-400 to-[#F26522] rounded-full transition-all duration-1000 ease-out relative"
                 style={{ width: `${progressPercent}%` }}
               >
@@ -129,13 +129,13 @@ export default function ReferralPage() {
           <div className="bg-orange-50 border border-orange-100 rounded-2xl p-6">
             <p className="font-bold text-slate-800 mb-3 text-center">Таны урилгын линк</p>
             <div className="flex gap-2 mb-6">
-              <input 
-                type="text" 
-                readOnly 
-                value={referralLink} 
+              <input
+                type="text"
+                readOnly
+                value={referralLink}
                 className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-600 focus:outline-none"
               />
-              <button 
+              <button
                 onClick={handleCopy}
                 className="bg-[#1B3561] text-white px-5 rounded-xl font-bold hover:bg-[#122340] transition-colors flex items-center gap-2"
               >
@@ -146,7 +146,7 @@ export default function ReferralPage() {
 
             <p className="text-center text-sm font-medium text-slate-500 mb-4">Эсвэл шууд хуваалцах</p>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <a 
+              <a
                 href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(referralLink)}`}
                 target="_blank"
                 rel="noreferrer"
@@ -155,14 +155,14 @@ export default function ReferralPage() {
                 <Facebook className="w-6 h-6 text-blue-600" />
                 Facebook
               </a>
-              <a 
+              <a
                 href={`fb-messenger://share/?link=${encodeURIComponent(referralLink)}`}
                 className="flex flex-col items-center justify-center gap-2 p-3 bg-white border border-slate-200 rounded-xl hover:border-blue-500 hover:text-blue-500 transition-colors text-slate-600 font-medium text-sm md:hidden"
               >
                 <MessageCircle className="w-6 h-6 text-blue-500" />
                 Messenger
               </a>
-              <a 
+              <a
                 href={`http://www.facebook.com/dialog/send?app_id=YOUR_APP_ID&link=${encodeURIComponent(referralLink)}&redirect_uri=${encodeURIComponent(window.location.origin)}`}
                 target="_blank"
                 rel="noreferrer"
@@ -171,7 +171,7 @@ export default function ReferralPage() {
                 <MessageCircle className="w-6 h-6 text-blue-500" />
                 Messenger
               </a>
-              <button 
+              <button
                 onClick={handleShare}
                 className="flex flex-col items-center justify-center gap-2 p-3 bg-white border border-slate-200 rounded-xl hover:border-slate-400 hover:text-slate-800 transition-colors text-slate-600 font-medium text-sm"
               >
