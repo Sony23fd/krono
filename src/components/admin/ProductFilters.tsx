@@ -61,6 +61,8 @@ export function ProductFilters({
         <option value="stock_asc">Бага үлдэгдэлтэйгээс нь</option>
         <option value="newest">Шинэ нь эхэндээ</option>
         <option value="oldest">Хуучин нь эхэндээ</option>
+        <option value="updated_desc">Сүүлд шинэчлэгдсэн нь эхэндээ</option>
+        <option value="updated_asc">Удаан шинэчлэгдээгүй нь эхэндээ</option>
       </select>
     </div>
   )

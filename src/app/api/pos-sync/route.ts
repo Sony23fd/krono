@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db'; // Prisma client
-import { Prisma } from '@prisma/client';
+import { Prisma, ProductStatus } from '@prisma/client';
 import { orderEmitter } from '@/lib/orderEvents'; // For notifications
 
 export async function POST(request: Request) {
@@ -59,9 +59,19 @@ export async function POST(request: Request) {
 
     // 6. Олдсон бараануудыг шинэчлэх (Update price, stock, and barcode if empty)
     const updateOperations = matchedItems.map(({ item, dbRecord }) => {
+      let newStatus = dbRecord.status;
+      
+      // Автомат төлөвийн логик
+      if (item.price <= 0 || item.stock <= 0) {
+        newStatus = ProductStatus.ARCHIVED; // Үнэ эсвэл үлдэгдэл 0 бол шууд Архив
+      } else {
+        newStatus = ProductStatus.ACTIVE; // Үнэтэй бөгөөд үлдэгдэлтэй бол Идэвхтэй
+      }
+
       const dataToUpdate: any = {
         price: item.price,
-        stockQuantity: item.stock
+        stockQuantity: item.stock,
+        status: newStatus
       };
       
       // Хэрэв баазад barcode хоосон, харин payload дээр ирсэн бол нөхөж оруулах
@@ -75,16 +85,23 @@ export async function POST(request: Request) {
       });
     });
 
-    // 7. Олдоогүй бараануудыг DRAFT төлөвтэйгөөр үүсгэх
-    const draftsToCreate = missingItems.map((item: any) => ({
-      sku: item.itemId,
-      barcode: item.barcode || null,
-      name: item.name || `Шинэ бараа - ${item.itemId}`,
-      slug: `pos-${item.itemId}-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      price: item.price,
-      stockQuantity: item.stock,
-      status: "DRAFT" as const
-    }));
+    // 7. Олдоогүй бараануудыг DRAFT эсвэл ARCHIVED төлөвтэйгөөр үүсгэх
+    const draftsToCreate = missingItems.map((item: any) => {
+      let initialStatus: ProductStatus = ProductStatus.DRAFT;
+      if (item.price <= 0 || item.stock <= 0) {
+        initialStatus = ProductStatus.ARCHIVED;
+      }
+      
+      return {
+        sku: item.itemId,
+        barcode: item.barcode || null,
+        name: item.name || `Шинэ бараа - ${item.itemId}`,
+        slug: `pos-${item.itemId}-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        price: item.price,
+        stockQuantity: item.stock,
+        status: initialStatus
+      };
+    });
 
     // Транзакц (Transactions) - Шинэчлэх
     if (updateOperations.length > 0) {
@@ -113,6 +130,13 @@ export async function POST(request: Request) {
     // Activity Log бичих (Шинэчлэгдсэн эсвэл шинээр нэмэгдсэн байвал)
     if (updateOperations.length > 0 || draftsToCreate.length > 0) {
       try {
+        let draftMessage = `\nБүртгэлгүй байсан тул "Ноорог" (Draft) хэлбэрээр үүссэн: ${draftsToCreate.length}`;
+        if (draftsToCreate.length > 0) {
+          const draftSkus = draftsToCreate.map((d: any) => d.sku);
+          const displaySkus = draftSkus.slice(0, 10).join(", ");
+          draftMessage += ` (SKU: ${displaySkus}${draftSkus.length > 10 ? ` болон бусад ${draftSkus.length - 10} бараа` : ""})`;
+        }
+
         await (db as any).activityLog.create({
           data: {
             userId: "system",
@@ -120,7 +144,7 @@ export async function POST(request: Request) {
             userRole: "SYSTEM",
             action: "POS Системтэй синхрончилов",
             target: "Product",
-            detail: `Нийт хүлээн авсан бараа: ${items.length}\nАмжилттай шинэчлэгдсэн үлдэгдэл/үнэ: ${updateOperations.length}\nБүртгэлгүй байсан тул "Ноорог" (Draft) хэлбэрээр үүссэн: ${draftsToCreate.length}`
+            detail: `Нийт хүлээн авсан бараа: ${items.length}\nАмжилттай шинэчлэгдсэн үлдэгдэл/үнэ: ${updateOperations.length}${draftMessage}`
           }
         });
       } catch (e) {

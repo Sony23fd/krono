@@ -14,7 +14,7 @@ export async function getProducts(filters?: {
   categoryId?: string
   page?: number
   limit?: number
-  sort?: "newest" | "oldest" | "price_asc" | "price_desc" | "stock_asc" | "stock_desc"
+  sort?: "newest" | "oldest" | "price_asc" | "price_desc" | "stock_asc" | "stock_desc" | "updated_desc" | "updated_asc"
 }) {
   try {
     const page = filters?.page || 1
@@ -55,6 +55,8 @@ export async function getProducts(filters?: {
       case "price_desc": orderBy = [{ price: "desc" }]; break
       case "stock_asc": orderBy = [{ stockQuantity: "asc" }]; break
       case "stock_desc": orderBy = [{ stockQuantity: "desc" }]; break
+      case "updated_desc": orderBy = [{ updatedAt: "desc" }]; break
+      case "updated_asc": orderBy = [{ updatedAt: "asc" }]; break
     }
 
     const [products, total] = await Promise.all([

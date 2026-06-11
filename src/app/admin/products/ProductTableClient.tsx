@@ -139,13 +139,20 @@ export function ProductTableClient({ products, categories, search, currentPage =
                     </td>
 
                     <td className="px-4 py-4 text-center">
-                      <span className={`inline-flex items-center justify-center min-w-[48px] px-2.5 py-1 rounded-full text-xs font-bold ${
-                        availableStock <= 0 ? 'bg-red-100 text-red-700' :
-                        availableStock < 20 ? 'bg-[#fb8500]/10 text-[#fb8500]' :
-                        'bg-[#22c55e]/10 text-[#22c55e]'
-                      }`}>
-                        {availableStock}
-                      </span>
+                      <div className="flex flex-col items-center gap-1.5">
+                        <span className={`inline-flex items-center justify-center min-w-[48px] px-2.5 py-1 rounded-full text-xs font-bold ${
+                          availableStock <= 0 ? 'bg-red-100 text-red-700' :
+                          availableStock < 20 ? 'bg-[#fb8500]/10 text-[#fb8500]' :
+                          'bg-[#22c55e]/10 text-[#22c55e]'
+                        }`}>
+                          {availableStock}
+                        </span>
+                        {product.updatedAt && (
+                          <span className="text-[9px] text-slate-400 font-medium whitespace-nowrap" title="Сүүлд шинэчлэгдсэн">
+                            Сүүлд: {new Date(product.updatedAt).toLocaleString("mn-MN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     <td className="px-4 py-4 text-center">
@@ -247,6 +254,11 @@ export function ProductTableClient({ products, categories, search, currentPage =
                         availableStock < 20 ? 'text-[#fb8500]' :
                         'text-[#22c55e]'
                       }`}>{availableStock}</p>
+                      {product.updatedAt && (
+                        <p className="text-[9px] text-slate-400 mt-0.5">
+                          Сүүлд: {new Date(product.updatedAt).toLocaleString("mn-MN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <EditProductSheet product={product} categories={categories} />
