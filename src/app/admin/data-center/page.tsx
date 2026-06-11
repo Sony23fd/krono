@@ -61,7 +61,7 @@ export default async function DataCenterPage() {
         <LoyaltyToggle initialValue={loyaltyEnabled} />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl border shadow-sm p-6 space-y-4 border-t-4 border-t-purple-500 flex flex-col">
            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
              <Download className="w-5 h-5 text-purple-500" /> Нөөцлөх
@@ -98,6 +98,18 @@ export default async function DataCenterPage() {
            </p>
            <a href="/admin/data-center/system" className="inline-flex items-center justify-center gap-2 bg-indigo-600 text-white hover:bg-indigo-700 px-4 py-2.5 rounded-lg font-medium transition-colors text-sm w-full">
               <Terminal className="w-4 h-4" /> Тохиргоо руу орох
+           </a>
+        </div>
+
+        <div className="bg-slate-900 rounded-xl border border-slate-800 shadow-sm p-6 space-y-4 border-t-4 border-t-[#F26522] flex flex-col">
+           <h2 className="text-lg font-bold text-white flex items-center gap-2">
+             <Terminal className="w-5 h-5 text-[#F26522]" /> POS Скрипт
+           </h2>
+           <p className="text-sm text-slate-400 flex-1">
+             Касс (POS) програмаас үлдэгдэл татдаг скрипт кодоо эндээс шууд удирдах.
+           </p>
+           <a href="/admin/data-center/pos-script" className="inline-flex items-center justify-center gap-2 bg-[#F26522] text-white hover:bg-[#F26522]/90 px-4 py-2.5 rounded-lg font-medium transition-colors text-sm w-full">
+              <Terminal className="w-4 h-4" /> Код засах
            </a>
         </div>
       </div>
