@@ -98,27 +98,33 @@ export async function POST(request: Request) {
         skipDuplicates: true // давхардал гарвал алгасах
       });
 
-      // Activity Log бичих
+      // Админ руу бодит цагийн мэдэгдэл (SSE) явуулах
       try {
-        await (db as any).activityLog.create({
-          data: {
-            userId: "system",
-            userName: "POS Sync System",
-            userRole: "SYSTEM",
-            action: "Шинэ бараа (Draft) нэмэгдлээ",
-            target: "Product",
-            detail: `${draftsToCreate.length} шинэ бараа POS системээс автоматаар DRAFT хэлбэрээр нэмэгдлээ.`
-          }
-        });
-
-        // Админ руу бодит цагийн мэдэгдэл (SSE) явуулах
         orderEmitter.emit("system-alert", {
           message: `${draftsToCreate.length} шинэ бараа POS системээс нэмэгдлээ!`,
           details: "Ноорог хэсгээс шалгаж баталгаажуулна уу.",
           createdAt: new Date().toISOString()
         });
       } catch (e) {
-        console.error("Failed to log or emit event:", e);
+        console.error("Failed to emit event:", e);
+      }
+    }
+
+    // Activity Log бичих (Шинэчлэгдсэн эсвэл шинээр нэмэгдсэн байвал)
+    if (updateOperations.length > 0 || draftsToCreate.length > 0) {
+      try {
+        await (db as any).activityLog.create({
+          data: {
+            userId: "system",
+            userName: "POS Sync System",
+            userRole: "SYSTEM",
+            action: "POS Системтэй синхрончилов",
+            target: "Product",
+            detail: `Нийт хүлээн авсан бараа: ${items.length}\nАмжилттай шинэчлэгдсэн үлдэгдэл/үнэ: ${updateOperations.length}\nБүртгэлгүй байсан тул "Ноорог" (Draft) хэлбэрээр үүссэн: ${draftsToCreate.length}`
+          }
+        });
+      } catch (e) {
+        console.error("Failed to log activity:", e);
       }
     }
 

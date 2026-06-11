@@ -5,13 +5,11 @@ export function ProductFilters({
   currentStock,
   currentSort,
   currentCategory = "all",
-  currentPreOrder = "all",
   categories = []
 }: {
   currentStock: string,
   currentSort: string,
   currentCategory?: string,
-  currentPreOrder?: string,
   categories?: any[]
 }) {
   const router = useRouter()
@@ -53,25 +51,14 @@ export function ProductFilters({
         <option value="out_of_stock">✗ Дууссан</option>
       </select>
 
-      {/* Pre-order Filter */}
-      <select
-        value={currentPreOrder}
-        onChange={(e) => updateParam('preOrder', e.target.value)}
-        className="bg-white border border-slate-200 text-slate-600 font-medium text-sm rounded-lg px-3 py-2 outline-none focus:ring-2 ring-indigo-500 hover:border-slate-300 transition-colors"
-      >
-        <option value="all">Бүх төрөл</option>
-        <option value="pre_order">⏰ Урьдчилсан захиалга</option>
-        <option value="regular">📦 Бэлэн бараа</option>
-      </select>
-
       {/* Sort Filter */}
       <select
         value={currentSort}
         onChange={(e) => updateParam('sort', e.target.value)}
         className="bg-white border border-slate-200 text-slate-600 font-medium text-sm rounded-lg px-3 py-2 outline-none focus:ring-2 ring-indigo-500 hover:border-slate-300 transition-colors"
       >
-        <option value="remaining_desc">Их үлдэгдэлтэйгээс нь</option>
-        <option value="remaining_asc">Бага үлдэгдэлтэйгээс нь</option>
+        <option value="stock_desc">Их үлдэгдэлтэйгээс нь</option>
+        <option value="stock_asc">Бага үлдэгдэлтэйгээс нь</option>
         <option value="newest">Шинэ нь эхэндээ</option>
         <option value="oldest">Хуучин нь эхэндээ</option>
       </select>

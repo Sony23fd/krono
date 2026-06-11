@@ -48,13 +48,13 @@ export async function getProducts(filters?: {
       where.categoryId = filters.categoryId
     }
 
-    let orderBy: any = [{ imageUrl: { sort: "desc", nulls: "last" } }, { createdAt: "desc" }]
+    let orderBy: any = [{ createdAt: "desc" }]
     switch (filters?.sort) {
-      case "oldest": orderBy = [{ imageUrl: { sort: "desc", nulls: "last" } }, { createdAt: "asc" }]; break
-      case "price_asc": orderBy = [{ imageUrl: { sort: "desc", nulls: "last" } }, { price: "asc" }]; break
-      case "price_desc": orderBy = [{ imageUrl: { sort: "desc", nulls: "last" } }, { price: "desc" }]; break
-      case "stock_asc": orderBy = [{ imageUrl: { sort: "desc", nulls: "last" } }, { stockQuantity: "asc" }]; break
-      case "stock_desc": orderBy = [{ imageUrl: { sort: "desc", nulls: "last" } }, { stockQuantity: "desc" }]; break
+      case "oldest": orderBy = [{ createdAt: "asc" }]; break
+      case "price_asc": orderBy = [{ price: "asc" }]; break
+      case "price_desc": orderBy = [{ price: "desc" }]; break
+      case "stock_asc": orderBy = [{ stockQuantity: "asc" }]; break
+      case "stock_desc": orderBy = [{ stockQuantity: "desc" }]; break
     }
 
     const [products, total] = await Promise.all([
@@ -140,13 +140,13 @@ export async function getActiveProducts(filters?: {
       where.comparePrice = { gt: db.product.fields.price }
     }
 
-    let orderBy: any = [{ imageUrl: { sort: "desc", nulls: "last" } }, { createdAt: "desc" }]
+    let orderBy: any = [{ createdAt: "desc" }]
     switch (filters?.sort) {
-      case "oldest": orderBy = [{ imageUrl: { sort: "desc", nulls: "last" } }, { createdAt: "asc" }]; break
-      case "price_asc": orderBy = [{ imageUrl: { sort: "desc", nulls: "last" } }, { price: "asc" }]; break
-      case "price_desc": orderBy = [{ imageUrl: { sort: "desc", nulls: "last" } }, { price: "desc" }]; break
-      case "stock_asc": orderBy = [{ imageUrl: { sort: "desc", nulls: "last" } }, { stockQuantity: "asc" }]; break
-      case "stock_desc": orderBy = [{ imageUrl: { sort: "desc", nulls: "last" } }, { stockQuantity: "desc" }]; break
+      case "oldest": orderBy = [{ createdAt: "asc" }]; break
+      case "price_asc": orderBy = [{ price: "asc" }]; break
+      case "price_desc": orderBy = [{ price: "desc" }]; break
+      case "stock_asc": orderBy = [{ stockQuantity: "asc" }]; break
+      case "stock_desc": orderBy = [{ stockQuantity: "desc" }]; break
     }
 
     const [products, total] = await Promise.all([
