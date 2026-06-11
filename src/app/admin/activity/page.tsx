@@ -2,7 +2,6 @@ import { getCurrentAdmin } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { notFound, redirect } from "next/navigation"
 import { Shield, Truck, Clock } from "lucide-react"
-import { ClearLogsButton } from "./ClearLogsButton"
 
 export const dynamic = "force-dynamic"
 
@@ -81,8 +80,6 @@ export default async function ActivityLogPage({
               <h1 className="text-2xl font-bold text-slate-900">Үйлдлийн лог</h1>
               <p className="text-slate-500 text-sm mt-1">Нийт {total} бичлэг олдлоо</p>
             </div>
-            <div className="hidden sm:block h-8 w-px bg-slate-200"></div>
-            <ClearLogsButton />
           </div>
           <form method="GET" className="flex flex-wrap items-center gap-3">
             <select name="actionType" defaultValue={actionType || "ALL"} className="border-slate-300 rounded-lg text-sm bg-slate-50 focus:ring-indigo-500">
