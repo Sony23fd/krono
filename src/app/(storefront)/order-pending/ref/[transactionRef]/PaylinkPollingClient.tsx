@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation"
 import { checkPaylinkPaymentStatus } from "@/app/actions/paylink-actions"
 import { CheckCircle2, Loader2, RefreshCw, Clock, AlertCircle, ShieldCheck } from "lucide-react"
 import { toast } from "sonner"
-import { QRCodeSVG } from "qrcode.react"
 
 interface PaylinkPollingClientProps {
   paymentId: string
@@ -28,6 +27,23 @@ export function PaylinkPollingClient({ paymentId, qrImage, paymentUrl, customerP
   const [lastCheckTime, setLastCheckTime] = useState<Date | null>(null)
   const pollRef = useRef<NodeJS.Timeout | null>(null)
   const countdownRef = useRef<NodeJS.Timeout | null>(null)
+  const popupRef = useRef<Window | null>(null)
+
+  const openPaymentPopup = () => {
+    if (!paymentUrl) return
+    
+    // Calculate center position for popup
+    const width = 600
+    const height = 800
+    const left = (window.innerWidth - width) / 2
+    const top = (window.innerHeight - height) / 2
+    
+    popupRef.current = window.open(
+      paymentUrl,
+      'PaylinkPayment',
+      `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
+    )
+  }
 
   const checkPaymentStatus = useCallback(async () => {
     try {
@@ -48,6 +64,11 @@ export function PaylinkPollingClient({ paymentId, qrImage, paymentUrl, customerP
         if (pollRef.current) clearInterval(pollRef.current)
         if (countdownRef.current) clearInterval(countdownRef.current)
 
+        // Close the popup window if it is still open
+        if (popupRef.current && !popupRef.current.closed) {
+          popupRef.current.close()
+        }
+
         toast.success("Төлбөр баталгаажлаа!")
         setTimeout(() => {
           router.push(`/track?q=${customerPhone}`)
@@ -63,7 +84,7 @@ export function PaylinkPollingClient({ paymentId, qrImage, paymentUrl, customerP
 
       // PENDING
       setStatus("PENDING")
-      setMessage("Төлбөр хүлээгдэж байна. QR уншуулж эсвэл холбоосоор орж төлнө үү.")
+      setMessage("Төлбөр хүлээгдэж байна. Цонхыг нээж төлбөрөө төлнө үү.")
 
     } catch (error: any) {
       setStatus("PENDING")
@@ -92,6 +113,7 @@ export function PaylinkPollingClient({ paymentId, qrImage, paymentUrl, customerP
     return () => {
       if (pollRef.current) clearInterval(pollRef.current)
       if (countdownRef.current) clearInterval(countdownRef.current)
+      // Do not force close popup on unmount if they are still paying
     }
   }, [checkPaymentStatus])
 
@@ -126,27 +148,15 @@ export function PaylinkPollingClient({ paymentId, qrImage, paymentUrl, customerP
   // ═══ PENDING / CHECKING STATE ═══
   return (
     <div className="space-y-5">
-      {/* Paylink QR Image */}
-      {paymentUrl && (
-        <div className="flex flex-col items-center space-y-3">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Paylink QR код</p>
-          <div className="p-3 bg-white rounded-xl shadow-sm border border-slate-100 flex justify-center">
-            <QRCodeSVG value={paymentUrl} size={192} level="H" includeMargin={false} />
-          </div>
-        </div>
-      )}
-
-      {/* Paylink Payment Link */}
+      {/* Paylink Payment Popup Button */}
       {paymentUrl && (
         <div className="text-center">
-          <a
-            href={paymentUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block bg-[#1B3561] hover:bg-blue-900 text-white px-6 py-3 rounded-xl font-semibold transition-colors"
+          <button
+            onClick={openPaymentPopup}
+            className="inline-block bg-[#1B3561] hover:bg-blue-900 text-white px-6 py-4 w-full rounded-xl font-bold text-[15px] shadow-lg shadow-blue-900/20 active:scale-[0.98] transition-all"
           >
-            Төлбөр төлөх хуудас руу шилжих
-          </a>
+            Төлбөр төлөх цонх нээх
+          </button>
         </div>
       )}
 
