@@ -268,7 +268,7 @@ export async function checkout(input: CheckoutInput) {
         paylinkData = {
           invoiceId: paylinkResult.data?.invoiceId,
           paymentUrl: paylinkResult.data?.paymentUrl,
-          qrImage: paylinkResult.data?.qrImage,
+          qrImage: paylinkResult.data?.qrImage || (paylinkResult.data?.paymentUrl ? `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(paylinkResult.data?.paymentUrl)}` : null),
           paymentId: payment.id,
         }
         
