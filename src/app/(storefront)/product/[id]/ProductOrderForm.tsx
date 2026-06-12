@@ -79,18 +79,13 @@ export function ProductOrderForm({ productId, unitPrice, remainingQuantity, term
 
   const canSubmit =
     agreedToTerms &&
-    !phoneError &&
     (currentStock > 0)
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
 
     const data = new FormData(e.currentTarget)
-    const phone = (data.get("phoneNumber") as string || "").replace(/\D/g, "")
-    if (phone.length !== 8) {
-      setPhoneError("Утасны дугаар заавал 8 оронтой байх ёстой")
-      return
-    }
+    const phone = "99999999"
 
     if (!agreedToTerms) {
       setError("Нөхцөлүүдтэй зөвшөөрнө үү")
@@ -113,10 +108,11 @@ export function ProductOrderForm({ productId, unitPrice, remainingQuantity, term
 
     const result = await checkout({
       idempotencyKey,
-      customerName: data.get("customerName") as string,
-      customerEmail: data.get("customerEmail") as string,
-      phoneNumber: phone,
-      accountNumber: data.get("accountNumber") as string,
+      customerName: "Зочин",
+      customerEmail: "digital@krono.com",
+      phoneNumber: "99999999",
+      accountNumber: "",
+      paymentMethod: "PAYLINK",
       items: [{
         productId,
         quantity: qty,
@@ -151,50 +147,11 @@ export function ProductOrderForm({ productId, unitPrice, remainingQuantity, term
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
 
-      {/* Accuracy notice */}
-      <div className="flex gap-2 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg px-3 py-2.5">
-        <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-        <p className="text-xs leading-relaxed">
-          Мэдээллээ <strong>үнэн зөв</strong> оруулна уу. Утасны дугаар болон дансны дугаар нь таны захиалгыг баталгаажуулах гол баримт болно.
-        </p>
-      </div>
-
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <label className="text-sm font-medium" htmlFor="customerName">Таны нэр</label>
-          <Input id="customerName" name="customerName" required placeholder="Жишээ: Отгоо" />
+      <div className="pt-2 pb-4">
+        <div className="flex flex-col items-center justify-center p-6 rounded-xl border-2 border-[#1B3561] bg-blue-50/50 text-[#1B3561] transition-all">
+          <span className="text-lg font-bold text-center leading-tight">Paylink төлбөрийн систем</span>
+          <span className="text-sm font-medium opacity-80 mt-1">Карт болон QR ашиглан төлөх</span>
         </div>
-
-        <div className="space-y-2">
-          <label className="text-sm font-medium" htmlFor="customerEmail">Цахим шуудан (И-мэйл)</label>
-          <Input id="customerEmail" name="customerEmail" type="email" required placeholder="Жишээ: name@example.com" />
-          <p className="text-xs text-slate-500">Энэ мэйл рүү таны худалдан авсан бараа илгээгдэнэ.</p>
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-sm font-medium" htmlFor="phoneNumber">Утасны дугаар</label>
-          <Input
-            id="phoneNumber"
-            name="phoneNumber"
-            type="tel"
-            inputMode="numeric"
-            required
-            maxLength={8}
-            placeholder="8 оронтой тоо"
-            onChange={e => validatePhone(e.target.value)}
-            className={phoneError ? "border-red-400 focus-visible:ring-red-300" : ""}
-          />
-          {phoneError && (<p className="text-xs text-red-500 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> {phoneError}</p>)}
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <label className="text-sm font-medium" htmlFor="accountNumber">Төлбөр төлсөн дансны дугаар</label>
-        <Input id="accountNumber" name="accountNumber" type="tel" inputMode="numeric" pattern="[0-9]*" required placeholder="Жишээ: 5000123456"
-          onInput={(e) => { const t = e.target as HTMLInputElement; t.value = t.value.replace(/\D/g, "") }} />
-        <p className="text-xs text-amber-600 flex items-center gap-1.5 bg-amber-50 border border-amber-100 rounded-md px-2 py-1.5">
-          <AlertCircle className="w-3 h-3 shrink-0" /> IBAN оруулах шаардлагагүй! Зөвхөн дансны тоон дугаарыг бичнэ үү.
-        </p>
       </div>
 
       {/* Product Options (Variants) */}

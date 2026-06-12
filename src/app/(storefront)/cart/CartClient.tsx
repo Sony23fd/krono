@@ -355,42 +355,16 @@ export function CartClient({
             >
               <h2 className="font-bold text-slate-900 text-lg">Захиалгын мэдээлэл</h2>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-slate-700 block mb-1">Таны нэр</label>
-                  <input type="text" name="customerName" required defaultValue={customer?.name || ""}
-                    className="w-full border border-slate-200 bg-slate-50 rounded-xl px-4 py-2.5 text-sm focus:bg-white transition-colors focus:outline-none focus:ring-2 focus:ring-[#1B3561]/30" />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-700 block mb-1">Утасны дугаар</label>
-                  <input type="tel" name="phoneNumber" required defaultValue={customer?.phone || ""}
-                    className="w-full border border-slate-200 bg-slate-50 rounded-xl px-4 py-2.5 text-sm focus:bg-white transition-colors focus:outline-none focus:ring-2 focus:ring-[#1B3561]/30" />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-700 block mb-1">Имэйл хаяг (Дижитал бараа хүлээн авах)</label>
-                  <input type="email" name="customerEmail" required defaultValue={""}
-                    className="w-full border border-slate-200 bg-slate-50 rounded-xl px-4 py-2.5 text-sm focus:bg-white transition-colors focus:outline-none focus:ring-2 focus:ring-[#1B3561]/30" />
-                </div>
-              </div>
+              {/* Hidden default values to bypass validation */}
+              <input type="hidden" name="customerName" value="Зочин" />
+              <input type="hidden" name="phoneNumber" value="99999999" />
+              <input type="hidden" name="customerEmail" value="digital@krono.com" />
+              <input type="hidden" name="paymentMethod" value="PAYLINK" />
 
-              {/* Payment Method Selector */}
               <div className="pt-2">
-                <label className="text-sm font-medium text-slate-700 block mb-2">Төлбөрийн хэлбэр</label>
-                <div className="grid grid-cols-3 gap-3">
-                  <label className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === "PAYLINK" ? "border-[#1B3561] bg-blue-50/50 text-[#1B3561]" : "border-slate-100 bg-white hover:border-slate-200 text-slate-600"}`}>
-                    <input type="radio" name="paymentMethod" value="PAYLINK" checked={paymentMethod === "PAYLINK"} onChange={() => setPaymentMethod("PAYLINK")} className="sr-only" />
-                    <span className="text-sm font-bold text-center leading-tight">Paylink<br/><span className="text-[10px] font-medium opacity-80">(Карт, QPay)</span></span>
-                  </label>
-                  {qpayEnabled && (
-                    <label className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === "QPAY" ? "border-[#1B3561] bg-blue-50/50 text-[#1B3561]" : "border-slate-100 bg-white hover:border-slate-200 text-slate-600"}`}>
-                      <input type="radio" name="paymentMethod" value="QPAY" checked={paymentMethod === "QPAY"} onChange={() => setPaymentMethod("QPAY")} className="sr-only" />
-                      <span className="text-sm font-bold text-center leading-tight">QPay<br/><span className="text-[10px] font-medium opacity-80">(Апп)</span></span>
-                    </label>
-                  )}
-                  <label className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === "BANK_TRANSFER" ? "border-[#1B3561] bg-blue-50/50 text-[#1B3561]" : "border-slate-100 bg-white hover:border-slate-200 text-slate-600"}`}>
-                    <input type="radio" name="paymentMethod" value="BANK_TRANSFER" checked={paymentMethod === "BANK_TRANSFER"} onChange={() => setPaymentMethod("BANK_TRANSFER")} className="sr-only" />
-                    <span className="text-sm font-bold text-center leading-tight">Шилжүүлэг<br/><span className="text-[10px] font-medium opacity-80">(Гараар)</span></span>
-                  </label>
+                <div className="flex flex-col items-center justify-center p-6 rounded-xl border-2 border-[#1B3561] bg-blue-50/50 text-[#1B3561] transition-all">
+                  <span className="text-lg font-bold text-center leading-tight">Paylink төлбөрийн систем</span>
+                  <span className="text-sm font-medium opacity-80 mt-1">Карт болон QR ашиглан төлөх</span>
                 </div>
               </div>
 
