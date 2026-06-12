@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: krono_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: secretpassword
+      POSTGRES_DB: krono
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - krono_net
+
+  web:
+    build: .
+    container_name: krono_web
+    restart: always
+    ports:
+      - "80:3000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:secretpassword@db:5432/krono?schema=public
+      # Add other ENVs here manually on the server in a .env file if preferred, or directly here:
+      - NEXT_TELEMETRY_DISABLED=1
+      - NODE_ENV=production
+    depends_on:
+      - db
+    networks:
+      - krono_net
+
+volumes:
+  pgdata:
+
+networks:
+  krono_net:
