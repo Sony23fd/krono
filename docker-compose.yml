@@ -24,7 +24,19 @@ services:
       - "80:3000"
     environment:
       - DATABASE_URL=postgresql://postgres:secretpassword@db:5432/krono?schema=public
-      # Add other ENVs here manually on the server in a .env file if preferred, or directly here:
+      - DIRECT_URL=postgresql://postgres:secretpassword@db:5432/krono?schema=public
+      - SESSION_SECRET=shoooop-super-secret-key-32-chars-minimum-length-required!
+      - NEXTAUTH_SECRET=engiinshop-super-secret-key-32-chars!
+      - NEXTAUTH_URL=https://kronoventure.com
+      - NEXT_PUBLIC_APP_URL=https://kronoventure.com
+      - QPAY_CLIENT_ID=BILEGHURGELT
+      - QPAY_CLIENT_SECRET=k04dMExt
+      - QPAY_INVOICE_CODE=BILEGHURGELT_INVOICE
+      - QPAY_BASE_URL=https://merchant.qpay.mn/v2
+      - VERIFY_MN_API_KEY=vrf_9rokHcZDkzWp5gun1-YOiDrHH7-E6njn
+      - POS_SYNC_API_KEY=super_secret_pos_key_2026
+      - PAYLINK_USERNAME=batmagnai.ui@gmail.com
+      - PAYLINK_SIGNATURE=vfl4QBd0obvVzIFD94rCr3bbj6uOD27OHeRtp6Krtwe57dwkVBQVYwaXc+N4P0eTikHPZ20/4HhGdjNMVNkC1Q==
       - NEXT_TELEMETRY_DISABLED=1
       - NODE_ENV=production
     depends_on:
