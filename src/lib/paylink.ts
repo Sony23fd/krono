@@ -60,22 +60,26 @@ export async function createPaylinkInvoice({
       amount: amount,
       txndesc: description,
       merchant_ref: transactionRef,
-      fee_percent: 0
+      fee_percent: 0,
+      fee_amount: 0,
+      base_amount: amount
     }
 
     const data = await callPaylinkApi("cu0900", payload)
     
-    // The response should contain an `invid` to construct the payment URL
-    const invid = data.invid || data.id // fallback if id is used
+    console.log("[Paylink Raw Response]:", JSON.stringify(data))
+    
+    const resData = data.response || data;
+    const invid = resData.invid || resData.id || resData.invoiceId || resData.invoice_id // fallback if id is used
     if (!invid) {
-      throw new Error("Invalid response from Paylink: missing invid")
+      throw new Error("Invalid response from Paylink: missing invid. Raw: " + JSON.stringify(data))
     }
 
     return { 
       success: true, 
       data: {
         invoiceId: invid,
-        paymentUrl: `https://www.paylink.mn/pay/${invid}`,
+        paymentUrl: resData.payment_link || `https://www.paylink.mn/pay/${invid}`,
         // We do not have a direct QR image from cu0900 based on standard Paylink proxy, 
         // but frontend handles redirection. We can pass a dummy base64 or let frontend handle the link.
         qrImage: null, 
