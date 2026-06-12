@@ -13,7 +13,7 @@ const SESSION_OPTIONS = {
   password: process.env.SESSION_SECRET!,
   cookieName: "anar-admin-session",
   cookieOptions: {
-    secure: process.env.NODE_ENV === "production",
+    secure: false, // process.env.NODE_ENV === "production" && process.env.NEXT_PUBLIC_APP_URL?.startsWith("https"),
     httpOnly: true,
     maxAge: 60 * 60 * 8, // 8 hours
   },
