@@ -37,6 +37,10 @@ services:
       - POS_SYNC_API_KEY=super_secret_pos_key_2026
       - PAYLINK_USERNAME=batmagnai.ui@gmail.com
       - PAYLINK_SIGNATURE=vfl4QBd0obvVzIFD94rCr3bbj6uOD27OHeRtp6Krtwe57dwkVBQVYwaXc+N4P0eTikHPZ20/4HhGdjNMVNkC1Q==
+      - SMTP_HOST=smtp.gmail.com
+      - SMTP_PORT=587
+      - SMTP_USER=engiineerengineer@gmail.com
+      - SMTP_PASS=axew necf retg xtnw
       - NEXT_TELEMETRY_DISABLED=1
       - NODE_ENV=production
     depends_on:
