@@ -21,7 +21,7 @@ services:
     container_name: krono_web
     restart: always
     ports:
-      - "80:3000"
+      - "127.0.0.1:3000:3000"
     environment:
       - DATABASE_URL=postgresql://postgres:secretpassword@db:5432/krono?schema=public
       - DIRECT_URL=postgresql://postgres:secretpassword@db:5432/krono?schema=public
