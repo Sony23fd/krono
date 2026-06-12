@@ -1,119 +1,171 @@
+// src/lib/paylink.ts
 
-export const PAYLINK_BASE_URL = "https://paylink.mn/api/v1"
+export type PaylinkInvoiceStatus = "pending" | "paid" | "approved" | "canceled" | "expired";
 
-// Paylink Credentials (from .env)
-function getCredentials() {
-  const username = process.env.PAYLINK_USERNAME
-  const signature = process.env.PAYLINK_SIGNATURE
-  
-  if (!username || !signature) {
-    console.warn("⚠️ Paylink credentials (X-USERNAME, X-SIGNATURE) are not fully configured in .env")
-  }
-
-  return { username, signature }
+export interface CreateInvoiceParams {
+  amount: number;
+  transactionRef: string;
+  description?: string;
 }
 
-async function callPaylinkApi(pc: string, payload: any) {
-  const { username, signature } = getCredentials()
-  if (!username || !signature) {
-    throw new Error("Authentication configuration missing")
-  }
-
-  const res = await fetch(`${PAYLINK_BASE_URL}/external/process`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Accept": "application/json",
-      "pc": pc,
-      "X-USERNAME": username,
-      "X-SIGNATURE": signature
-    },
-    body: JSON.stringify(payload),
-    cache: "no-store"
-  })
-
-  const data = await res.json()
-  
-  if (!res.ok || data.status === "error") {
-    throw new Error(data.message || `Paylink API error (${pc})`)
-  }
-  
-  return data
+export interface PaylinkResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  response_code?: string;
 }
 
-/**
- * 1. Create invoice (cu0900)
- */
-export async function createPaylinkInvoice({ 
-  transactionRef, 
-  amount, 
-  description = "Дижитал худалдан авалт" 
-}: { 
-  transactionRef: string, 
-  amount: number, 
-  description?: string 
-}) {
-  try {
-    const payload = {
-      amount_total: amount,
-      count_total: 1,
-      amount: amount,
-      txndesc: description,
-      merchant_ref: transactionRef,
-      fee_percent: 0,
-      fee_amount: 0,
-      base_amount: amount
+export class PaylinkClient {
+  private readonly baseUrl: string;
+  private readonly username: string;
+  private readonly signature: string;
+
+  constructor() {
+    this.baseUrl = "https://paylink.mn/api/v1/external/process";
+    
+    // Environment Variables
+    this.username = process.env.PAYLINK_USERNAME || "";
+    this.signature = process.env.PAYLINK_SIGNATURE || "";
+
+    if (!this.username || !this.signature) {
+      console.warn("⚠️ Paylink credentials (PAYLINK_USERNAME, PAYLINK_SIGNATURE) are missing in .env");
+    }
+  }
+
+  /**
+   * Helper function: Generate X-SIGNATURE
+   * Paylink MN uses static API Keys in most standard integrations.
+   * If HMAC-SHA256 based on payload is required, it can be implemented here.
+   */
+  private generateSignature(): string {
+    return this.signature;
+  }
+
+  /**
+   * Core request handler for Paylink's Single Endpoint Architecture
+   * @param pc Process Code (e.g., cu0900, cu0904)
+   * @param payload Request Body
+   */
+  private async request(pc: string, payload: any): Promise<any> {
+    if (!this.username || !this.signature) {
+      throw new Error("Paylink authentication configuration is missing.");
     }
 
-    const data = await callPaylinkApi("cu0900", payload)
-    
-    console.log("[Paylink Raw Response]:", JSON.stringify(data))
-    
-    const resData = data.response || data;
-    const invid = resData.invid || resData.id || resData.invoiceId || resData.invoice_id // fallback if id is used
-    if (!invid) {
-      throw new Error("Invalid response from Paylink: missing invid. Raw: " + JSON.stringify(data))
-    }
+    try {
+      const response = await fetch(this.baseUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "pc": pc,
+          "X-USERNAME": this.username,
+          "X-SIGNATURE": this.generateSignature(),
+        },
+        body: JSON.stringify(payload),
+        cache: "no-store",
+      });
 
-    return { 
-      success: true, 
-      data: {
-        invoiceId: invid,
-        paymentUrl: resData.payment_link || `https://www.paylink.mn/pay/${invid}`,
-        // We do not have a direct QR image from cu0900 based on standard Paylink proxy, 
-        // but frontend handles redirection. We can pass a dummy base64 or let frontend handle the link.
-        qrImage: null, 
-        raw: data
-      } 
-    }
-  } catch (error: any) {
-    console.error("Paylink Invoice Error:", error)
-    // Return mock data for testing if API fails in dev
-    if (process.env.NODE_ENV !== "production") {
-      console.log("Mocking Paylink response for development")
-      return {
-        success: true,
-        data: {
-          invoiceId: "mock_invoice_" + transactionRef,
-          paymentUrl: "https://www.paylink.mn/pay/mock_" + transactionRef,
-          qrImage: null
+      const data = await response.json();
+      
+      if (data.response_code !== "RC000000") {
+        throw new Error(data.response || `Paylink API error. Code: ${data.response_code}`);
+      }
+
+      return data.response; 
+    } catch (error: any) {
+      console.error(`[Paylink API Error - ${pc}]:`, error.message);
+      
+      // Mocking for development environment when API fails
+      if (process.env.NODE_ENV !== "production") {
+        console.log(`Mocking Paylink response for ${pc} in development`);
+        if (pc === "cu0900") {
+          return {
+            invid: "mock_inv_" + Date.now(),
+            payment_link: "https://paylink.mn/pay/mock_inv_" + Date.now()
+          };
+        } else if (pc === "cu0904") {
+          return { status: "pending", paid_at: null };
         }
       }
+      
+      throw error;
     }
-    return { success: false, error: error.message }
+  }
+
+  /**
+   * 1. Create Invoice (pc: cu0900)
+   */
+  public async createInvoice({ amount, transactionRef, description = "Худалдан авалт" }: CreateInvoiceParams): Promise<PaylinkResponse> {
+    try {
+      const payload = {
+        amount_total: amount,
+        count_total: 1,
+        amount: amount,
+        txndesc: description,
+        merchant_ref: transactionRef,
+        base_amount: amount,
+        fee_percent: 0,
+        fee_amount: 0,
+      };
+
+      const result = await this.request("cu0900", payload);
+
+      if (!result.invid || !result.payment_link) {
+        throw new Error("Invalid response: Missing invid or payment_link");
+      }
+
+      return {
+        success: true,
+        response_code: "RC000000",
+        data: {
+          invoiceId: result.invid,
+          paymentUrl: result.payment_link,
+          qrImage: null, // Frontend will handle QR generation
+          raw: result
+        }
+      };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * 2. Check Invoice Status (pc: cu0904)
+   */
+  public async checkInvoiceStatus(invoiceId: string): Promise<PaylinkResponse<{ status: PaylinkInvoiceStatus, isPaid: boolean, raw: any }>> {
+    try {
+      const payload = { invid: invoiceId };
+      const result = await this.request("cu0904", payload);
+
+      const status: PaylinkInvoiceStatus = result.status?.toLowerCase() || "pending";
+      const isPaid = status === "paid" || status === "success";
+
+      return {
+        success: true,
+        response_code: "RC000000",
+        data: {
+          status,
+          isPaid,
+          raw: result
+        }
+      };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
   }
 }
 
-/**
- * 2. Check payment status (cu0904)
- */
+// Global instance
+export const paylinkClient = new PaylinkClient();
+
+// Legacy Wrapper Functions to maintain compatibility with existing codebase
+export async function createPaylinkInvoice(params: CreateInvoiceParams) {
+  return paylinkClient.createInvoice(params);
+}
+
 export async function checkPaylinkPayment(invoiceId: string) {
-  try {
-    const data = await callPaylinkApi("cu0904", { invid: invoiceId })
-    
-    return { success: true, data }
-  } catch (error: any) {
-    console.error("Paylink Check Payment Error:", error)
-    return { success: false, error: error.message }
-  }
+  const result = await paylinkClient.checkInvoiceStatus(invoiceId);
+  if (!result.success) return { success: false, error: result.error };
+  // Return raw data to maintain compatibility with existing usages
+  return { success: true, data: result.data?.raw };
 }
