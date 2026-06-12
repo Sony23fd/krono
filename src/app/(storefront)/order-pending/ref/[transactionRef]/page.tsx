@@ -97,7 +97,7 @@ export default async function OrderPendingByRefPage({ params }: { params: Promis
     <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-12">
       <div className="max-w-md w-full space-y-4">
 
-        <CopyTrackingLink trackingRef={transactionRef} />
+        {/* Tracking link removed as per request */}
 
         {/* Status */}
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-3">
@@ -192,13 +192,7 @@ export default async function OrderPendingByRefPage({ params }: { params: Promis
           )}
         </div>
 
-        {/* Track link */}
-        <div className="text-center space-y-2">
-          <a href={`/track?q=${order.customerPhone}`} className="text-[#1B3561] font-medium text-sm hover:underline">
-            Захиалгын явц хянах →
-          </a>
-          <p className="text-xs text-slate-400">Асуулт байвал бидэнтэй холбогдоорой</p>
-        </div>
+        {/* Track link removed */}
       </div>
     </div>
   )

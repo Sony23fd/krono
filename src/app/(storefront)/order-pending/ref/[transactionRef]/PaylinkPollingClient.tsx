@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { checkPaylinkPaymentStatus } from "@/app/actions/paylink-actions"
 import { CheckCircle2, Loader2, RefreshCw, Clock, AlertCircle, ShieldCheck } from "lucide-react"
 import { toast } from "sonner"
+import { QRCodeSVG } from "qrcode.react"
 
 interface PaylinkPollingClientProps {
   paymentId: string
@@ -126,11 +127,11 @@ export function PaylinkPollingClient({ paymentId, qrImage, paymentUrl, customerP
   return (
     <div className="space-y-5">
       {/* Paylink QR Image */}
-      {qrImage && (
+      {paymentUrl && (
         <div className="flex flex-col items-center space-y-3">
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Paylink QR код</p>
-          <div className="p-3 bg-white rounded-xl shadow-sm border border-slate-100">
-            <img src={qrImage.startsWith('data:') ? qrImage : `data:image/png;base64,${qrImage}`} alt="Paylink QR" className="w-48 h-48" />
+          <div className="p-3 bg-white rounded-xl shadow-sm border border-slate-100 flex justify-center">
+            <QRCodeSVG value={paymentUrl} size={192} level="H" includeMargin={false} />
           </div>
         </div>
       )}

@@ -134,18 +134,9 @@ export function CartClient({
   const hasInStock = items.some(i => !i.isPreOrder)
   const isMixedCart = hasPreOrder && hasInStock
 
-  // Conditional delivery fee logic
-  // TODO: Шинэ Дархан, Хуучин Дархан зэрэг бүсчлэлээр хүргэлтийн үнэ ялгах бол энд `deliveryRegion` ашиглаж тооцно
-  // const regionFee = deliveryRegion === "Хуучин Дархан" ? 2000 : 0;
-  const baseDeliveryFee = totalPrice >= (deliveryThreshold ?? 50000) 
-    ? (deliveryFeeAboveThreshold ?? 5000) 
-    : (deliveryFeeBelowThreshold ?? 8000);
-
-  // Still allow products to have custom delivery fee if they are higher (e.g. large items)
-  const maxItemFee = items.length > 0 ? Math.max(0, ...items.map(i => i.deliveryFee || 0)) : 0
-  const finalDeliveryFee = Math.max(baseDeliveryFee, maxItemFee);
-
-  let singleDeliveryFee = (wantsDelivery && !hasPreOrder) ? finalDeliveryFee : 0
+  // Conditional delivery fee logic removed
+  const finalDeliveryFee = 0;
+  let singleDeliveryFee = 0;
   
   // Apply referral reward to delivery fee
   let referralRewardUsed = 0;
@@ -348,7 +339,6 @@ export function CartClient({
               onSubmit={async (e) => {
                 e.preventDefault()
                 const fd = new FormData(e.currentTarget)
-                if (!agreedToTerms) { setError("Нөхцөлүүдтэй зөвшөөрнө үү"); return }
                 await handleCheckout(fd)
               }}
               className="bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/40 p-6 sm:p-8 space-y-6 sticky top-24"
@@ -368,16 +358,7 @@ export function CartClient({
                 </div>
               </div>
 
-              {(termsOfService || deliveryTerms) && (
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-3">
-                  <label className="flex items-start gap-3 cursor-pointer">
-                    <input type="checkbox" checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)} className="accent-[#F26522] w-4 h-4 shrink-0 mt-0.5" />
-                    <span className="text-sm text-slate-700 font-medium flex-1">
-                      Би үйлчилгээний нөхцөлүүдийг уншиж танилцсан бөгөөд зөвшөөрч байна
-                    </span>
-                  </label>
-                </div>
-              )}
+              {/* Terms and conditions removed */}
 
               {/* Price Summary */}
               <div className="border-t pt-4 space-y-1.5">
