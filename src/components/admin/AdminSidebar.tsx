@@ -77,8 +77,6 @@ const SIDEBAR_STRUCTURE: SidebarGroup[] = [
     id: "marketing",
     label: "Маркетинг",
     items: [
-      { name: "Слайд & Попап баннер", url: "/admin/marketing/banners", icon: ImageIcon, roles: ["ADMIN"] },
-      { name: "Нүүрний хэсгүүд", url: "/admin/marketing/homepage-sections", icon: LayoutDashboard, roles: ["ADMIN"] },
       { name: "Хямдрал & Урамшуулал", url: "/admin/marketing/promotions", icon: Tag, roles: ["ADMIN"] }
     ]
   },
@@ -90,7 +88,6 @@ const SIDEBAR_STRUCTURE: SidebarGroup[] = [
       { name: "Ерөнхий тохиргоо", url: "/admin/settings/general", icon: Settings, roles: ["ADMIN"] },
       { name: "Төлбөрийн тохиргоо", url: "/admin/settings/payment", icon: CreditCard, roles: ["ADMIN"] },
       { name: "Карго тохиргоо", url: "/admin/cargo-settings", icon: Truck, roles: ["CARGO_ADMIN"] },
-      { name: "Нөхцөлийн тохиргоо", url: "/admin/settings/terms", icon: FileText, roles: ["ADMIN"] },
       { name: "Админ хэрэглэгчид", url: "/admin/users", icon: ShieldCheck, roles: ["ADMIN", "DATAADMIN"] },
       { name: "Үйлдлийн лог", url: "/admin/activity", icon: Database, roles: ["ADMIN", "DATAADMIN"] },
       { name: "Гарын авлага", url: "/admin/guide", icon: BookOpen, roles: ["ADMIN", "CARGO_ADMIN"] }

@@ -1,113 +1,54 @@
-import { getBanners } from "@/app/actions/home-actions"
-import { getStorefrontHomePageSections } from "@/app/actions/homepage-section-actions"
-import { getCategories } from "@/app/actions/category-actions"
-import { getCustomerSession } from "@/lib/customer-session"
-
-import { HeroSlider } from "@/components/storefront/home/HeroSlider"
-import { ProductSliderSection } from "@/components/storefront/home/ProductSliderSection"
-import { PromoSliderSection } from "@/components/storefront/home/PromoSliderSection"
-import { ThinBannerSlider } from "@/components/storefront/home/ThinBannerSlider"
-import { HowItWorks } from "@/components/storefront/home/HowItWorks"
-import { StoryCategoryMenu } from "@/components/storefront/home/StoryCategoryMenu"
+import { getActiveProducts } from "@/app/actions/product-actions"
+import { ProductCard } from "@/components/storefront/product/ProductCard"
+import { Suspense } from "react"
+import { Package } from "lucide-react"
 
 export const dynamic = "force-dynamic"
 
-export default async function StorefrontHomePage() {
-  const [{ banners, thinBanners }, { sections }, categoriesResult, session] = await Promise.all([
-    getBanners(),
-    getStorefrontHomePageSections(),
-    getCategories(),
-    getCustomerSession()
-  ])
-
-  const categories = categoriesResult?.categories || []
-  const isLoggedIn = session.isLoggedIn === true
-
-  const visibleSections = (sections || []).filter(section => {
-    if (section.visibilityTarget === "LOGGED_IN_ONLY" && !isLoggedIn) return false
-    if (section.visibilityTarget === "GUEST_ONLY" && isLoggedIn) return false
-    return true
-  })
-
-  // Group sections by checking what type they are and rendering
+function ProductGridSkeleton() {
   return (
-    <div className="bg-white min-h-screen flex flex-col pb-10">
-      {visibleSections.map((section) => {
-        let deviceClass = "";
-        if (section.deviceTarget === "MOBILE_ONLY") deviceClass = "block md:hidden";
-        if (section.deviceTarget === "DESKTOP_ONLY") deviceClass = "hidden md:block";
-
-        switch (section.type) {
-          case "HERO_BANNER":
-            return (
-              <div key={section.id} className={deviceClass}>
-                <HeroSlider banners={banners || []} />
-              </div>
-            )
-          
-          case "CATEGORY_MENU":
-            return (
-              <div key={section.id} className={`mt-6 md:mt-10 ${deviceClass}`}>
-                <StoryCategoryMenu categories={categories} />
-              </div>
-            )
-
-          case "THIN_BANNER":
-            return thinBanners && thinBanners.length > 0 ? (
-              <div key={section.id} className={`mt-12 md:mt-20 ${deviceClass}`}>
-                <ThinBannerSlider banners={thinBanners} />
-              </div>
-            ) : null
-
-          case "HOW_IT_WORKS":
-            return (
-              <div key={section.id} className={deviceClass}>
-                <HowItWorks />
-              </div>
-            )
-
-          case "PRODUCT_SLIDER":
-            return (
-              <div key={section.id} className={`mt-12 md:mt-20 ${deviceClass}`}>
-                <ProductSliderSection
-                  title={section.title}
-                  products={section.products || []}
-                  viewAllLink={section.categoryId ? `/categories/${section.category?.slug}` : "/shop"}
-                  rowCount={section.rowCount}
-                  autoScroll={section.autoScroll}
-                  layoutVariant={section.layoutVariant}
-                />
-              </div>
-            )
-
-          case "PROMO_SLIDER":
-            return (
-              <div key={section.id} className={`mt-12 md:mt-20 ${deviceClass}`}>
-                <PromoSliderSection
-                  title={section.title}
-                  promoTitle={section.title}
-                  promoSubtitle={section.category ? ((section.category as any).displayName || section.category.name) : "Онцгой санал"}
-                  promoLink={section.bannerLink || (section.categoryId ? `/categories/${section.category?.slug}` : "/shop")}
-                  promoImage={section.bannerImageUrl || undefined}
-                  products={section.products || []}
-                  rowCount={section.rowCount}
-                  autoScroll={section.autoScroll}
-                  layoutVariant={section.layoutVariant}
-                  bannerText={section.bannerText}
-                  showBannerText={section.showBannerText}
-                  bannerTextColor={section.bannerTextColor || undefined}
-                  bannerTextPosition={section.bannerTextPosition || undefined}
-                  bannerTextSize={section.bannerTextSize || undefined}
-                  bannerPosition={section.bannerPosition || "LEFT"}
-                />
-              </div>
-            )
-            
-          default:
-            return null
-        }
-      })}
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4 lg:gap-6 mt-6">
+      {Array.from({ length: 30 }).map((_, i) => (
+        <div key={i} className="animate-pulse bg-slate-100 rounded-2xl h-[280px] w-full" />
+      ))}
     </div>
   )
 }
 
+async function ProductGrid() {
+  // Fetch a reasonably large number of products for the homepage
+  const result = await getActiveProducts({ limit: 100 })
+  const products = result?.products || []
+
+  if (products.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+        <Package className="w-12 h-12 mb-4 opacity-50" />
+        <p>Бараа олдсонгүй</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4 lg:gap-6 mt-6">
+      {products.map((product: any) => (
+        <ProductCard key={product.id} product={product} />
+      ))}
+    </div>
+  )
+}
+
+export default function StorefrontHomePage() {
+  return (
+    <div className="bg-slate-50 min-h-screen flex flex-col pb-10">
+      <div className="max-w-7xl mx-auto px-4 w-full py-8 md:py-12">
+        <h1 className="text-2xl md:text-3xl font-extrabold text-[#1B3561] mb-2 tracking-tight">Бүх бараа</h1>
+        <p className="text-slate-500 text-sm md:text-base mb-8">Манай дэлгүүрт байгаа бүх бараа бүтээгдэхүүнүүд</p>
+        
+        <Suspense fallback={<ProductGridSkeleton />}>
+          <ProductGrid />
+        </Suspense>
+      </div>
+    </div>
+  )
+}
