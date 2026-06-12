@@ -137,8 +137,9 @@ export class PaylinkClient {
       const payload = { invid: invoiceId };
       const result = await this.request("cu0904", payload);
 
-      const status: PaylinkInvoiceStatus = result.status?.toLowerCase() || "pending";
-      const isPaid = status === "paid" || status === "success";
+      const rawStatus = result.status?.toLowerCase() || "pending";
+      const status: PaylinkInvoiceStatus = (rawStatus === "success" ? "paid" : rawStatus) as PaylinkInvoiceStatus;
+      const isPaid = status === "paid";
 
       return {
         success: true,
