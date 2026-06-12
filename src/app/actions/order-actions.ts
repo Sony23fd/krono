@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
+import { sendDigitalGoodsEmail } from "@/lib/email"
 
 // ═══════════════════════════════════════════════════
 // ТӨЛБӨР БАТАЛГААЖУУЛАЛТ
@@ -62,6 +63,25 @@ export async function confirmPayment(orderId: string, externalRef?: string) {
         })
       }
     })
+
+    // Fetch order again to send email
+    const updatedOrder = await db.order.findUnique({
+      where: { id: orderId },
+      include: { items: true }
+    })
+
+    if (updatedOrder && updatedOrder.customerEmail) {
+      await sendDigitalGoodsEmail({
+        toEmail: updatedOrder.customerEmail,
+        orderNumber: updatedOrder.orderNumber,
+        customerName: updatedOrder.customerName,
+        items: updatedOrder.items.map(i => ({
+          productName: i.productName,
+          quantity: i.quantity,
+          downloadUrl: `https://krono.mn/download/${updatedOrder.idempotencyKey}/${i.id}`,
+        }))
+      })
+    }
 
     revalidatePath("/admin/orders")
     revalidatePath("/")

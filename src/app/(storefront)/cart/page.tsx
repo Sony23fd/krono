@@ -21,6 +21,7 @@ export default async function CartPage() {
       termsOfService={settings.terms_of_service}
       deliveryTerms={settings.delivery_terms}
       qpayEnabled={settings.qpay_enabled === "true"}
+      paylinkEnabled={settings.paylink_enabled !== "false"} // Default true
       deliveryScheduleDays={settings.delivery_schedule_days || "3,6"}
       loyaltyPercent={Number(settings.loyalty_discount_percent || 3)}
       loyaltyEnabled={settings.loyalty_enabled !== "false"}

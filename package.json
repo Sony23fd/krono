@@ -36,6 +36,7 @@
     "lucide-react": "^0.577.0",
     "next": "16.1.6",
     "next-auth": "^4.24.13",
+    "nodemailer": "^8.0.11",
     "prisma": "^5.22.0",
     "qrcode.react": "^4.2.0",
     "react": "19.2.3",
@@ -59,6 +60,7 @@
     "seed": "tsx prisma/seed.ts"
   },
   "devDependencies": {
+    "@types/nodemailer": "^8.0.1",
     "@types/ssh2": "^1.15.5"
   }
 }

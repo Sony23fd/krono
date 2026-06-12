@@ -10,55 +10,31 @@ import { checkout } from "@/app/actions/checkout-actions"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Package } from "lucide-react"
-import { getUpcomingDeliveryDates } from "@/lib/utils"
 import { isValidPhone } from "@/lib/customer-utils"
 
 interface Props {
   productId: string
   unitPrice: number
-  deliveryFee: number
   remainingQuantity: number
   termsOfService?: string
-  deliveryTerms?: string
-  isPreOrder?: boolean
   options?: Array<{ name: string, values: string[] }>
   variants?: Array<{ id: string; sku: string; name: string; stockQuantity: number; price?: number }>
-  deliveryScheduleDays?: string
 }
 
-const DAY_NAMES = ["Ням", "Даваа", "Мягмар", "Лхагва", "Пүрэв", "Баасан", "Бямба"]
 
-function getNextDeliveryDate(scheduleDaysStr: string): string {
-  const days = scheduleDaysStr.split(",").map(Number).filter(n => !isNaN(n))
-  if (days.length === 0) return ""
-  const now = new Date()
-  for (let i = 1; i <= 7; i++) {
-    const next = new Date(now)
-    next.setDate(now.getDate() + i)
-    if (days.includes(next.getDay())) {
-      const month = next.getMonth() + 1
-      const day = next.getDate()
-      const dayName = DAY_NAMES[next.getDay()]
-      return `${dayName}, ${month}-р сарын ${day}`
-    }
-  }
-  return ""
-}
 
-export function ProductOrderForm({ productId, unitPrice, deliveryFee, remainingQuantity, termsOfService, deliveryTerms, isPreOrder, options, variants, deliveryScheduleDays = "3,6" }: Props) {
+export function ProductOrderForm({ productId, unitPrice, remainingQuantity, termsOfService, options, variants }: Props) {
   // Build variantStock map from variants array
   const variantStock = variants?.reduce((acc, v) => ({ ...acc, [v.name]: v.stockQuantity }), {} as Record<string, number>) || null
   const router = useRouter()
   const { removeItem } = useCart()
-  const [wantsDelivery, setWantsDelivery] = useState(false)
-  const [qty, setQty] = useState(1)
+    const [qty, setQty] = useState(1)
   const [submitting, setSubmitting] = useState(false)
   const [isRedirecting, setIsRedirecting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [phoneError, setPhoneError] = useState<string | null>(null)
-  const [agreedToTerms, setAgreedToTerms] = useState(!termsOfService && !deliveryTerms)
-  const [selectedDeliveryDate, setSelectedDeliveryDate] = useState<string | null>(null)
-  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>(() => {
+  const [agreedToTerms, setAgreedToTerms] = useState(!termsOfService)
+    const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>(() => {
     const defaultOpts: Record<string, string> = {}
     if (options) {
       options.forEach(opt => {
@@ -92,7 +68,7 @@ export function ProductOrderForm({ productId, unitPrice, deliveryFee, remainingQ
   }
 
   const itemTotal = qty * unitPrice
-  const totalAmount = itemTotal + (wantsDelivery ? deliveryFee : 0)
+  const totalAmount = itemTotal
 
   function validatePhone(value: string) {
     const digits = value.replace(/\D/g, "")
@@ -104,7 +80,7 @@ export function ProductOrderForm({ productId, unitPrice, deliveryFee, remainingQ
   const canSubmit =
     agreedToTerms &&
     !phoneError &&
-    (isPreOrder || currentStock > 0)
+    (currentStock > 0)
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -122,7 +98,7 @@ export function ProductOrderForm({ productId, unitPrice, deliveryFee, remainingQ
     }
 
     // Variant stock check
-    if (variantStock && currentVariantKey && !isPreOrder) {
+    if (variantStock && currentVariantKey) {
       const available = variantStock[currentVariantKey] ?? 0
       if (available < qty) {
         setError(`Таны сонгосон хослолын үлдэгдэл хүрэлцэхгүй байна (${available} ширхэг)`)
@@ -138,11 +114,9 @@ export function ProductOrderForm({ productId, unitPrice, deliveryFee, remainingQ
     const result = await checkout({
       idempotencyKey,
       customerName: data.get("customerName") as string,
+      customerEmail: data.get("customerEmail") as string,
       phoneNumber: phone,
       accountNumber: data.get("accountNumber") as string,
-      deliveryAddress: wantsDelivery ? (data.get("deliveryAddress") as string) : undefined,
-      deliveryDate: (wantsDelivery && !isPreOrder && selectedDeliveryDate) ? selectedDeliveryDate : undefined,
-      wantsDelivery: isPreOrder ? false : wantsDelivery,
       items: [{
         productId,
         quantity: qty,
@@ -190,6 +164,13 @@ export function ProductOrderForm({ productId, unitPrice, deliveryFee, remainingQ
           <label className="text-sm font-medium" htmlFor="customerName">Таны нэр</label>
           <Input id="customerName" name="customerName" required placeholder="Жишээ: Отгоо" />
         </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium" htmlFor="customerEmail">Цахим шуудан (И-мэйл)</label>
+          <Input id="customerEmail" name="customerEmail" type="email" required placeholder="Жишээ: name@example.com" />
+          <p className="text-xs text-slate-500">Энэ мэйл рүү таны худалдан авсан бараа илгээгдэнэ.</p>
+        </div>
+
         <div className="space-y-2">
           <label className="text-sm font-medium" htmlFor="phoneNumber">Утасны дугаар</label>
           <Input
@@ -279,88 +260,15 @@ export function ProductOrderForm({ productId, unitPrice, deliveryFee, remainingQ
         </div>
       </div>
 
-      {/* Delivery Type */}
-      {!isPreOrder ? (
-        <div className="space-y-3">
-          <label className="text-sm font-medium">Хүлээн авах хэлбэр</label>
-          <div className="grid grid-cols-2 gap-3">
-            <button type="button" onClick={() => { setWantsDelivery(false) }}
-              className={`border-2 rounded-xl p-4 text-center transition-all ${!wantsDelivery ? "border-indigo-500 bg-indigo-50" : "border-slate-200 hover:bg-slate-50"}`}>
-              <ShoppingBag className={`w-5 h-5 mx-auto mb-1 ${!wantsDelivery ? "text-indigo-500" : "text-slate-400"}`} />
-              <p className="text-sm font-semibold text-slate-700">Өөрөө ирнэ</p>
-              <p className="text-xs text-slate-400">Нэмэлт үнэгүй</p>
-            </button>
-            <button type="button" onClick={() => setWantsDelivery(true)}
-              className={`border-2 rounded-xl p-4 text-center transition-all ${wantsDelivery ? "border-indigo-500 bg-indigo-50" : "border-slate-200 hover:bg-slate-50"}`}>
-              <Truck className={`w-5 h-5 mx-auto mb-1 ${wantsDelivery ? "text-indigo-500" : "text-slate-400"}`} />
-              <p className="text-sm font-semibold text-slate-700">Хүргэлтээр</p>
-              {deliveryFee > 0
-                ? <p className={`text-xs font-medium ${wantsDelivery ? "text-indigo-500" : "text-slate-400"}`}>+₮{deliveryFee.toLocaleString()}</p>
-                : <p className="text-xs text-green-500 font-medium">Үнэгүй</p>
-              }
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex gap-3 items-start">
-            <Info className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-            <div className="text-xs text-amber-800 leading-relaxed">
-              <strong>Урьдчилсан захиалга:</strong> Таны сонгосон бараа Монголд ирсний дараа хүргэлтийн асуудал тусад нь шийдэгдэх болно.
-              {deliveryFee > 0 && (<> Хүргэлтийн үнэ <strong>₮{deliveryFee.toLocaleString()}</strong> (ирсний дараа тооцогдоно).</>)}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Delivery schedule selection */}
-      {wantsDelivery && !isPreOrder && (
-        <div className="space-y-3 mt-4 border-t pt-4">
-          <label className="text-sm font-medium text-slate-700 block mb-2">Хүргэлт гарах өдрийг сонгон уу.</label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {getUpcomingDeliveryDates(deliveryScheduleDays, 2).map((opt, i) => (
-              <label key={i} className={`flex items-start gap-3 p-3 rounded-lg border-2 cursor-pointer transition-colors ${selectedDeliveryDate === opt.date.toISOString() ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 hover:bg-slate-50'}`}>
-                <input
-                  type="radio"
-                  name="deliveryDateChoice"
-                  className="mt-1"
-                  required
-                  checked={selectedDeliveryDate === opt.date.toISOString()}
-                  onChange={() => setSelectedDeliveryDate(opt.date.toISOString())}
-                  value={opt.date.toISOString()}
-                />
-                <div>
-                  <p className={`text-sm font-bold ${selectedDeliveryDate === opt.date.toISOString() ? 'text-indigo-900' : 'text-slate-700'}`}>{opt.formatted}</p>
-                  <p className="text-[11px] text-slate-500 mt-0.5">Товлосон өдрөөс хойш 24-72ц дотор</p>
-                </div>
-              </label>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Address */}
-      {wantsDelivery && !isPreOrder && (
-        <div className="space-y-2">
-          <label className="text-sm font-medium" htmlFor="deliveryAddress">Хүргүүлэх хаяг</label>
-          <Textarea id="deliveryAddress" name="deliveryAddress" required rows={2}
-            placeholder="Хот, Дүүрэг, Хороо, Байр, Тоот..." className="resize-none" />
-        </div>
-      )}
-
       {/* Combined Terms */}
-      {(termsOfService || (wantsDelivery && deliveryTerms)) && (
+      {termsOfService && (
         <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2">
           {termsOfService && (
             <p className="text-xs text-slate-600 leading-relaxed">
               <strong>Үйлчилгээний нөхцөл:</strong> {termsOfService}
             </p>
           )}
-          {wantsDelivery && deliveryTerms && (
-            <p className="text-xs text-slate-600 leading-relaxed">
-              <strong>Хүргэлтийн нөхцөл:</strong> {deliveryTerms}
-            </p>
-          )}
+
           <label className="flex items-start gap-2 cursor-pointer pt-1">
             <input
               type="checkbox"
@@ -379,12 +287,7 @@ export function ProductOrderForm({ productId, unitPrice, deliveryFee, remainingQ
           <span>₮{unitPrice.toLocaleString()} × {qty}</span>
           <span>₮{itemTotal.toLocaleString()}</span>
         </div>
-        {wantsDelivery && !isPreOrder && deliveryFee > 0 && (
-          <div className="flex justify-between text-sm text-slate-500">
-            <span>Хүргэлт</span>
-            <span>+₮{deliveryFee.toLocaleString()}</span>
-          </div>
-        )}
+
         <div className="flex justify-between font-bold text-slate-900 text-base border-t pt-2">
           <span>Нийт төлөх</span>
           <span className="text-[#F26522] text-xl">₮{totalAmount.toLocaleString()}</span>
@@ -402,10 +305,10 @@ export function ProductOrderForm({ productId, unitPrice, deliveryFee, remainingQ
         disabled={submitting || !canSubmit}
         className="w-full bg-[#F26522] hover:bg-[#E85B1C] active:scale-[0.98] py-7 text-base sm:text-lg font-bold shadow-xl shadow-red-500/20 rounded-xl disabled:opacity-60 disabled:cursor-not-allowed transition-all"
       >
-        {submitting ? "Илгээж байна..." : (isPreOrder || currentStock > 0) ? "Захиалга баталгаажуулах" : "Дууссан"}
+        {submitting ? "Илгээж байна..." : (currentStock > 0) ? "Захиалга баталгаажуулах" : "Дууссан"}
       </Button>
 
-      {!agreedToTerms && (termsOfService || deliveryTerms) && (
+      {!agreedToTerms && termsOfService && (
         <p className="text-center text-xs text-slate-400">Үйлчилгээний нөхцөлтэй зөвшөөрснөөр захиалгаа дуусгана уу</p>
       )}
     </form>

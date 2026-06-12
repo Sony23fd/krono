@@ -58,6 +58,36 @@ export function PaymentSettingsForm({ settings }: { settings: Record<string, str
         </button>
       </div>
 
+      {/* PAYLINK TOGGLE */}
+      <div className="flex items-center justify-between p-4 bg-slate-50 border rounded-xl">
+        <div>
+          <h3 className="font-semibold text-slate-800 flex items-center gap-2">
+            Paylink Төлбөрийн Систем
+            {values["paylink_enabled"] !== "false" ? (
+              <span className="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full font-medium">Асаалттай</span>
+            ) : (
+              <span className="bg-slate-200 text-slate-600 text-xs px-2 py-0.5 rounded-full font-medium">Унтраалттай</span>
+            )}
+          </h3>
+          <p className="text-sm text-slate-500 mt-0.5">Paylink төлбөрийн сонголтыг харуулах.</p>
+        </div>
+        <button
+          onClick={async () => {
+            const newVal = values["paylink_enabled"] !== "false" ? "false" : "true"
+            setValues(v => ({ ...v, paylink_enabled: newVal }))
+            setSaving("paylink_enabled")
+            await saveShopSetting("paylink_enabled", newVal)
+            setSaving(null)
+            setSaved("paylink_enabled")
+            setTimeout(() => setSaved(null), 2000)
+          }}
+          disabled={saving === "paylink_enabled"}
+          className={`w-12 h-6 rounded-full transition-colors relative flex items-center px-0.5 outline-none ${values["paylink_enabled"] !== "false" ? "bg-indigo-600" : "bg-slate-300"}`}
+        >
+          <div className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${values["paylink_enabled"] !== "false" ? "translate-x-6" : "translate-x-0"}`} />
+        </button>
+      </div>
+
       <div className="space-y-5 border-t pt-5">
         <h3 className="font-semibold text-slate-800">Банкны Мэдээлэл (QPay унтраалттай үед харагдана)</h3>
         {FIELDS.map(f => (

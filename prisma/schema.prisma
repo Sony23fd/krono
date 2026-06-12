@@ -145,6 +145,7 @@ model Order {
   userId                String?
   customerName          String
   customerPhone         String
+  customerEmail         String?
   accountNumber         String?
   subtotal              Decimal        @default(0)
   deliveryFee           Decimal        @default(0)
@@ -365,6 +366,7 @@ enum CreationSource {
 
 enum PaymentMethod {
   QPAY
+  PAYLINK
   BANK_TRANSFER
   CASH
   CARD

@@ -11,13 +11,11 @@ import { createQPayInvoiceForOrder } from "./qpay-actions"
 interface CheckoutInput {
   idempotencyKey: string
   customerName: string
+  customerEmail?: string
   phoneNumber: string
   accountNumber?: string
-  deliveryAddress?: string
-  deliveryDate?: string
-  wantsDelivery: boolean
   note?: string
-  paymentMethod?: "QPAY" | "BANK_TRANSFER"
+  paymentMethod?: "QPAY" | "BANK_TRANSFER" | "PAYLINK"
   userId?: string
   receiptType?: string
   companyRegistryNumber?: string
@@ -48,7 +46,6 @@ export async function checkout(input: CheckoutInput) {
 
   // ──── 2. INPUT VALIDATION ────
   if (!input.items.length) return { success: false, error: "Сагс хоосон байна" }
-  if (!input.userId) return { success: false, error: "Та системд нэвтэрч байж захиалга үүсгэх боломжтой" }
   if (!input.customerName.trim()) return { success: false, error: "Нэрээ оруулна уу" }
   const phone = input.phoneNumber.replace(/\D/g, "")
   if (phone.length !== 8) return { success: false, error: "Утасны дугаар 8 оронтой байх ёстой" }
@@ -130,33 +127,9 @@ export async function checkout(input: CheckoutInput) {
       // ──── 4. НИЙТ ДҮН БА ХӨНГӨЛӨЛТ (LOYALTY) ────
       const subtotal = snapshots.reduce((sum, s) => sum + s.unitPrice * s.quantity, 0)
 
-      // Хүргэлтийн төлбөр тохиргооноос авах
       let deliveryFee = 0
-      if (input.wantsDelivery) {
-        const settings = await tx.shopSettings.findMany({
-          where: { key: { in: ["delivery_threshold", "delivery_fee_below_threshold", "delivery_fee_above_threshold"] } }
-        })
-        const threshold = Number(settings.find(s => s.key === "delivery_threshold")?.value || 50000)
-        const feeBelow = Number(settings.find(s => s.key === "delivery_fee_below_threshold")?.value || 8000)
-        const feeAbove = Number(settings.find(s => s.key === "delivery_fee_above_threshold")?.value || 5000)
-
-        const baseDeliveryFee = subtotal >= threshold ? feeAbove : feeBelow;
-
-        // Custom delivery fee from items (e.g. large items)
-        let maxItemFee = 0;
-        for (const item of snapshots) {
-          const product = await tx.product.findUnique({ where: { id: item.productId } })
-          // @ts-ignore - Assuming product model might have custom fields or we fetch from schema
-          const itemFee = Number((product as any)?.deliveryFee || 0)
-          if (itemFee > maxItemFee) maxItemFee = itemFee
-        }
-
-        deliveryFee = Math.max(baseDeliveryFee, maxItemFee)
-      }
-
-      // Referral Reward Хөнгөлөлт (Зөвхөн хүргэлтээс)
       let referralRewardUsed = 0
-      if (input.useReferralReward && input.userId && input.wantsDelivery && deliveryFee > 0) {
+      if (input.useReferralReward && input.userId && deliveryFee > 0) {
         const user = await tx.user.findUnique({ where: { id: input.userId } })
         if (user && user.referralReward > 0) {
           referralRewardUsed = Math.min(user.referralReward, deliveryFee)
@@ -211,10 +184,7 @@ export async function checkout(input: CheckoutInput) {
           customerName: input.customerName.trim(),
           customerPhone: phone,
           accountNumber: input.accountNumber?.trim() || undefined,
-          deliveryAddress: input.wantsDelivery ? input.deliveryAddress?.trim() : undefined,
-          deliveryDate: input.deliveryDate ? new Date(input.deliveryDate) : undefined,
-          wantsDelivery: input.wantsDelivery,
-          subtotal,
+                                        subtotal,
           deliveryFee,
           discount,
           totalAmount,

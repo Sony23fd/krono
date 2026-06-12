@@ -4,6 +4,7 @@ import { notFound } from "next/navigation"
 import { Clock, CreditCard, CheckCircle2, AlertCircle, Banknote } from "lucide-react"
 import { CopyButton } from "@/components/storefront/CopyButton"
 import { QPayPollingClient } from "./QPayPollingClient"
+import { PaylinkPollingClient } from "./PaylinkPollingClient"
 import CopyTrackingLink from "../../../track/CopyTrackingLink"
 
 export const dynamic = "force-dynamic"
@@ -42,6 +43,10 @@ export default async function OrderPendingByRefPage({ params }: { params: Promis
   // QPay мэдээлэл
   const isQPay = payment?.method === "QPAY"
   const qpayMeta = (payment?.metadata as any) || {}
+
+  // Paylink мэдээлэл
+  const isPaylink = payment?.method === "PAYLINK"
+  const paylinkMeta = (payment?.metadata as any) || {}
 
   // ═══ БАТАЛГААЖСАН ═══
   if (allConfirmed) {
@@ -100,7 +105,7 @@ export default async function OrderPendingByRefPage({ params }: { params: Promis
           <div>
             <p className="font-semibold text-amber-800 text-sm">Төлбөр хүлээгдэж байна</p>
             <p className="text-amber-600 text-xs mt-0.5">
-              {isQPay ? "QPay-ээр төлбөрөө төлнө үү" : "Дараах дансанд шилжүүлгийг бүрэн хийнэ үү"}
+              {isQPay ? "QPay-ээр төлбөрөө төлнө үү" : isPaylink ? "Paylink-ээр төлбөрөө төлнө үү" : "Дараах дансанд шилжүүлгийг бүрэн хийнэ үү"}
             </p>
           </div>
         </div>
@@ -144,7 +149,7 @@ export default async function OrderPendingByRefPage({ params }: { params: Promis
         {/* Payment Section */}
         <div className="bg-white rounded-2xl border shadow-sm p-5 space-y-4">
           <h2 className="font-bold text-slate-900 flex items-center gap-2">
-            {isQPay ? "📱 QPay Төлбөр" : "💳 Банк Шилжүүлэг"}
+            {isQPay ? "📱 QPay Төлбөр" : isPaylink ? "💳 Paylink Төлбөр" : "💳 Банк Шилжүүлэг"}
           </h2>
 
           {isQPay && payment ? (
@@ -153,6 +158,14 @@ export default async function OrderPendingByRefPage({ params }: { params: Promis
               paymentId={payment.id}
               qrImage={qpayMeta.qr_image}
               urls={qpayMeta.urls}
+              customerPhone={order.customerPhone}
+            />
+          ) : isPaylink && payment ? (
+            /* ═══ Paylink Section ═══ */
+            <PaylinkPollingClient
+              paymentId={payment.id}
+              qrImage={paylinkMeta.qrImage}
+              paymentUrl={paylinkMeta.paymentUrl}
               customerPhone={order.customerPhone}
             />
           ) : (
