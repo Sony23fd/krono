@@ -376,7 +376,7 @@ export function CartClient({
 
               <button
                 type="submit"
-                disabled={submitting || !agreedToTerms}
+                disabled={submitting}
                 className="w-full bg-[#F26522] hover:bg-[#E85B1C] text-white py-4 rounded-2xl font-bold text-[15px] shadow-lg shadow-orange-500/20 active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {submitting ? "Уншиж байна..." : "Төлбөр төлөх"}
