@@ -152,13 +152,30 @@ export async function POST(request: Request) {
       }
     }
 
-    // 8. Хариу буцаах
+    // 8. Payload-д ирээгүй (POS дээр идэвхгүй/устсан) бараануудыг Архивлаж, үлдэгдлийг 0 болгох
+    let archivedOrphansCount = 0;
+    if (itemIds.length > 0) {
+      const orphansUpdateResult = await db.product.updateMany({
+        where: {
+          sku: { notIn: itemIds },
+          status: { not: ProductStatus.ARCHIVED }
+        },
+        data: {
+          stockQuantity: 0,
+          status: ProductStatus.ARCHIVED
+        }
+      });
+      archivedOrphansCount = orphansUpdateResult.count;
+    }
+
+    // 9. Буцаах утга
     return NextResponse.json({
       success: true,
       receivedCount: items.length,
       updatedCount: matchedItems.length,
-      ignoredCount: 0, // Бүгдийг боловсруулдаг болсон тул ignore байхгүй
-      createdDraftsCount: draftsToCreate.length
+      ignoredCount: 0, // Цаашид хэрэгцээгүй болсон тул ignore хийхгүй
+      createdDraftsCount: draftsToCreate.length,
+      archivedOrphansCount: archivedOrphansCount
     }, { status: 200 });
 
   } catch (error) {
