@@ -12,13 +12,10 @@ export function BottomNavigation() {
   const { customer, isReady } = useCustomerAuth()
   const cartCount = items.reduce((sum, i) => sum + i.qty, 0)
 
-  const profileHref = isReady && customer ? "/profile" : "/login"
-
   const tabs = [
-    { name: "Нүүр", href: "/", icon: Home },
+    { name: "Дэлгүүр", href: "/", icon: Home },
     { name: "Ангилал", href: "/categories", icon: LayoutGrid },
     { name: "Сагс", href: "/cart", icon: ShoppingCart, badge: cartCount },
-    { name: "Профайл", href: profileHref, icon: User },
   ]
 
   return (

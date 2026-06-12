@@ -6,8 +6,6 @@ import { AgeVerificationProvider } from "@/context/AgeVerificationContext"
 import { CustomerAuthProvider } from "@/context/CustomerAuthContext"
 import { CartIcon } from "@/components/storefront/CartIcon"
 import { CartBadgeIcon } from "@/components/storefront/CartBadgeIcon"
-import { FavoritesBadgeIcon } from "@/components/storefront/FavoritesBadgeIcon"
-import { ProfileMenuIcon } from "@/components/storefront/ProfileMenuIcon"
 import { HeaderSearchBar } from "@/components/storefront/HeaderSearchBar"
 import { getCategories } from "@/app/actions/category-actions"
 import { CategoryBar } from "@/components/storefront/CategoryBar"
@@ -92,29 +90,23 @@ export default async function StorefrontLayout({ children }: { children: ReactNo
           {/* No Logo as requested */}
           <div className="hidden md:block shrink-0 w-4"></div>
 
-          {/* Search Bar — full width on mobile, flexible on desktop */}
-          <div className="w-full md:flex-1 max-w-3xl">
-            <HeaderSearchBar categories={categories} />
+          {/* Search Bar Removed */}
+          <div className="w-full md:flex-1 max-w-3xl hidden">
           </div>
 
           {/* Desktop Nav Links */}
           <nav className="hidden lg:flex items-center gap-6 shrink-0">
-            <Link href="/shop" className="text-sm font-semibold text-gray-700 hover:text-[#F26522] transition-colors whitespace-nowrap">
+            <Link href="/" className="text-sm font-semibold text-gray-700 hover:text-[#F26522] transition-colors whitespace-nowrap">
               Дэлгүүр
             </Link>
-            <Link href="/categories" className="text-sm font-semibold text-gray-700 hover:text-[#F26522] transition-colors whitespace-nowrap">
-              Ангилал
-            </Link>
-            <Link href="/shop?sale=true" className="text-sm font-semibold text-red-500 hover:text-red-600 transition-colors whitespace-nowrap">
+            <Link href="/?sale=true" className="text-sm font-semibold text-red-500 hover:text-red-600 transition-colors whitespace-nowrap">
               Хямдрал
             </Link>
           </nav>
 
           {/* Right: Desktop Icon Buttons */}
           <div className="hidden md:flex items-center gap-3 shrink-0 border-l border-slate-200 pl-5">
-            <FavoritesBadgeIcon />
             <CartBadgeIcon />
-            <ProfileMenuIcon />
           </div>
         </div>
       </header>
