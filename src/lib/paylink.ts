@@ -1,29 +1,48 @@
-import crypto from 'crypto'
 
-export const PAYLINK_BASE_URL = process.env.PAYLINK_BASE_URL || "https://api.paylink.mn/v1"
+export const PAYLINK_BASE_URL = "https://paylink.mn/api/v1"
 
 // Paylink Credentials (from .env)
 function getCredentials() {
-  const appId = process.env.PAYLINK_APP_ID
-  const secretKey = process.env.PAYLINK_SECRET_KEY
+  const username = process.env.PAYLINK_USERNAME
+  const signature = process.env.PAYLINK_SIGNATURE
   
-  if (!appId || !secretKey) {
-    console.warn("⚠️ Paylink credentials are not fully configured in .env")
+  if (!username || !signature) {
+    console.warn("⚠️ Paylink credentials (X-USERNAME, X-SIGNATURE) are not fully configured in .env")
   }
 
-  return { appId, secretKey }
+  return { username, signature }
+}
+
+async function callPaylinkApi(pc: string, payload: any) {
+  const { username, signature } = getCredentials()
+  if (!username || !signature) {
+    throw new Error("Authentication configuration missing")
+  }
+
+  const res = await fetch(`${PAYLINK_BASE_URL}/external/process`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Accept": "application/json",
+      "pc": pc,
+      "X-USERNAME": username,
+      "X-SIGNATURE": signature
+    },
+    body: JSON.stringify(payload),
+    cache: "no-store"
+  })
+
+  const data = await res.json()
+  
+  if (!res.ok || data.status === "error") {
+    throw new Error(data.message || `Paylink API error (${pc})`)
+  }
+  
+  return data
 }
 
 /**
- * Helper to generate signature if required
- */
-function generateSignature(payload: any, secretKey: string) {
-  const dataString = typeof payload === 'string' ? payload : JSON.stringify(payload)
-  return crypto.createHmac('sha256', secretKey).update(dataString).digest('hex')
-}
-
-/**
- * 1. Create invoice (cu0900 equivalent)
+ * 1. Create invoice (cu0900)
  */
 export async function createPaylinkInvoice({ 
   transactionRef, 
@@ -34,52 +53,46 @@ export async function createPaylinkInvoice({
   amount: number, 
   description?: string 
 }) {
-  const { appId, secretKey } = getCredentials()
-  if (!appId || !secretKey) return { success: false, error: "Authentication configuration missing" }
-
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-  const callbackUrl = `${appUrl}/api/paylink/callback?ref=${transactionRef}`
-
-  const payload = {
-    amount: amount,
-    orderId: transactionRef,
-    description: description,
-    callbackUrl: callbackUrl,
-    // Add other fields as required by Paylink API
-  }
-
-  const signature = generateSignature(payload, secretKey)
-
   try {
-    const res = await fetch(`${PAYLINK_BASE_URL}/invoice`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "App-Id": appId,
-        "X-Signature": signature
-      },
-      body: JSON.stringify(payload),
-      cache: "no-store"
-    })
-
-    const data = await res.json()
-    
-    if (!res.ok) {
-      throw new Error(data.message || "Failed to create invoice")
+    const payload = {
+      amount_total: amount,
+      count_total: 1,
+      amount: amount,
+      txndesc: description,
+      merchant_ref: transactionRef,
+      fee_percent: 0
     }
+
+    const data = await callPaylinkApi("cu0900", payload)
     
-    return { success: true, data }
+    // The response should contain an `invid` to construct the payment URL
+    const invid = data.invid || data.id // fallback if id is used
+    if (!invid) {
+      throw new Error("Invalid response from Paylink: missing invid")
+    }
+
+    return { 
+      success: true, 
+      data: {
+        invoiceId: invid,
+        paymentUrl: `https://www.paylink.mn/pay/${invid}`,
+        // We do not have a direct QR image from cu0900 based on standard Paylink proxy, 
+        // but frontend handles redirection. We can pass a dummy base64 or let frontend handle the link.
+        qrImage: null, 
+        raw: data
+      } 
+    }
   } catch (error: any) {
     console.error("Paylink Invoice Error:", error)
-    // Return mock data for testing if API fails
+    // Return mock data for testing if API fails in dev
     if (process.env.NODE_ENV !== "production") {
       console.log("Mocking Paylink response for development")
       return {
         success: true,
         data: {
           invoiceId: "mock_invoice_" + transactionRef,
-          paymentUrl: "https://paylink.mn/pay/mock_" + transactionRef,
-          qrImage: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+          paymentUrl: "https://www.paylink.mn/pay/mock_" + transactionRef,
+          qrImage: null
         }
       }
     }
@@ -88,26 +101,11 @@ export async function createPaylinkInvoice({
 }
 
 /**
- * 2. Check payment status (cu0904 equivalent)
+ * 2. Check payment status (cu0904)
  */
 export async function checkPaylinkPayment(invoiceId: string) {
-  const { appId, secretKey } = getCredentials()
-  if (!appId || !secretKey) return { success: false, error: "Authentication configuration missing" }
-
   try {
-    const res = await fetch(`${PAYLINK_BASE_URL}/invoice/check/${invoiceId}`, {
-      method: "GET",
-      headers: {
-        "App-Id": appId,
-      },
-      cache: "no-store"
-    })
-
-    const data = await res.json()
-    
-    if (!res.ok) {
-      throw new Error(data.message || "Failed to check payment")
-    }
+    const data = await callPaylinkApi("cu0904", { invid: invoiceId })
     
     return { success: true, data }
   } catch (error: any) {

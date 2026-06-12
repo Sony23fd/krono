@@ -35,8 +35,8 @@ export async function checkPaylinkPaymentStatus(paymentId: string) {
       return { success: false, error: result.error || "Шалгахад алдаа гарлаа" }
     }
 
-    // Assuming result.data.status is something like 'PAID', 'PENDING', 'FAILED'
-    const paylinkStatus = result.data?.status || "PENDING"
+    // Assuming result.data.status is something like 'paid', 'pending', 'failed'
+    const paylinkStatus = (result.data?.status || "PENDING").toUpperCase()
     
     if (paylinkStatus === "PAID" || paylinkStatus === "SUCCESS") {
       // Payment successful

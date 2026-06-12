@@ -3,6 +3,8 @@
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 import { createQPayInvoiceForOrder } from "./qpay-actions"
+import { createPaylinkInvoice } from "@/lib/paylink"
+import { PaymentMethod } from "@prisma/client"
 
 // ═══════════════════════════════════════════════════
 // CHECKOUT — Race condition + Idempotency + Stock Lock
@@ -214,19 +216,21 @@ export async function checkout(input: CheckoutInput) {
               totalPrice: s.unitPrice * s.quantity,
             }))
           },
-          // Payment бичлэг
-          payments: {
-            create: {
-              method: paymentMethod,
-              amount: totalAmount,
-              status: "PENDING",
-            }
-          }
         },
-        include: { items: true, payments: true }
+        include: { items: true }
       })
 
-      return order
+      // Payment бичлэг тусдаа үүсгэх
+      const payment = await tx.payment.create({
+        data: {
+          orderId: order.id,
+          method: paymentMethod as PaymentMethod,
+          amount: totalAmount,
+          status: "PENDING",
+        }
+      })
+
+      return { order, payment }
     }, {
       maxWait: 10000,
       timeout: 30000,
@@ -236,12 +240,14 @@ export async function checkout(input: CheckoutInput) {
     revalidatePath("/")
 
     const paymentMethod = input.paymentMethod || "BANK_TRANSFER"
-    const payment = result.payments[0]
+    const payment = result.payment
 
-    // ──── 6. QPay INVOICE ҮҮСГЭХ (хэрэв QPay сонгосон бол) ────
+    // ──── 6. INVOICE ҮҮСГЭХ (хэрэв QPay эсвэл Paylink сонгосон бол) ────
     let qpayData: any = null
+    let paylinkData: any = null
+
     if (paymentMethod === "QPAY" && payment) {
-      const qpayResult = await createQPayInvoiceForOrder(result.id, payment.id)
+      const qpayResult = await createQPayInvoiceForOrder(result.order.id, payment.id)
       if (qpayResult.success) {
         qpayData = {
           invoiceId: qpayResult.invoiceId,
@@ -252,16 +258,40 @@ export async function checkout(input: CheckoutInput) {
         }
       } else {
         console.error("[Checkout] QPay invoice failed:", qpayResult.error)
-        // QPay invoice амжилтгүй ч захиалга амжилттай — банк шилжүүлгээр үргэлжлүүлнэ
+      }
+    } else if (paymentMethod === "PAYLINK" && payment) {
+      const paylinkResult = await createPaylinkInvoice({
+        transactionRef: payment.id,
+        amount: Number(result.order.totalAmount),
+      })
+      if (paylinkResult.success) {
+        paylinkData = {
+          invoiceId: paylinkResult.data?.invoiceId,
+          paymentUrl: paylinkResult.data?.paymentUrl,
+          qrImage: paylinkResult.data?.qrImage,
+          paymentId: payment.id,
+        }
+        
+        // Save to DB metadata
+        await db.payment.update({
+          where: { id: payment.id },
+          data: {
+            metadata: paylinkData,
+            externalRef: paylinkResult.data?.invoiceId
+          }
+        })
+      } else {
+        console.error("[Checkout] Paylink invoice failed:", paylinkResult.error)
       }
     }
 
     return {
       success: true,
-      order: JSON.parse(JSON.stringify(result)),
+      order: JSON.parse(JSON.stringify(result.order)),
       paymentMethod,
       paymentId: payment?.id,
       qpayData,
+      paylinkData,
     }
 
   } catch (error: any) {
