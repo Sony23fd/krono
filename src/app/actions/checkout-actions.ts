@@ -282,6 +282,7 @@ export async function checkout(input: CheckoutInput) {
         })
       } else {
         console.error("[Checkout] Paylink invoice failed:", paylinkResult.error)
+        return { success: false, error: "Төлбөрийн нэхэмжлэх үүсгэхэд алдаа гарлаа (Дүн хэт бага байж болзошгүй)" }
       }
     }
 
