@@ -26,34 +26,52 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Invalid payload format' }, { status: 400 });
     }
 
-    // 3. Payload дотроос itemId-г ялгах
+    // 3. Payload дотроос itemId болон barcode-г ялгах
     const itemIds = items.map((item: any) => item.itemId).filter(Boolean);
+    const itemBarcodes = items.map((item: any) => item.barcode).filter(Boolean);
 
     if (itemIds.length === 0) {
       return NextResponse.json({ success: true, message: 'No valid items found' }, { status: 200 });
     }
 
-    // 4. Өгөгдлийн сангаас itemId (манай sku)-гээр хайх
+    // 4. Өгөгдлийн сангаас itemId (манай sku)-гээр ЭСВЭЛ barcode-оор хайх
     const existingProducts = await db.product.findMany({
       where: {
-        sku: { in: itemIds }
+        OR: [
+          { sku: { in: itemIds } },
+          { barcode: { in: itemBarcodes } }
+        ]
       },
-      select: { sku: true, barcode: true }
+      select: { sku: true, barcode: true, status: true }
     });
 
-    const existingMap = new Map(existingProducts.map(p => [p.sku, p]));
+    const existingMapBySku = new Map(existingProducts.map(p => [p.sku, p]));
+    const existingMapByBarcode = new Map(existingProducts.filter(p => p.barcode).map(p => [p.barcode, p]));
 
     // 5. Олдсон болон олдоогүй барааг ялгах
     const matchedItems: any[] = [];
     const missingItems: any[] = [];
+    const protectedSkus: string[] = []; // Архивлалтаас хамгаалах sku-нууд (Шинэчлэгдэж байгаа болон шинээр үүсэж байгаа)
 
     items.forEach((item: any) => {
       const id = item.itemId;
+      const bc = item.barcode;
       if (!id) return;
-      if (existingMap.has(id)) {
-        matchedItems.push({ item, dbRecord: existingMap.get(id) });
+      
+      // Эхлээд SKU-ээр хайх
+      let matchedDbRecord = existingMapBySku.get(id);
+      
+      // Хэрвээ SKU-ээр олдохгүй бол Barcode-оор хайх
+      if (!matchedDbRecord && bc) {
+        matchedDbRecord = existingMapByBarcode.get(bc);
+      }
+
+      if (matchedDbRecord) {
+        matchedItems.push({ item, dbRecord: matchedDbRecord });
+        protectedSkus.push(matchedDbRecord.sku); // Бааз дээрх жинхэнэ SKU-г нь хамгаална
       } else {
         missingItems.push(item);
+        protectedSkus.push(id); // Шинээр үүсэж байгаа SKU-г хамгаална
       }
     });
 
@@ -80,7 +98,7 @@ export async function POST(request: Request) {
       }
 
       return db.product.update({
-        where: { sku: item.itemId },
+        where: { sku: dbRecord.sku }, // item.itemId БИШ, бааз дээрх жинхэнэ SKU-ээр нь update хийнэ!
         data: dataToUpdate
       });
     });
@@ -154,10 +172,10 @@ export async function POST(request: Request) {
 
     // 8. Payload-д ирээгүй (POS дээр идэвхгүй/устсан) бараануудыг Архивлаж, үлдэгдлийг 0 болгох
     let archivedOrphansCount = 0;
-    if (itemIds.length > 0) {
+    if (protectedSkus.length > 0) {
       const orphansUpdateResult = await db.product.updateMany({
         where: {
-          sku: { notIn: itemIds },
+          sku: { notIn: protectedSkus },
           status: { not: ProductStatus.ARCHIVED }
         },
         data: {
