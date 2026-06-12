@@ -195,6 +195,10 @@ export function CartClient({
   async function handleCheckout(formData: FormData) {
     setSubmitting(true)
     setError(null)
+    
+    // Define popup outside try-catch to ensure we can close it on errors
+    let paymentPopup: Window | null = null;
+    
     try {
       const customerName = formData.get("customerName") as string
       const phoneNumber = formData.get("phoneNumber") as string
@@ -214,11 +218,26 @@ export function CartClient({
         updateAddress(deliveryAddress)
       }
 
+      // Pre-open popup synchronously to bypass popup blockers (especially Safari/iOS)
+      if (paymentMethod === "PAYLINK") {
+        const width = 600
+        const height = 800
+        const left = (window.innerWidth - width) / 2
+        const top = (window.innerHeight - height) / 2
+        // Open empty popup immediately
+        paymentPopup = window.open('about:blank', 'PaylinkPayment', `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`)
+        
+        if (paymentPopup) {
+          paymentPopup.document.write('<div style="display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;color:#333;">Төлбөрийн хуудас руу шилжиж байна...</div>')
+        }
+      }
+
       // Pre-validate stock (non-locking, UI feedback)
       const stockCheck = await validateCartStock(
         items.map(i => ({ productId: i.batchId, quantity: i.qty }))
       )
       if (!stockCheck.success) {
+        if (paymentPopup) paymentPopup.close();
         setError(stockCheck.errors[0])
         setSubmitting(false)
         return
@@ -249,6 +268,7 @@ export function CartClient({
       })
 
       if (!result.success) {
+        if (paymentPopup) paymentPopup.close();
         setError(result.error ?? "Захиалга үүсгэхэд алдаа гарлаа")
         setSubmitting(false)
         return
@@ -258,12 +278,22 @@ export function CartClient({
       setIsRedirecting(true)
       clearCart()
 
+      // Redirect popup to actual payment URL
+      if (result.paymentMethod === "PAYLINK" && result.paylinkData?.paymentUrl) {
+        if (paymentPopup) {
+          paymentPopup.location.href = result.paylinkData.paymentUrl
+        }
+      } else if (paymentPopup) {
+        paymentPopup.close();
+      }
+
       if (result.paymentMethod === "BANK_TRANSFER") {
         router.push(`/order-manual/ref/${result.order.orderNumber}`)
       } else {
         router.push(`/order-pending/ref/${result.order.orderNumber}`)
       }
     } catch (e: any) {
+      if (paymentPopup) paymentPopup.close();
       setError(e.message || "Алдаа гарлаа")
       setSubmitting(false)
     }
