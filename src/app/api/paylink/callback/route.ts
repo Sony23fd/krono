@@ -127,16 +127,18 @@ async function handleCallback(request: Request) {
     let paylinkPaymentIdFromApi: string | null = paylinkPaymentId
     let paymentTime: Date | null = null
 
-    if (checkRes.success && checkRes.data?.rows?.length > 0) {
-      const paidRow = checkRes.data.rows.find((r: any) => r.payment_status === "PAID")
-      if (paidRow) {
+    if (checkRes.success) {
+      const rawData = checkRes.data?.response || checkRes.data || {}
+      const paylinkStatus = (rawData.status || "").toLowerCase()
+      
+      if (paylinkStatus === "paid" || paylinkStatus === "success") {
         isPaid = true
-        paylinkPaymentIdFromApi = paidRow.payment_id || paylinkPaymentIdFromApi
-        paymentTime = paidRow.payment_time ? new Date(paidRow.payment_time) : new Date()
+        paylinkPaymentIdFromApi = rawData.id?.toString() || paylinkPaymentIdFromApi
+        paymentTime = rawData.paid_at ? new Date(rawData.paid_at) : new Date()
         console.log(`[Paylink Callback] Payment confirmed by Paylink`, {
           paymentId: paylinkPaymentIdFromApi,
           paymentTime: paymentTime?.toISOString(),
-          amount: paidRow.amount,
+          amount: rawData.amount,
         })
       }
     }
