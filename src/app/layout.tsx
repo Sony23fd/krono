@@ -8,7 +8,7 @@ import "./globals.css"
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" })
 
 export async function generateMetadata(): Promise<Metadata> {
-  let shopName = "Билэг Супермаркет"
+  let shopName = "Онлайн дэлгүүр"
   try {
     const setting = await db.shopSettings.findUnique({ where: { key: "shop_name" } })
     if (setting?.value) shopName = setting.value

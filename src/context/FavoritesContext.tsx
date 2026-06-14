@@ -19,7 +19,7 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
 
   // Load from localStorage on mount
   useEffect(() => {
-    const stored = localStorage.getItem("bileg_favorites")
+    const stored = localStorage.getItem("store_favorites")
     if (stored) {
       try {
         setFavorites(JSON.parse(stored))
@@ -33,7 +33,7 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
   // Save to localStorage whenever it changes
   useEffect(() => {
     if (mounted) {
-      localStorage.setItem("bileg_favorites", JSON.stringify(favorites))
+      localStorage.setItem("store_favorites", JSON.stringify(favorites))
     }
   }, [favorites, mounted])
 

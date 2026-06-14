@@ -187,7 +187,7 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
                   required 
                   value={email} 
                   onChange={e => setEmail(e.target.value)} 
-                  placeholder="name@bileg.mn" 
+                  placeholder="name@demo.mn" 
                 />
               </div>
               <div className="space-y-2">
@@ -259,7 +259,7 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
                   autoComplete="off"
                   disabled
                   value={email} 
-                  placeholder="name@bileg.mn" 
+                  placeholder="name@demo.mn" 
                 />
               </div>
               <div className="space-y-2">

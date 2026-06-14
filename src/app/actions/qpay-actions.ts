@@ -29,7 +29,7 @@ export async function createQPayInvoiceForOrder(orderId: string, paymentId: stri
     const result = await createQPayInvoice({
       transactionRef: paymentId,
       amount,
-      description: `Bileg #${order.orderNumber} - ${order.customerName}`,
+      description: `Store #${order.orderNumber} - ${order.customerName}`,
     })
 
     if (!result.success || !result.data) {

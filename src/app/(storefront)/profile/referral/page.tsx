@@ -60,8 +60,8 @@ export default function ReferralPage() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: "Bileg Hurgelt",
-          text: "Надтай хамт Bileg Hurgelt-ээс худалдан авалт хийгээрэй!",
+          title: "Store",
+          text: "Надтай хамт Store-оос худалдан авалт хийгээрэй!",
           url: referralLink,
         })
       } catch (err) {

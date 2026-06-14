@@ -20,7 +20,7 @@ interface Props {
 export function GeneralSettingsClient({ initialSettings, userRole }: Props) {
   const router = useRouter()
   
-  const [shopName, setShopName] = useState(initialSettings["shop_name"] || "Билэг Супермаркет")
+  const [shopName, setShopName] = useState(initialSettings["shop_name"] || "Онлайн дэлгүүр")
   const [logoUrl, setLogoUrl] = useState(initialSettings["site_logo"] || "")
   // Default to true if not explicitly set to "false"
   const [showHeroText, setShowHeroText] = useState(initialSettings["hero_text_visible"] !== "false")
@@ -207,7 +207,7 @@ export function GeneralSettingsClient({ initialSettings, userRole }: Props) {
             type="text"
             value={shopName}
             onChange={e => setShopName(e.target.value)}
-            placeholder="Билэг Супермаркет"
+            placeholder="Онлайн дэлгүүр"
             className="w-full max-w-md px-4 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#F26522]/30 focus:border-[#F26522]/50"
           />
         </CardContent>

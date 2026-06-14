@@ -10,47 +10,44 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  phone     String?  @unique
-  email     String?  @unique
-  password  String?
-  name      String?
-  role      Role     @default(CUSTOMER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String   @id @default(cuid())
+  phone          String?  @unique
+  email          String?  @unique
+  password       String?
+  name           String?
+  role           Role     @default(CUSTOMER)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
   address        String?
+  referralCode   String?  @unique
+  referralCount  Int      @default(0)
+  referralReward Int      @default(0)
+  referredById   String?
   cart           Cart?
   orders         Order[]
-  
-  // Referral System
-  referralCode   String?   @unique
-  referredById   String?
-  referralReward Int       @default(0)
-  referralCount  Int       @default(0)
-  referredBy     User?     @relation("UserReferrals", fields: [referredById], references: [id])
-  referrals      User[]    @relation("UserReferrals")
+  referredBy     User?    @relation("UserReferrals", fields: [referredById], references: [id])
+  referrals      User[]   @relation("UserReferrals")
 
   @@index([role])
 }
 
 model Category {
-  id              String    @id @default(cuid())
-  name            String    @unique
-  slug            String    @unique
-  imageUrl        String?
-  isActive        Boolean   @default(true)
-  sortOrder       Int       @default(0)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  metaDescription String?
-  metaTitle       String?
-  parentId        String?
-  displayName     String?
-  products        Product[]
-  
-  parent          Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  subcategories   Category[] @relation("CategoryHierarchy")
+  id               String            @id @default(cuid())
+  name             String            @unique
+  slug             String            @unique
+  imageUrl         String?
+  isActive         Boolean           @default(true)
+  sortOrder        Int               @default(0)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  metaDescription  String?
+  metaTitle        String?
+  displayName      String?
+  parentId         String?
+  parent           Category?         @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  subcategories    Category[]        @relation("CategoryHierarchy")
   homePageSections HomePageSection[]
+  products         Product[]
 
   @@index([isActive, sortOrder])
   @@index([parentId])
@@ -59,7 +56,6 @@ model Category {
 model Product {
   id                      String           @id @default(cuid())
   sku                     String           @unique
-  barcode                 String?          @unique
   name                    String
   slug                    String           @unique
   description             String?
@@ -82,6 +78,7 @@ model Product {
   requiresAgeVerification Boolean          @default(false)
   customBadge             String?
   unit                    String           @default("ширхэг")
+  barcode                 String?          @unique
   cartItems               CartItem[]
   orderItems              OrderItem[]
   category                Category?        @relation(fields: [categoryId], references: [id])
@@ -146,7 +143,6 @@ model Order {
   userId                String?
   customerName          String
   customerPhone         String
-  customerEmail         String?
   accountNumber         String?
   subtotal              Decimal        @default(0)
   deliveryFee           Decimal        @default(0)
@@ -171,6 +167,7 @@ model Order {
   loyaltyPointsEarned   Int            @default(0)
   loyaltyPointsUsed     Int            @default(0)
   referralRewardUsed    Int            @default(0)
+  customerEmail         String?
   user                  User?          @relation(fields: [userId], references: [id])
   items                 OrderItem[]
   payments              Payment[]
@@ -266,22 +263,19 @@ model VisitorLog {
 }
 
 model Banner {
-  id        String   @id @default(cuid())
-  type      String   @default("HERO") // "HERO" | "THIN"
-  title     String?
-  imageUrl  String
-  linkUrl   String?
-  isActive  Boolean  @default(true)
-  sortOrder Int      @default(0)
-  
-  // Banner Text Configuration
-  showTitle     Boolean @default(true)
-  titleColor    String? @default("#FFFFFF")
-  titlePosition String? @default("CENTER")
-  titleSize     String? @default("LARGE")
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String   @id @default(cuid())
+  title         String?
+  imageUrl      String
+  linkUrl       String?
+  isActive      Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  type          String   @default("HERO")
+  showTitle     Boolean  @default(true)
+  titleColor    String?  @default("#FFFFFF")
+  titlePosition String?  @default("CENTER")
+  titleSize     String?  @default("LARGE")
 
   @@index([isActive, type, sortOrder])
 }
@@ -299,38 +293,43 @@ model LoyaltyCard {
 }
 
 model HomePageSection {
-  id              String   @id @default(cuid())
-  title           String
-  type            SectionType @default(PRODUCT_SLIDER)
-  categoryId      String?
-  bannerImageUrl  String?
-  bannerLink      String?
-  isActive        Boolean  @default(true)
-  sortOrder       Int      @default(0)
-  rowCount        Int      @default(2)
-  autoScroll      Boolean  @default(false)
-  
-  // New scheduling and targeting fields
-  startDate       DateTime?
-  endDate         DateTime?
-  visibilityTarget VisibilityTarget @default(ALL)
-  deviceTarget    DeviceTarget     @default(ALL)
-  layoutVariant   LayoutVariant    @default(DEFAULT)
-  
-  // Banner Text Configuration
-  bannerText           String?
-  showBannerText       Boolean            @default(true)
-  bannerTextColor      String?            @default("#FFFFFF")
-  bannerTextPosition   BannerTextPosition @default(TOP_LEFT)
-  bannerTextSize       BannerTextSize     @default(LARGE)
-  bannerPosition       String             @default("LEFT") // "LEFT" | "RIGHT"
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  category        Category? @relation(fields: [categoryId], references: [id])
+  id                 String             @id @default(cuid())
+  title              String
+  type               SectionType        @default(PRODUCT_SLIDER)
+  categoryId         String?
+  bannerImageUrl     String?
+  bannerLink         String?
+  isActive           Boolean            @default(true)
+  sortOrder          Int                @default(0)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  autoScroll         Boolean            @default(false)
+  rowCount           Int                @default(2)
+  deviceTarget       DeviceTarget       @default(ALL)
+  endDate            DateTime?
+  layoutVariant      LayoutVariant      @default(DEFAULT)
+  startDate          DateTime?
+  visibilityTarget   VisibilityTarget   @default(ALL)
+  bannerText         String?
+  bannerTextColor    String?            @default("#FFFFFF")
+  bannerTextPosition BannerTextPosition @default(TOP_LEFT)
+  bannerTextSize     BannerTextSize     @default(LARGE)
+  showBannerText     Boolean            @default(true)
+  bannerPosition     String             @default("LEFT")
+  category           Category?          @relation(fields: [categoryId], references: [id])
 
   @@index([isActive, sortOrder])
+}
+
+model SearchKeyword {
+  id        String   @id @default(cuid())
+  keyword   String   @unique
+  count     Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([count])
+  @@index([keyword])
 }
 
 enum Role {
@@ -367,10 +366,10 @@ enum CreationSource {
 
 enum PaymentMethod {
   QPAY
-  PAYLINK
   BANK_TRANSFER
   CASH
   CARD
+  PAYLINK
 }
 
 enum PaymentStatus {
@@ -424,15 +423,4 @@ enum BannerTextSize {
   MEDIUM
   LARGE
   XLARGE
-}
-
-model SearchKeyword {
-  id        String   @id @default(cuid())
-  keyword   String   @unique
-  count     Int      @default(1)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([count])
-  @@index([keyword])
 }

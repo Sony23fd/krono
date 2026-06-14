@@ -82,7 +82,7 @@ export default function StickerDemoPage() {
   return (
     <StickerPrintClient
       groups={demoGroups}
-      shopName="БИЛЭГ СУПЕРМАРКЕТ"
+      shopName="ОНЛАЙН ДЭЛГҮҮР"
       shopPhone="8853 9667"
       appUrl="https://anarkoreashop.mn"
     />

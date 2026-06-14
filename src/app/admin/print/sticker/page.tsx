@@ -39,7 +39,7 @@ export default async function PrintStickerPage({
   // Get shop settings for phone
   const settings = await getShopSettings()
   const shopPhone = settings["shop_phone"] || "8853 9667"
-  const shopName = settings["shop_name"] || "БИЛЭГ СУПЕРМАРКЕТ"
+  const shopName = settings["shop_name"] || "ОНЛАЙН ДЭЛГҮҮР"
 
   // Group by customer to print one sticker per customer
   const { getCanonicalCustomerId } = await import("@/lib/customer-utils")

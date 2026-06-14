@@ -11,7 +11,7 @@ export interface CustomerSessionData {
 
 const SESSION_OPTIONS = {
   password: process.env.SESSION_SECRET || "fallback_secret_for_local_development_only_change_this_to_32_chars_long_str",
-  cookieName: "bileg-customer-session",
+  cookieName: "store-customer-session",
   cookieOptions: {
     secure: process.env.NODE_ENV === "production",
     httpOnly: true,

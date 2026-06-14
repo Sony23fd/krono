@@ -18,7 +18,7 @@ export function useAgeVerification() {
   return useContext(AgeVerificationContext)
 }
 
-const STORAGE_KEY = "bileg_age_verified"
+const STORAGE_KEY = "store_age_verified"
 
 export function AgeVerificationProvider({ children }: { children: ReactNode }) {
   const [isVerified, setIsVerified] = useState(false)

@@ -10,7 +10,7 @@ import { isValidPhone } from "@/lib/customer-utils"
 import { toast } from "sonner"
 import { useCustomerAuth } from "@/context/CustomerAuthContext"
 
-const VERIFY_STORAGE_KEY = "bileg_pending_verified_phone"
+const VERIFY_STORAGE_KEY = "store_pending_verified_phone"
 const VERIFY_TTL_MS = 10 * 60 * 1000 // 10 minutes
 
 function getStoredPendingPhone(): { phone: string; name: string; savedAt: number } | null {

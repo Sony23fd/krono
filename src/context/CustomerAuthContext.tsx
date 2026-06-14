@@ -25,7 +25,7 @@ interface CustomerAuthContextType {
 
 const CustomerAuthContext = createContext<CustomerAuthContextType | undefined>(undefined)
 
-const STORAGE_KEY = "bileg_customer"
+const STORAGE_KEY = "store_customer"
 
 export function CustomerAuthProvider({ children }: { children: ReactNode }) {
   const [customer, setCustomerState] = useState<Customer | null>(null)

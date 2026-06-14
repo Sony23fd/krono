@@ -8,7 +8,7 @@ const FIELDS = [
   { key: "bank_name", label: "Банкны нэр", placeholder: "Хаан Банк" },
   { key: "bank_account", label: "Дансны дугаар", placeholder: "5071443386" },
   { key: "bank_holder", label: "Данс эзэмшигч", placeholder: "Отгоо" },
-  { key: "bank_note", label: "Нэмэлт тайлбар", placeholder: "Билэг Супермаркет" },
+  { key: "bank_note", label: "Нэмэлт тайлбар", placeholder: "Онлайн дэлгүүр" },
   { key: "delivery_fee", label: "Хүргэлтийн хураамж /QPay/ (₮)", placeholder: "6000" },
 ]
 

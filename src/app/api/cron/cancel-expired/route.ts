@@ -17,7 +17,7 @@ export async function GET(req: Request) {
   // Нууц түлхүүрээр хамгаалах (optional)
   const { searchParams } = new URL(req.url)
   const key = searchParams.get("key")
-  const expectedKey = process.env.CRON_SECRET || "bileg-cron-2026"
+  const expectedKey = process.env.CRON_SECRET || "store-cron-2026"
   
   if (key && key !== expectedKey) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })

@@ -71,7 +71,7 @@ export default async function StorefrontLayout({ children }: { children: ReactNo
               </div>
             </a>
           </div>
-          <p className="text-xs text-slate-400 mt-8">Bileg Supermarket © {new Date().getFullYear()}</p>
+          <p className="text-xs text-slate-400 mt-8">Онлайн дэлгүүр © {new Date().getFullYear()}</p>
         </div>
       </div>
     )

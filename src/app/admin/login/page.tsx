@@ -47,7 +47,7 @@ export default function AdminLoginPage() {
               <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-white">Bileg Admin</h1>
+          <h1 className="text-2xl font-bold text-white">Store Admin</h1>
           <p className="text-slate-400 text-sm mt-1">Админ хэсэгт нэвтрэх</p>
         </div>
 
@@ -61,7 +61,7 @@ export default function AdminLoginPage() {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
-                placeholder="admin@bileg.mn"
+                placeholder="admin@demo.mn"
                 className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
               />
             </div>
@@ -121,7 +121,7 @@ export default function AdminLoginPage() {
           </div>
         </div>
 
-        <p className="text-center text-slate-500 text-xs mt-6">© 2026 Билэг Супермаркет · Зөвхөн эрх бүхий хэрэглэгчдэд</p>
+        <p className="text-center text-slate-500 text-xs mt-6">© 2026 Онлайн дэлгүүр · Зөвхөн эрх бүхий хэрэглэгчдэд</p>
       </div>
     </div>
   )

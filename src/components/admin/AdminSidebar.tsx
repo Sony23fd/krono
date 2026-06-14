@@ -128,7 +128,7 @@ export function AdminSidebar({ className, role }: { className?: string; role: Ad
           </div>
           <div>
             <h2 className="text-[16px] font-extrabold text-white tracking-tight leading-none group-hover:text-red-50 transition-colors">
-              Bileg Admin
+              Store Admin
             </h2>
             <p className="text-[11px] font-medium text-slate-400 mt-1 uppercase tracking-wider">Супермаркет</p>
           </div>
@@ -208,7 +208,7 @@ export function AdminSidebar({ className, role }: { className?: string; role: Ad
 
       {/* Footer Info */}
       <div className="px-6 py-4 border-t border-white/5 text-[11px] text-slate-500 font-medium flex items-center justify-between bg-black/20 relative z-10">
-        <span>© Bileg 2026</span>
+        <span>© 2026</span>
         <div className="flex items-center gap-2">
           <span>Online</span>
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]"></span>

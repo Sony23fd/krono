@@ -72,7 +72,7 @@ export async function getQPayToken() {
 export async function createQPayInvoice({ 
   transactionRef, 
   amount, 
-  description = "Bileg Supermarket" 
+  description = "Store" 
 }: { 
   transactionRef: string, 
   amount: number, 
