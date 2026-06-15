@@ -192,7 +192,7 @@ export function SaaSHomepageClient({ products }: { products: any[] }) {
                 <Shield className="w-7 h-7 text-blue-600" />
               </div>
               <h4 className="text-xl font-bold text-slate-900 mb-3">Өндөр нууцлал</h4>
-              <p className="text-slate-600 leading-relaxed">AWS үүлэн технологид суурилсан, олон улсын ISO 27001 стандартын шаардлага хангасан мэдээллийн аюулгүй байдал.</p>
+              <p className="text-slate-600 leading-relaxed">AWS үүлэн технологид суурилсан мэдээллийн аюулгүй байдал, өндөр нууцлал хамгаалалт.</p>
             </div>
 
             <div className="p-8 rounded-3xl bg-slate-50 border border-slate-100 hover:shadow-lg transition-shadow">

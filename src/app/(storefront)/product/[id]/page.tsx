@@ -102,7 +102,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                   </div>
                   <div>
                     <h4 className="text-lg font-bold text-slate-900 mb-2">Найдвартай ажиллагаа ба Нууцлал</h4>
-                    <p className="text-slate-600">Мэдээллийн аюулгүй байдлын ISO 27001 стандартын шаардлагыг хангасан AWS үүлэн серверт таны мэдээлэл хадгалагдах бөгөөд 99.9% тасралтгүй ажиллагааг амлана.</p>
+                    <p className="text-slate-600">AWS үүлэн серверт таны мэдээлэл өндөр нууцлалтай хадгалагдах бөгөөд 99.9% тасралтгүй ажиллагааг амлана.</p>
                   </div>
                 </div>
 
