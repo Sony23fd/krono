@@ -1,7 +1,6 @@
 import { db } from "@/lib/db"
 import { notFound } from "next/navigation"
-import { ArrowLeft, CheckCircle2, ShieldCheck, Zap, Server, BarChart3, Users, Database } from "lucide-react"
-import Link from "next/link"
+import { CheckCircle2, ShieldCheck, Zap, Server, BarChart3, Users, Database, ArrowRight, LayoutDashboard, Lock, Globe, Clock, MessageSquare, HeadphonesIcon } from "lucide-react"
 import { BackButton } from "@/components/storefront/product/BackButton"
 import { ProductActions } from "./ProductActions"
 
@@ -29,28 +28,27 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   }
 
   const unitPrice = Number(product.price)
-  const isCrm = product.slug === "crm-system"
   const isErp = product.slug === "erp-system"
 
   // Танилцуулга мэдээллүүд (Модулиуд)
   const crmFeatures = [
     { title: "Хэрэглэгчийн сан", desc: "Бүх харилцагчийн мэдээллийг нэгтгэн удирдах, түүх хадгалах.", icon: <Users className="w-6 h-6 text-indigo-500" /> },
     { title: "Борлуулалтын урсгал", desc: "Сэжмээс борлуулалт хүртэлх үе шатыг хянах ухаалаг pipeline.", icon: <BarChart3 className="w-6 h-6 text-indigo-500" /> },
-    { title: "Тайлан аналитик", desc: "Борлуулалтын орлого болон ажилтнуудын гүйцэтгэлийн тайлан.", icon: <Server className="w-6 h-6 text-indigo-500" /> },
+    { title: "Тайлан аналитик", desc: "Борлуулалтын орлого болон ажилтнуудын гүйцэтгэлийн нарийвчилсан тайлан.", icon: <LayoutDashboard className="w-6 h-6 text-indigo-500" /> },
+    { title: "Маркетинг, И-Мэйл", desc: "Хэрэглэгч рүү автоматаар мэйл, мессеж илгээх маркетингийн модуль.", icon: <MessageSquare className="w-6 h-6 text-indigo-500" /> },
   ]
 
   const erpFeatures = [
-    { title: "Санхүүгийн удирдлага", desc: "Орлого, зарлага, цалин хөлсний нэгдсэн хяналт.", icon: <Database className="w-6 h-6 text-fuchsia-500" /> },
-    { title: "Хүний нөөц", desc: "Ажилтны мэдээлэл, ирц, гүйцэтгэлийн үнэлгээний систем.", icon: <Users className="w-6 h-6 text-fuchsia-500" /> },
-    { title: "Агуулахын бүртгэл", desc: "Бараа материалын үлдэгдэл, хөдөлгөөний нарийвчилсан бүртгэл.", icon: <Server className="w-6 h-6 text-fuchsia-500" /> },
+    { title: "Санхүүгийн удирдлага", desc: "Орлого, зарлага, цалин хөлсний нэгдсэн хяналт болон НӨАТ-ын баримт хэвлэлт.", icon: <Database className="w-6 h-6 text-fuchsia-500" /> },
+    { title: "Хүний нөөц", desc: "Ажилтны мэдээлэл, ирц, гүйцэтгэлийн үнэлгээ, цалин бодолтын систем.", icon: <Users className="w-6 h-6 text-fuchsia-500" /> },
+    { title: "Агуулахын бүртгэл", desc: "Бараа материалын үлдэгдэл, хөдөлгөөний нарийвчилсан бүртгэл (олон агуулах).", icon: <Server className="w-6 h-6 text-fuchsia-500" /> },
+    { title: "Үйлдвэрлэл", desc: "Орц норм, хаягдлын бүртгэл, үйлдвэрлэлийн өртөг тооцоолох.", icon: <Globe className="w-6 h-6 text-fuchsia-500" /> },
   ]
 
   const features = isErp ? erpFeatures : crmFeatures
-  const accentColor = isErp ? "fuchsia" : "indigo"
   const badgeClasses = isErp ? "bg-fuchsia-100 text-fuchsia-700" : "bg-indigo-100 text-indigo-700"
   const iconWrapperClasses = isErp ? "bg-fuchsia-50" : "bg-indigo-50"
   const checkIconClasses = isErp ? "text-fuchsia-500" : "text-indigo-500"
-  const AccentIcon = isErp ? Database : BarChart3
 
   return (
     <div className="bg-slate-50 min-h-screen pb-20 md:pb-0 text-slate-900 font-sans">
@@ -72,9 +70,10 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               {product.name}
             </h1>
             
-            <p className="text-lg sm:text-xl text-slate-600 mb-10 leading-relaxed font-medium">
-              {product.description || "Байгууллагын үйл ажиллагааг автоматжуулах ухаалаг шийдэл."}
-            </p>
+            <div 
+              className="prose prose-slate prose-lg text-slate-600 mb-10 leading-relaxed font-medium"
+              dangerouslySetInnerHTML={{ __html: product.description || "Байгууллагын үйл ажиллагааг автоматжуулах ухаалаг шийдэл." }}
+            />
 
             {/* Features / Modules Grid */}
             <div className="space-y-6 mb-12">
@@ -92,17 +91,43 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               </div>
             </div>
 
-            {/* Trust Badges */}
-            <div className="flex flex-wrap items-center gap-4 border-y border-slate-200 py-6">
-              <div className="flex items-center gap-2 text-slate-600 font-medium">
-                <ShieldCheck className="w-5 h-5 text-green-500" />
-                <span>Найдвартай хамгаалалт</span>
-              </div>
-              <div className="flex items-center gap-2 text-slate-600 font-medium">
-                <Server className="w-5 h-5 text-blue-500" />
-                <span>Үүлэн технологи (Cloud)</span>
+            {/* Detailed Presentation Section */}
+            <div className="mt-16 bg-white border border-slate-200 rounded-3xl p-8 sm:p-10 shadow-sm">
+              <h3 className="text-2xl font-bold text-slate-900 mb-6">Яагаад манай системийг сонгох вэ?</h3>
+              
+              <div className="space-y-8">
+                <div className="flex gap-4">
+                  <div className={`w-12 h-12 shrink-0 rounded-full ${iconWrapperClasses} flex items-center justify-center`}>
+                    <Lock className={`w-6 h-6 ${checkIconClasses}`} />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-bold text-slate-900 mb-2">Найдвартай ажиллагаа ба Нууцлал</h4>
+                    <p className="text-slate-600">Мэдээллийн аюулгүй байдлын ISO 27001 стандартын шаардлагыг хангасан AWS үүлэн серверт таны мэдээлэл хадгалагдах бөгөөд 99.9% тасралтгүй ажиллагааг амлана.</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <div className={`w-12 h-12 shrink-0 rounded-full ${iconWrapperClasses} flex items-center justify-center`}>
+                    <Clock className={`w-6 h-6 ${checkIconClasses}`} />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-bold text-slate-900 mb-2">Шуурхай нэвтрүүлэлт</h4>
+                    <p className="text-slate-600">Гэрээ байгуулсан өдрөөс хойш ажлын 3 хоногт багтаан системийг бүрэн тохируулж, танай байгууллагын онцлогт тохирсон анхан шатны сургалтыг хийнэ.</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <div className={`w-12 h-12 shrink-0 rounded-full ${iconWrapperClasses} flex items-center justify-center`}>
+                    <HeadphonesIcon className={`w-6 h-6 ${checkIconClasses}`} />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-bold text-slate-900 mb-2">24/7 Техникийн тусламж</h4>
+                    <p className="text-slate-600">Ашиглалтын явцад гарах аливаа асуудлыг тухай бүрт нь түргэн шуурхай шийдвэрлэх мэргэжлийн инженерүүдийн баг танд туслахад бэлэн байна.</p>
+                  </div>
+                </div>
               </div>
             </div>
+
           </div>
 
           {/* Checkout Panel - Right Side */}
@@ -123,28 +148,30 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                 )}
               </div>
 
-              <ul className="space-y-4 mb-8">
-                {['Хязгааргүй хэрэглэгч', 'Үнэгүй сургалт, нэвтрүүлэлт', '1 жилийн үнэгүй засвар үйлчилгээ', '24/7 техникийн тусламж'].map((perk, i) => (
-                  <li key={i} className="flex items-center gap-3 text-slate-700 font-medium">
-                    <CheckCircle2 className={`w-5 h-5 ${checkIconClasses} shrink-0`} />
-                    <span>{perk}</span>
-                  </li>
-                ))}
-              </ul>
+              <div className="bg-slate-50 rounded-xl p-5 mb-8 border border-slate-100">
+                <p className="text-sm font-bold text-slate-900 mb-4">Төлбөрт багтсан эрхүүд:</p>
+                <ul className="space-y-3">
+                  {['Хязгааргүй хэрэглэгчийн эрх', 'Үнэгүй сургалт, нэвтрүүлэлт', '1 жилийн үнэгүй засвар үйлчилгээ', 'Үндсэн модулиуд бүгд нээлттэй'].map((perk, i) => (
+                    <li key={i} className="flex items-center gap-3 text-slate-700 text-sm font-medium">
+                      <CheckCircle2 className={`w-5 h-5 ${checkIconClasses} shrink-0`} />
+                      <span>{perk}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
 
-              <div className="pt-6 border-t border-slate-100" id="order-form">
+              <div id="order-form">
                 <ProductActions
                   productId={product.id}
                   name={product.name}
                   imageUrl={product.imageUrl}
                   unitPrice={unitPrice}
                   remainingQuantity={999}
-                  isPreOrder={false}
-                  options={undefined}
-                  variants={undefined}
                 />
               </div>
-              <p className="text-center text-xs text-slate-400 mt-4">Товчийг дарснаар шууд сагсанд нэмэгдэнэ</p>
+              <div className="mt-4 text-center">
+                <p className="text-xs text-slate-400">Та захиалга хийсний дараа манай борлуулалтын баг тантай шууд холбогдох болно.</p>
+              </div>
             </div>
           </div>
 
