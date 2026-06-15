@@ -86,8 +86,10 @@ export default async function StorefrontLayout({ children }: { children: ReactNo
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-100/50 shadow-sm" suppressHydrationWarning>
         <div className="max-w-7xl mx-auto px-3 md:px-4 py-2.5 md:py-3 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 md:gap-6" suppressHydrationWarning>
           
-          {/* No Logo as requested */}
-          <div className="hidden md:block shrink-0 w-4"></div>
+          {/* Logo */}
+          <Link href="/" className="shrink-0 flex items-center">
+            <span className="text-3xl font-black tracking-tighter text-indigo-600">CVC</span>
+          </Link>
 
           {/* Search Bar Removed */}
           <div className="w-full md:flex-1 max-w-3xl hidden">
@@ -95,10 +97,13 @@ export default async function StorefrontLayout({ children }: { children: ReactNo
 
           {/* Desktop Nav Links */}
           <nav className="hidden lg:flex items-center gap-6 shrink-0">
-            <Link href="/product/erp-system" className="text-sm font-semibold text-gray-700 hover:text-[#F26522] transition-colors whitespace-nowrap">
+            <Link href="/" className="text-sm font-semibold text-gray-700 hover:text-indigo-600 transition-colors whitespace-nowrap">
+              Нүүр хуудас
+            </Link>
+            <Link href="/product/erp-system" className="text-sm font-semibold text-gray-700 hover:text-indigo-600 transition-colors whitespace-nowrap">
               ERP Систем
             </Link>
-            <Link href="/product/crm-system" className="text-sm font-semibold text-gray-700 hover:text-[#F26522] transition-colors whitespace-nowrap">
+            <Link href="/product/crm-system" className="text-sm font-semibold text-gray-700 hover:text-indigo-600 transition-colors whitespace-nowrap">
               CRM Систем
             </Link>
           </nav>
