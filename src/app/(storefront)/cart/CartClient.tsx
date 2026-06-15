@@ -180,13 +180,13 @@ export function CartClient({
   if (items.length === 0) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-24 text-center flex flex-col items-center">
-        <div className="w-48 h-48 mb-6 relative hover:scale-105 transition-transform duration-300">
-          <img src="/empty.png" alt="Empty Cart" className="object-contain w-full h-full drop-shadow-lg" />
+        <div className="w-24 h-24 mb-6 relative hover:scale-105 transition-transform duration-300 text-slate-300">
+          <Package className="w-full h-full" />
         </div>
-        <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800 mb-3 tracking-tight">Таны сагс хоосон байна өө! 🥕</h1>
-        <p className="text-slate-500 mb-8 text-base">Манай амттай, шинэхэн бараануудаас сонголтоо хийгээрэй.</p>
-        <Link href="/" className="inline-flex items-center gap-2 bg-[#F26522] text-white px-8 py-3.5 rounded-full font-bold hover:bg-[#E85B1C] transition-colors shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50">
-          <Package className="w-5 h-5" /> Дэлгүүр хэсэх
+        <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800 mb-3 tracking-tight">Захиалга сонгогдоогүй байна</h1>
+        <p className="text-slate-500 mb-8 text-base">Та манай системүүдтэй танилцаад сонголтоо хийнэ үү.</p>
+        <Link href="/" className="inline-flex items-center gap-2 bg-indigo-600 text-white px-8 py-3.5 rounded-full font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50">
+          <Info className="w-5 h-5" /> Буцах
         </Link>
       </div>
     )
@@ -301,11 +301,11 @@ export function CartClient({
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-12">
-      <h1 className="text-2xl font-bold text-slate-900 mb-8 flex items-center gap-3">
-        <ShoppingCart className="w-6 h-6 text-[#1B3561]" />
-        Миний сагс
-        <span className="text-base font-normal text-slate-400">({items.length} бараа)</span>
-      </h1>
+        <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+          <CheckCircle2 className="w-8 h-8 text-indigo-600" />
+          Захиалга баталгаажуулах
+          <span className="text-base font-normal text-slate-400">({items.length} бараа)</span>
+        </h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
         {/* Cart Items */}

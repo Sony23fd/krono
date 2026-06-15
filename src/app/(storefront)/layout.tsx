@@ -4,8 +4,7 @@ import { CartProvider } from "@/context/CartContext"
 import { FavoritesProvider } from "@/context/FavoritesContext"
 import { AgeVerificationProvider } from "@/context/AgeVerificationContext"
 import { CustomerAuthProvider } from "@/context/CustomerAuthContext"
-import { CartIcon } from "@/components/storefront/CartIcon"
-import { CartBadgeIcon } from "@/components/storefront/CartBadgeIcon"
+
 import { HeaderSearchBar } from "@/components/storefront/HeaderSearchBar"
 import { getCategories } from "@/app/actions/category-actions"
 import { CategoryBar } from "@/components/storefront/CategoryBar"
@@ -104,9 +103,8 @@ export default async function StorefrontLayout({ children }: { children: ReactNo
             </Link>
           </nav>
 
-          {/* Right: Desktop Icon Buttons */}
-          <div className="hidden md:flex items-center gap-3 shrink-0 border-l border-slate-200 pl-5">
-            <CartBadgeIcon />
+          {/* Right: Empty space to balance */}
+          <div className="hidden md:flex items-center w-12">
           </div>
         </div>
       </header>
@@ -116,10 +114,7 @@ export default async function StorefrontLayout({ children }: { children: ReactNo
         {children}
       </main>
 
-      {/* Global FAB Cart Icon (Hidden on mobile to avoid overlapping bottom nav) */}
-      <div className="hidden md:block">
-        <CartIcon />
-      </div>
+
 
       {/* Mobile Bottom Navigation */}
       <BottomNavigation />
