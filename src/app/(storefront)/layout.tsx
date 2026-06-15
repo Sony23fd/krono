@@ -15,7 +15,7 @@ import { db } from "@/lib/db"
 
 import { AnimatedHeroBackground } from "@/components/storefront/home/AnimatedHeroBackground"
 import { VisitorTracker } from "@/components/storefront/VisitorTracker"
-import { SocialProofToast } from "@/components/storefront/SocialProofToast"
+
 import { BottomNavigation } from "@/components/storefront/BottomNavigation"
 import { FooterMap } from "@/components/storefront/FooterMap"
 import { PopupBannerModal } from "@/components/storefront/PopupBannerModal"
@@ -96,11 +96,11 @@ export default async function StorefrontLayout({ children }: { children: ReactNo
 
           {/* Desktop Nav Links */}
           <nav className="hidden lg:flex items-center gap-6 shrink-0">
-            <Link href="/" className="text-sm font-semibold text-gray-700 hover:text-[#F26522] transition-colors whitespace-nowrap">
-              Дэлгүүр
+            <Link href="/product/erp-system" className="text-sm font-semibold text-gray-700 hover:text-[#F26522] transition-colors whitespace-nowrap">
+              ERP Систем
             </Link>
-            <Link href="/?sale=true" className="text-sm font-semibold text-red-500 hover:text-red-600 transition-colors whitespace-nowrap">
-              Хямдрал
+            <Link href="/product/crm-system" className="text-sm font-semibold text-gray-700 hover:text-[#F26522] transition-colors whitespace-nowrap">
+              CRM Систем
             </Link>
           </nav>
 
@@ -126,7 +126,7 @@ export default async function StorefrontLayout({ children }: { children: ReactNo
 
       {/* Global Analytics & Social Proof */}
       <VisitorTracker />
-      <SocialProofToast />
+
       
       {/* Pop-up Banner */}
       <PopupBannerModal banner={popupBanner} />
