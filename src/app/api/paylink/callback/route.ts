@@ -51,7 +51,7 @@ async function handleCallback(request: Request) {
   try {
     // Check if Paylink is enabled
     const settings = await getShopSettings()
-    if (settings.paylink_enabled !== "true") {
+    if (settings.paylink_enabled === "false") {
       console.warn("[Paylink Callback] Paylink is disabled")
       return NextResponse.json({ error: "Paylink is disabled" }, { status: 403 })
     }

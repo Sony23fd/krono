@@ -51,10 +51,22 @@ export function CartClient({
   const { customer, updateAddress } = useCustomerAuth()
   const router = useRouter()
   const wantsDelivery = true
-  const [paymentMethod, setPaymentMethod] = useState<"QPAY" | "PAYLINK" | "BANK_TRANSFER">("PAYLINK")
+  const [paymentMethod, setPaymentMethod] = useState<"QPAY" | "PAYLINK" | "BANK_TRANSFER">(() => {
+    if (paylinkEnabled) return "PAYLINK"
+    if (qpayEnabled) return "QPAY"
+    return "BANK_TRANSFER"
+  })
   const [submitting, setSubmitting] = useState(false)
   const [isRedirecting, setIsRedirecting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (paymentMethod === "PAYLINK" && !paylinkEnabled) {
+      setPaymentMethod(qpayEnabled ? "QPAY" : "BANK_TRANSFER")
+    } else if (paymentMethod === "QPAY" && !qpayEnabled) {
+      setPaymentMethod(paylinkEnabled ? "PAYLINK" : "BANK_TRANSFER")
+    }
+  }, [paylinkEnabled, qpayEnabled, paymentMethod])
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [selectedDeliveryDate, setSelectedDeliveryDate] = useState<string | null>(null)
   
@@ -379,12 +391,65 @@ export function CartClient({
               <input type="hidden" name="customerName" value="Зочин" />
               <input type="hidden" name="phoneNumber" value="99999999" />
               <input type="hidden" name="customerEmail" value="digital@krono.com" />
-              <input type="hidden" name="paymentMethod" value="PAYLINK" />
+              <input type="hidden" name="paymentMethod" value={paymentMethod} />
 
-              <div className="pt-2">
-                <div className="flex flex-col items-center justify-center p-6 rounded-xl border-2 border-[#1B3561] bg-blue-50/50 text-[#1B3561] transition-all">
-                  <span className="text-lg font-bold text-center leading-tight">Paylink төлбөрийн систем</span>
-                  <span className="text-sm font-medium opacity-80 mt-1">Карт болон QR ашиглан төлөх</span>
+              <div className="pt-2 space-y-2.5">
+                <span className="text-sm font-bold text-slate-800 block">Төлбөр төлөх хэлбэр</span>
+                <div className="grid grid-cols-1 gap-2.5">
+                  {paylinkEnabled && (
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod("PAYLINK")}
+                      className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all cursor-pointer text-left ${paymentMethod === "PAYLINK" ? "border-indigo-600 bg-indigo-50/70 text-indigo-950 shadow-sm" : "border-slate-200 hover:border-slate-300 text-slate-700 bg-white"}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <CreditCard className={`w-6 h-6 ${paymentMethod === "PAYLINK" ? "text-indigo-600" : "text-slate-400"}`} />
+                        <div>
+                          <div className="font-bold text-base leading-tight">Paylink төлбөрийн систем</div>
+                          <div className="text-xs opacity-75 mt-0.5">Карт болон QR ашиглан төлөх</div>
+                        </div>
+                      </div>
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === "PAYLINK" ? "border-indigo-600 bg-indigo-600" : "border-slate-300"}`}>
+                        {paymentMethod === "PAYLINK" && <div className="w-2 h-2 rounded-full bg-white" />}
+                      </div>
+                    </button>
+                  )}
+
+                  {qpayEnabled && (
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod("QPAY")}
+                      className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all cursor-pointer text-left ${paymentMethod === "QPAY" ? "border-indigo-600 bg-indigo-50/70 text-indigo-950 shadow-sm" : "border-slate-200 hover:border-slate-300 text-slate-700 bg-white"}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Banknote className={`w-6 h-6 ${paymentMethod === "QPAY" ? "text-indigo-600" : "text-slate-400"}`} />
+                        <div>
+                          <div className="font-bold text-base leading-tight">QPay (Банкны апп)</div>
+                          <div className="text-xs opacity-75 mt-0.5">Бүх банкны аппликэйшнээр уншуулах</div>
+                        </div>
+                      </div>
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === "QPAY" ? "border-indigo-600 bg-indigo-600" : "border-slate-300"}`}>
+                        {paymentMethod === "QPAY" && <div className="w-2 h-2 rounded-full bg-white" />}
+                      </div>
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod("BANK_TRANSFER")}
+                    className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all cursor-pointer text-left ${paymentMethod === "BANK_TRANSFER" ? "border-indigo-600 bg-indigo-50/70 text-indigo-950 shadow-sm" : "border-slate-200 hover:border-slate-300 text-slate-700 bg-white"}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Banknote className={`w-6 h-6 ${paymentMethod === "BANK_TRANSFER" ? "text-indigo-600" : "text-slate-400"}`} />
+                      <div>
+                        <div className="font-bold text-base leading-tight">Дансаар шилжүүлэх</div>
+                        <div className="text-xs opacity-75 mt-0.5">Хаан банк, Голомт банк г.м</div>
+                      </div>
+                    </div>
+                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === "BANK_TRANSFER" ? "border-indigo-600 bg-indigo-600" : "border-slate-300"}`}>
+                      {paymentMethod === "BANK_TRANSFER" && <div className="w-2 h-2 rounded-full bg-white" />}
+                    </div>
+                  </button>
                 </div>
               </div>
 

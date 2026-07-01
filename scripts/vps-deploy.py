@@ -80,7 +80,7 @@ def main():
         # Step 6: Run prisma migrations
         print("\n>> Running database migrations...")
         time.sleep(10)  # Wait for DB to be ready
-        run_ssh_command(ssh, f"cd {PROJECT_DIR} && docker compose exec web npx prisma db push --accept-data-loss 2>&1 || docker-compose exec web npx prisma db push --accept-data-loss 2>&1", timeout=120)
+        run_ssh_command(ssh, f"cd {PROJECT_DIR} && docker compose exec web npx prisma@5.22.0 db push --accept-data-loss 2>&1 || docker-compose exec web npx prisma@5.22.0 db push --accept-data-loss 2>&1", timeout=120)
         
         # Step 7: Check status
         print("\n>> Checking container status...")

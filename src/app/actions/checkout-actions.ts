@@ -52,6 +52,20 @@ export async function checkout(input: CheckoutInput) {
   const phone = input.phoneNumber.replace(/\D/g, "")
   if (phone.length !== 8) return { success: false, error: "Утасны дугаар 8 оронтой байх ёстой" }
 
+  if (input.paymentMethod === "PAYLINK") {
+    const paylinkSetting = await db.shopSettings.findUnique({ where: { key: "paylink_enabled" } })
+    if (paylinkSetting?.value === "false") {
+      return { success: false, error: "Paylink төлбөрийн систем түр унтраалттай байна." }
+    }
+  }
+
+  if (input.paymentMethod === "QPAY") {
+    const qpaySetting = await db.shopSettings.findUnique({ where: { key: "qpay_enabled" } })
+    if (qpaySetting?.value === "false") {
+      return { success: false, error: "QPay төлбөрийн систем түр унтраалттай байна." }
+    }
+  }
+
   try {
     const result = await db.$transaction(async (tx) => {
 
