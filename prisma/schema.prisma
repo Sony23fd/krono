@@ -10,25 +10,30 @@ datasource db {
 }
 
 model User {
-  id             String   @id @default(cuid())
-  phone          String?  @unique
-  email          String?  @unique
-  password       String?
-  name           String?
-  role           Role     @default(CUSTOMER)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  address        String?
-  referralCode   String?  @unique
-  referralCount  Int      @default(0)
-  referralReward Int      @default(0)
-  referredById   String?
-  cart           Cart?
-  orders         Order[]
-  referredBy     User?    @relation("UserReferrals", fields: [referredById], references: [id])
-  referrals      User[]   @relation("UserReferrals")
+  id                String          @id @default(cuid())
+  phone             String?         @unique
+  email             String?         @unique
+  password          String?
+  name              String?
+  role              Role            @default(CUSTOMER)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  address           String?
+  referralCode      String?         @unique
+  referralCount     Int             @default(0)
+  referralReward    Int             @default(0)
+  referredById      String?
+  cart              Cart?
+  orders            Order[]
+  referredBy        User?           @relation("UserReferrals", fields: [referredById], references: [id])
+  referrals         User[]          @relation("UserReferrals")
+  branchId          String?
+  branch            Branch?         @relation(fields: [branchId], references: [id])
+  approvedTransfers StockTransfer[] @relation("TransferApprover")
+  createdTransfers  StockTransfer[] @relation("TransferCreator")
 
   @@index([role])
+  @@index([branchId])
 }
 
 model Category {
@@ -54,35 +59,38 @@ model Category {
 }
 
 model Product {
-  id                      String           @id @default(cuid())
-  sku                     String           @unique
+  id                      String              @id @default(cuid())
+  sku                     String              @unique
   name                    String
-  slug                    String           @unique
+  slug                    String              @unique
   description             String?
   imageUrl                String?
   images                  Json?
   price                   Decimal
   comparePrice            Decimal?
   costPrice               Decimal?
-  weight                  Decimal?         @default(0)
+  weight                  Decimal?            @default(0)
   categoryId              String?
-  stockQuantity           Int              @default(0)
-  reservedStock           Int              @default(0)
-  lowStockAlert           Int              @default(5)
-  status                  ProductStatus    @default(ACTIVE)
+  stockQuantity           Int                 @default(0)
+  reservedStock           Int                 @default(0)
+  lowStockAlert           Int                 @default(5)
+  status                  ProductStatus       @default(ACTIVE)
   options                 Json?
-  isPreOrder              Boolean          @default(false)
-  createdAt               DateTime         @default(now())
-  updatedAt               DateTime         @updatedAt
-  isFeatured              Boolean          @default(false)
-  requiresAgeVerification Boolean          @default(false)
+  isPreOrder              Boolean             @default(false)
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+  isFeatured              Boolean             @default(false)
+  requiresAgeVerification Boolean             @default(false)
   customBadge             String?
-  unit                    String           @default("ширхэг")
-  barcode                 String?          @unique
+  unit                    String              @default("ширхэг")
+  barcode                 String?             @unique
   cartItems               CartItem[]
   orderItems              OrderItem[]
-  category                Category?        @relation(fields: [categoryId], references: [id])
+  category                Category?           @relation(fields: [categoryId], references: [id])
   variants                ProductVariant[]
+  inventories             Inventory[]
+  transferItems           StockTransferItem[]
+  stockMovements          StockMovement[]
 
   @@index([status])
   @@index([categoryId])
@@ -93,17 +101,19 @@ model Product {
 }
 
 model ProductVariant {
-  id            String   @id @default(cuid())
+  id            String              @id @default(cuid())
   productId     String
-  sku           String   @unique
+  sku           String              @unique
   name          String
   options       Json
   price         Decimal?
-  stockQuantity Int      @default(0)
+  stockQuantity Int                 @default(0)
   imageUrl      String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  product       Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  inventories   Inventory[]
+  transferItems StockTransferItem[]
 
   @@index([productId])
 }
@@ -168,6 +178,8 @@ model Order {
   loyaltyPointsUsed     Int            @default(0)
   referralRewardUsed    Int            @default(0)
   customerEmail         String?
+  branchId              String?
+  branch                Branch?        @relation(fields: [branchId], references: [id])
   user                  User?          @relation(fields: [userId], references: [id])
   items                 OrderItem[]
   payments              Payment[]
@@ -178,6 +190,7 @@ model Order {
   @@index([stockReservedAt])
   @@index([createdAt])
   @@index([updatedAt])
+  @@index([branchId])
 }
 
 model OrderItem {
@@ -423,4 +436,125 @@ enum BannerTextSize {
   MEDIUM
   LARGE
   XLARGE
+}
+
+enum TransferStatus {
+  PENDING
+  IN_TRANSIT
+  COMPLETED
+  CANCELLED
+}
+
+enum MovementType {
+  IN
+  OUT
+  TRANSFER_OUT
+  TRANSFER_IN
+  ADJUSTMENT
+}
+
+enum BranchType {
+  MAIN_WAREHOUSE
+  STORE
+}
+
+model Branch {
+  id        String     @id @default(cuid())
+  name      String
+  type      BranchType @default(STORE)
+  address   String?
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  users         User[]
+  orders        Order[]
+  inventory     Inventory[]
+  transfersFrom StockTransfer[] @relation("TransferFromBranch")
+  transfersTo   StockTransfer[] @relation("TransferToBranch")
+  movements     StockMovement[]
+}
+
+model Inventory {
+  id        String   @id @default(cuid())
+  branchId  String
+  productId String
+  variantId String?
+  quantity  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  branch  Branch          @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  product Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@unique([branchId, productId, variantId])
+  @@index([branchId])
+  @@index([productId])
+}
+
+model StockTransfer {
+  id              String         @id @default(cuid())
+  referenceNumber String         @unique
+  fromBranchId    String
+  toBranchId      String
+  status          TransferStatus @default(PENDING)
+  note            String?
+
+  createdById  String
+  approvedById String?
+  shippedAt    DateTime?
+  receivedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  fromBranch Branch @relation("TransferFromBranch", fields: [fromBranchId], references: [id])
+  toBranch   Branch @relation("TransferToBranch", fields: [toBranchId], references: [id])
+  createdBy  User   @relation("TransferCreator", fields: [createdById], references: [id])
+  approvedBy User?  @relation("TransferApprover", fields: [approvedById], references: [id])
+
+  items     StockTransferItem[]
+  movements StockMovement[]
+
+  @@index([fromBranchId])
+  @@index([toBranchId])
+  @@index([status])
+}
+
+model StockTransferItem {
+  id          String  @id @default(cuid())
+  transferId  String
+  productId   String
+  variantId   String?
+  quantity    Int
+  receivedQty Int     @default(0)
+
+  transfer StockTransfer   @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  product  Product         @relation(fields: [productId], references: [id])
+  variant  ProductVariant? @relation(fields: [variantId], references: [id])
+
+  @@index([transferId])
+  @@index([productId])
+}
+
+model StockMovement {
+  id         String       @id @default(cuid())
+  branchId   String
+  productId  String
+  variantId  String?
+  type       MovementType
+  quantity   Int
+  transferId String?
+  orderId    String?
+  note       String?
+  createdAt  DateTime     @default(now())
+
+  branch   Branch         @relation(fields: [branchId], references: [id])
+  product  Product        @relation(fields: [productId], references: [id])
+  transfer StockTransfer? @relation(fields: [transferId], references: [id])
+
+  @@index([branchId])
+  @@index([productId])
+  @@index([createdAt])
 }

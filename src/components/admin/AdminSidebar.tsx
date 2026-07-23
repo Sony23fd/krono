@@ -23,7 +23,10 @@ import {
   ChevronRight,
   CreditCard,
   CreditCardIcon,
-  ShieldCheck
+  ShieldCheck,
+  Building2,
+  ArrowRightLeft,
+  Boxes
 } from "lucide-react"
 
 type AdminRole = "ADMIN" | "CARGO_ADMIN" | "DATAADMIN"
@@ -63,6 +66,15 @@ const SIDEBAR_STRUCTURE: SidebarGroup[] = [
     items: [
       { name: "Барааны жагсаалт", url: "/admin/products", icon: Package, roles: ["ADMIN"] },
       { name: "Ангилал & Төрөл", url: "/admin/categories", icon: ListFilter, roles: ["ADMIN"] }
+    ]
+  },
+  {
+    id: "warehouse",
+    label: "Агуулах & Шилжүүлэг",
+    items: [
+      { name: "Салбарууд", url: "/admin/branches", icon: Building2, roles: ["ADMIN"] },
+      { name: "Үлдэгдэл", url: "/admin/inventory", icon: Boxes, roles: ["ADMIN", "CARGO_ADMIN"] },
+      { name: "Шилжүүлэг", url: "/admin/transfers", icon: ArrowRightLeft, roles: ["ADMIN", "CARGO_ADMIN"] }
     ]
   },
   {
